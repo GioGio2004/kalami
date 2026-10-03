@@ -173,7 +173,7 @@ export type PublicApiType = {
       {
         courseId: Id<"courses">;
         instructions?: string;
-        kind: "quiz" | "midterm" | "final";
+        kind: "task" | "quiz" | "midterm" | "final";
         settings?: {
           attemptsAllowed?: number;
           closesAt?: number;
@@ -199,7 +199,7 @@ export type PublicApiType = {
           courseId: Id<"courses">;
           createdVia: "web" | "mcp";
           instructions?: string;
-          kind: "quiz" | "midterm" | "final";
+          kind: "task" | "quiz" | "midterm" | "final";
           publishedAt?: number;
           questionCount: number;
           settings: {
@@ -221,6 +221,70 @@ export type PublicApiType = {
         course: { _id: Id<"courses">; title: string };
         questions: Array<{
           _id: Id<"questions">;
+          code?: {
+            assets: Array<{ alt?: string; name: string; url: string }>;
+            files: Array<{ content: string; name: string }>;
+            steps: Array<{
+              checks: Array<
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "not_exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; id: string; label: string; type: "linked" }
+              >;
+              hint?: string;
+              instructions: string;
+              title: string;
+            }>;
+            variables?: Array<{ name: string; values: Array<string> }>;
+          };
           createdVia: "web" | "mcp";
           explanation?: string;
           key:
@@ -231,12 +295,70 @@ export type PublicApiType = {
                 caseSensitive: boolean;
                 type: "short";
               }
-            | { rubric?: string; type: "essay" };
+            | { rubric?: string; type: "essay" }
+            | {
+                hiddenChecks: Array<
+                  | {
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "exists";
+                    }
+                  | {
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "not_exists";
+                    }
+                  | {
+                      id: string;
+                      label: string;
+                      max?: number;
+                      min?: number;
+                      selector: string;
+                      type: "count";
+                    }
+                  | {
+                      caseSensitive?: boolean;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "text";
+                    }
+                  | {
+                      attribute: string;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "attr";
+                    }
+                  | {
+                      equals?: string;
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      oneOf?: Array<string>;
+                      property: string;
+                      selector: string;
+                      type: "css";
+                      viewport?: number;
+                    }
+                  | { href: string; id: string; label: string; type: "linked" }
+                >;
+                solution: Array<{ content: string; name: string }>;
+                type: "code";
+              };
           options?: Array<{ id: string; text: string }>;
           order: number;
           points: number;
           prompt: string;
-          type: "single" | "multiple" | "short" | "essay";
+          type: "single" | "multiple" | "short" | "essay" | "code";
         }>;
       }
     >;
@@ -246,7 +368,7 @@ export type PublicApiType = {
       {
         assessmentId: Id<"assessments">;
         instructions?: string;
-        kind?: "quiz" | "midterm" | "final";
+        kind?: "task" | "quiz" | "midterm" | "final";
         settings?: {
           attemptsAllowed?: number;
           closesAt?: number;
@@ -328,6 +450,7 @@ export type PublicApiType = {
           midterms: number;
           published: number;
           quizzes: number;
+          tasks: number;
         };
         createdVia: "web" | "mcp";
         description?: string;
@@ -356,7 +479,7 @@ export type PublicApiType = {
           courseId: Id<"courses">;
           createdVia: "web" | "mcp";
           instructions?: string;
-          kind: "quiz" | "midterm" | "final";
+          kind: "task" | "quiz" | "midterm" | "final";
           publishedAt?: number;
           questionCount: number;
           settings: {
@@ -381,6 +504,7 @@ export type PublicApiType = {
           midterms: number;
           published: number;
           quizzes: number;
+          tasks: number;
         };
         createdVia: "web" | "mcp";
         description?: string;
@@ -475,6 +599,7 @@ export type PublicApiType = {
           midterms: number;
           published: number;
           quizzes: number;
+          tasks: number;
         };
         createdVia: "web" | "mcp";
         description?: string;
@@ -503,7 +628,7 @@ export type PublicApiType = {
           courseId: Id<"courses">;
           createdVia: "web" | "mcp";
           instructions?: string;
-          kind: "quiz" | "midterm" | "final";
+          kind: "task" | "quiz" | "midterm" | "final";
           publishedAt?: number;
           questionCount: number;
           settings: {
@@ -528,6 +653,7 @@ export type PublicApiType = {
           midterms: number;
           published: number;
           quizzes: number;
+          tasks: number;
         };
         createdVia: "web" | "mcp";
         description?: string;
@@ -567,7 +693,7 @@ export type PublicApiType = {
           courseId: Id<"courses">;
           createdVia: "web" | "mcp";
           instructions?: string;
-          kind: "quiz" | "midterm" | "final";
+          kind: "task" | "quiz" | "midterm" | "final";
           publishedAt?: number;
           questionCount: number;
           settings: {
@@ -589,6 +715,70 @@ export type PublicApiType = {
         course: { _id: Id<"courses">; title: string };
         questions: Array<{
           _id: Id<"questions">;
+          code?: {
+            assets: Array<{ alt?: string; name: string; url: string }>;
+            files: Array<{ content: string; name: string }>;
+            steps: Array<{
+              checks: Array<
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "not_exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; id: string; label: string; type: "linked" }
+              >;
+              hint?: string;
+              instructions: string;
+              title: string;
+            }>;
+            variables?: Array<{ name: string; values: Array<string> }>;
+          };
           createdVia: "web" | "mcp";
           explanation?: string;
           key:
@@ -599,12 +789,70 @@ export type PublicApiType = {
                 caseSensitive: boolean;
                 type: "short";
               }
-            | { rubric?: string; type: "essay" };
+            | { rubric?: string; type: "essay" }
+            | {
+                hiddenChecks: Array<
+                  | {
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "exists";
+                    }
+                  | {
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "not_exists";
+                    }
+                  | {
+                      id: string;
+                      label: string;
+                      max?: number;
+                      min?: number;
+                      selector: string;
+                      type: "count";
+                    }
+                  | {
+                      caseSensitive?: boolean;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "text";
+                    }
+                  | {
+                      attribute: string;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "attr";
+                    }
+                  | {
+                      equals?: string;
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      oneOf?: Array<string>;
+                      property: string;
+                      selector: string;
+                      type: "css";
+                      viewport?: number;
+                    }
+                  | { href: string; id: string; label: string; type: "linked" }
+                >;
+                solution: Array<{ content: string; name: string }>;
+                type: "code";
+              };
           options?: Array<{ id: string; text: string }>;
           order: number;
           points: number;
           prompt: string;
-          type: "single" | "multiple" | "short" | "essay";
+          type: "single" | "multiple" | "short" | "essay" | "code";
         }>;
       }
     >;
@@ -614,7 +862,7 @@ export type PublicApiType = {
       {
         courseId: Id<"courses">;
         instructions?: string;
-        kind: "quiz" | "midterm" | "final";
+        kind: "task" | "quiz" | "midterm" | "final";
         settings?: {
           attemptsAllowed?: number;
           closesAt?: number;
@@ -636,7 +884,7 @@ export type PublicApiType = {
       {
         assessmentId: Id<"assessments">;
         instructions?: string;
-        kind?: "quiz" | "midterm" | "final";
+        kind?: "task" | "quiz" | "midterm" | "final";
         settings?: {
           attemptsAllowed?: number;
           closesAt?: number;
@@ -687,6 +935,101 @@ export type PublicApiType = {
               rubric?: string;
               type: "essay";
             }
+          | {
+              assets?: Array<{ alt?: string; name: string; url: string }>;
+              explanation?: string;
+              hiddenChecks?: Array<
+                | { label: string; selector: string; type: "exists" }
+                | { label: string; selector: string; type: "not_exists" }
+                | {
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; label: string; type: "linked" }
+              >;
+              points?: number;
+              prompt: string;
+              solution: Array<{ content: string; name: string }>;
+              starterFiles: Array<{ content: string; name: string }>;
+              steps: Array<{
+                checks: Array<
+                  | { label: string; selector: string; type: "exists" }
+                  | { label: string; selector: string; type: "not_exists" }
+                  | {
+                      label: string;
+                      max?: number;
+                      min?: number;
+                      selector: string;
+                      type: "count";
+                    }
+                  | {
+                      caseSensitive?: boolean;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      selector: string;
+                      type: "text";
+                    }
+                  | {
+                      attribute: string;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      selector: string;
+                      type: "attr";
+                    }
+                  | {
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      oneOf?: Array<string>;
+                      property: string;
+                      selector: string;
+                      type: "css";
+                      viewport?: number;
+                    }
+                  | { href: string; label: string; type: "linked" }
+                >;
+                hint?: string;
+                instructions: string;
+                title: string;
+              }>;
+              type: "code";
+              variables?: Array<{ name: string; values: Array<string> }>;
+            }
         >;
         token: string;
       },
@@ -725,6 +1068,101 @@ export type PublicApiType = {
               prompt: string;
               rubric?: string;
               type: "essay";
+            }
+          | {
+              assets?: Array<{ alt?: string; name: string; url: string }>;
+              explanation?: string;
+              hiddenChecks?: Array<
+                | { label: string; selector: string; type: "exists" }
+                | { label: string; selector: string; type: "not_exists" }
+                | {
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; label: string; type: "linked" }
+              >;
+              points?: number;
+              prompt: string;
+              solution: Array<{ content: string; name: string }>;
+              starterFiles: Array<{ content: string; name: string }>;
+              steps: Array<{
+                checks: Array<
+                  | { label: string; selector: string; type: "exists" }
+                  | { label: string; selector: string; type: "not_exists" }
+                  | {
+                      label: string;
+                      max?: number;
+                      min?: number;
+                      selector: string;
+                      type: "count";
+                    }
+                  | {
+                      caseSensitive?: boolean;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      selector: string;
+                      type: "text";
+                    }
+                  | {
+                      attribute: string;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      selector: string;
+                      type: "attr";
+                    }
+                  | {
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      oneOf?: Array<string>;
+                      property: string;
+                      selector: string;
+                      type: "css";
+                      viewport?: number;
+                    }
+                  | { href: string; label: string; type: "linked" }
+                >;
+                hint?: string;
+                instructions: string;
+                title: string;
+              }>;
+              type: "code";
+              variables?: Array<{ name: string; values: Array<string> }>;
             };
         questionId: Id<"questions">;
         token: string;
@@ -746,6 +1184,131 @@ export type PublicApiType = {
         token: string;
       },
       null
+    >;
+    checkCodeTask: FunctionReference<
+      "query",
+      "public",
+      {
+        question: {
+          assets?: Array<{ alt?: string; name: string; url: string }>;
+          explanation?: string;
+          hiddenChecks?: Array<
+            | { label: string; selector: string; type: "exists" }
+            | { label: string; selector: string; type: "not_exists" }
+            | {
+                label: string;
+                max?: number;
+                min?: number;
+                selector: string;
+                type: "count";
+              }
+            | {
+                caseSensitive?: boolean;
+                contains?: string;
+                equals?: string;
+                every?: boolean;
+                label: string;
+                selector: string;
+                type: "text";
+              }
+            | {
+                attribute: string;
+                contains?: string;
+                equals?: string;
+                every?: boolean;
+                label: string;
+                selector: string;
+                type: "attr";
+              }
+            | {
+                equals?: string;
+                every?: boolean;
+                label: string;
+                oneOf?: Array<string>;
+                property: string;
+                selector: string;
+                type: "css";
+                viewport?: number;
+              }
+            | { href: string; label: string; type: "linked" }
+          >;
+          points?: number;
+          prompt: string;
+          solution: Array<{ content: string; name: string }>;
+          starterFiles: Array<{ content: string; name: string }>;
+          steps: Array<{
+            checks: Array<
+              | { label: string; selector: string; type: "exists" }
+              | { label: string; selector: string; type: "not_exists" }
+              | {
+                  label: string;
+                  max?: number;
+                  min?: number;
+                  selector: string;
+                  type: "count";
+                }
+              | {
+                  caseSensitive?: boolean;
+                  contains?: string;
+                  equals?: string;
+                  every?: boolean;
+                  label: string;
+                  selector: string;
+                  type: "text";
+                }
+              | {
+                  attribute: string;
+                  contains?: string;
+                  equals?: string;
+                  every?: boolean;
+                  label: string;
+                  selector: string;
+                  type: "attr";
+                }
+              | {
+                  equals?: string;
+                  every?: boolean;
+                  label: string;
+                  oneOf?: Array<string>;
+                  property: string;
+                  selector: string;
+                  type: "css";
+                  viewport?: number;
+                }
+              | { href: string; label: string; type: "linked" }
+            >;
+            hint?: string;
+            instructions: string;
+            title: string;
+          }>;
+          type: "code";
+          variables?: Array<{ name: string; values: Array<string> }>;
+        };
+        token: string;
+      },
+      {
+        errors: Array<string>;
+        hidden: Array<{
+          detail: string;
+          id: string;
+          label: string;
+          onSolution: boolean;
+          onStarter: boolean;
+        }>;
+        ok: boolean;
+        steps: Array<{
+          checks: Array<{
+            detail: string;
+            id: string;
+            label: string;
+            onSolution: boolean;
+            onStarter: boolean;
+          }>;
+          title: string;
+        }>;
+        variants: number;
+        warnings: Array<string>;
+      }
     >;
   };
   mcpTokens: {
@@ -811,6 +1374,101 @@ export type PublicApiType = {
               rubric?: string;
               type: "essay";
             }
+          | {
+              assets?: Array<{ alt?: string; name: string; url: string }>;
+              explanation?: string;
+              hiddenChecks?: Array<
+                | { label: string; selector: string; type: "exists" }
+                | { label: string; selector: string; type: "not_exists" }
+                | {
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; label: string; type: "linked" }
+              >;
+              points?: number;
+              prompt: string;
+              solution: Array<{ content: string; name: string }>;
+              starterFiles: Array<{ content: string; name: string }>;
+              steps: Array<{
+                checks: Array<
+                  | { label: string; selector: string; type: "exists" }
+                  | { label: string; selector: string; type: "not_exists" }
+                  | {
+                      label: string;
+                      max?: number;
+                      min?: number;
+                      selector: string;
+                      type: "count";
+                    }
+                  | {
+                      caseSensitive?: boolean;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      selector: string;
+                      type: "text";
+                    }
+                  | {
+                      attribute: string;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      selector: string;
+                      type: "attr";
+                    }
+                  | {
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      oneOf?: Array<string>;
+                      property: string;
+                      selector: string;
+                      type: "css";
+                      viewport?: number;
+                    }
+                  | { href: string; label: string; type: "linked" }
+                >;
+                hint?: string;
+                instructions: string;
+                title: string;
+              }>;
+              type: "code";
+              variables?: Array<{ name: string; values: Array<string> }>;
+            }
         >;
       },
       Array<Id<"questions">>
@@ -848,6 +1506,101 @@ export type PublicApiType = {
               prompt: string;
               rubric?: string;
               type: "essay";
+            }
+          | {
+              assets?: Array<{ alt?: string; name: string; url: string }>;
+              explanation?: string;
+              hiddenChecks?: Array<
+                | { label: string; selector: string; type: "exists" }
+                | { label: string; selector: string; type: "not_exists" }
+                | {
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; label: string; type: "linked" }
+              >;
+              points?: number;
+              prompt: string;
+              solution: Array<{ content: string; name: string }>;
+              starterFiles: Array<{ content: string; name: string }>;
+              steps: Array<{
+                checks: Array<
+                  | { label: string; selector: string; type: "exists" }
+                  | { label: string; selector: string; type: "not_exists" }
+                  | {
+                      label: string;
+                      max?: number;
+                      min?: number;
+                      selector: string;
+                      type: "count";
+                    }
+                  | {
+                      caseSensitive?: boolean;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      selector: string;
+                      type: "text";
+                    }
+                  | {
+                      attribute: string;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      selector: string;
+                      type: "attr";
+                    }
+                  | {
+                      equals?: string;
+                      every?: boolean;
+                      label: string;
+                      oneOf?: Array<string>;
+                      property: string;
+                      selector: string;
+                      type: "css";
+                      viewport?: number;
+                    }
+                  | { href: string; label: string; type: "linked" }
+                >;
+                hint?: string;
+                instructions: string;
+                title: string;
+              }>;
+              type: "code";
+              variables?: Array<{ name: string; values: Array<string> }>;
             };
         questionId: Id<"questions">;
       },
@@ -863,6 +1616,450 @@ export type PublicApiType = {
       "mutation",
       "public",
       { assessmentId: Id<"assessments">; questionIds: Array<Id<"questions">> },
+      null
+    >;
+  };
+  learn: {
+    join: FunctionReference<
+      "mutation",
+      "public",
+      { code: string },
+      { courseId: Id<"courses">; ok: true } | { message: string; ok: false }
+    >;
+    myCourses: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _id: Id<"courses">;
+        archived: boolean;
+        description?: string;
+        lecturer: string;
+        openCount: number;
+        semester?: string;
+        title: string;
+      }>
+    >;
+    upNext: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _id: Id<"assessments">;
+        closesAt?: number;
+        courseId: Id<"courses">;
+        courseTitle: string;
+        kind: "task" | "quiz" | "midterm" | "final";
+        playable: boolean;
+        started: boolean;
+        title: string;
+      }>
+    >;
+    course: FunctionReference<
+      "query",
+      "public",
+      { courseId: Id<"courses"> },
+      {
+        _id: Id<"courses">;
+        archived: boolean;
+        assessments: Array<{
+          _id: Id<"assessments">;
+          closesAt?: number;
+          kind: "task" | "quiz" | "midterm" | "final";
+          opensAt?: number;
+          playable: boolean;
+          questionCount: number;
+          result: null | {
+            score?: number;
+            status: "in_progress" | "submitted";
+            submittedAt?: number;
+          };
+          state: "upcoming" | "open" | "closed";
+          title: string;
+          totalPoints: number;
+        }>;
+        description?: string;
+        lecturer: string;
+        semester?: string;
+        title: string;
+      }
+    >;
+    task: FunctionReference<
+      "query",
+      "public",
+      { assessmentId: Id<"assessments"> },
+      {
+        assessment: {
+          _id: Id<"assessments">;
+          closesAt?: number;
+          instructions?: string;
+          integrityLevel: "off" | "standard" | "strict";
+          resultsVisibility: "hidden" | "score" | "full_after_close";
+          state: "open" | "closed";
+          title: string;
+          totalPoints: number;
+        };
+        attempt: null | {
+          autoSubmitted: boolean;
+          feedback?: string;
+          maxScore: number;
+          score?: number;
+          startedAt: number;
+          status: "in_progress" | "submitted";
+          submittedAt?: number;
+        };
+        comments: Array<{
+          _id: Id<"codeComments">;
+          author: string;
+          file: string;
+          line: number;
+          questionId: Id<"questions">;
+          text: string;
+        }>;
+        course: { _id: Id<"courses">; title: string };
+        hiddenChecks: Array<{
+          id: string;
+          label: string;
+          questionId: Id<"questions">;
+        }>;
+        questions: Array<{
+          _id: Id<"questions">;
+          code: {
+            assets: Array<{ alt?: string; name: string; url: string }>;
+            files: Array<{ content: string; name: string }>;
+            steps: Array<{
+              checks: Array<
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "not_exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; id: string; label: string; type: "linked" }
+              >;
+              hint?: string;
+              instructions: string;
+              title: string;
+            }>;
+          };
+          points: number;
+          prompt: string;
+        }>;
+        responses: Array<{
+          autoScore?: number;
+          checkResults?: Array<{ id: string; passed: boolean }>;
+          files: Array<{ content: string; name: string }>;
+          progress?: { passed: Array<string>; step: number };
+          questionId: Id<"questions">;
+          savedAt: number;
+        }>;
+        unsupported: number;
+      }
+    >;
+    saveCodeWork: FunctionReference<
+      "mutation",
+      "public",
+      {
+        assessmentId: Id<"assessments">;
+        files: Array<{ content: string; name: string }>;
+        integrity?: {
+          awayMs?: number;
+          copyBlocked?: number;
+          dropBlocked?: number;
+          fullscreenExits?: number;
+          largeInserts?: number;
+          multiTab?: number;
+          pasteBlocked?: number;
+          resizes?: number;
+          shortcutsBlocked?: number;
+          tabSwitches?: number;
+        };
+        questionId: Id<"questions">;
+      },
+      { progress: { passed: Array<string>; step: number }; savedAt: number }
+    >;
+    reportIntegrityCounts: FunctionReference<
+      "mutation",
+      "public",
+      {
+        assessmentId: Id<"assessments">;
+        counts: {
+          awayMs?: number;
+          copyBlocked?: number;
+          dropBlocked?: number;
+          fullscreenExits?: number;
+          largeInserts?: number;
+          multiTab?: number;
+          pasteBlocked?: number;
+          resizes?: number;
+          shortcutsBlocked?: number;
+          tabSwitches?: number;
+        };
+      },
+      null
+    >;
+    submit: FunctionReference<
+      "mutation",
+      "public",
+      { assessmentId: Id<"assessments"> },
+      null
+    >;
+  };
+  submissions: {
+    forAssessment: FunctionReference<
+      "query",
+      "public",
+      { assessmentId: Id<"assessments"> },
+      Array<{
+        attemptId: Id<"attempts">;
+        autoSubmitted: boolean;
+        graded: boolean;
+        integrity: {
+          awayMs?: number;
+          copyBlocked?: number;
+          dropBlocked: number;
+          fullscreenExits?: number;
+          largeInserts: number;
+          multiTab?: number;
+          pasteBlocked: number;
+          resizes?: number;
+          shortcutsBlocked?: number;
+          tabSwitches?: number;
+        };
+        integrityColor: "green" | "yellow" | "red";
+        integrityScore: number;
+        maxScore: number;
+        score?: number;
+        startedAt: number;
+        status: "in_progress" | "submitted";
+        stepsDone: number;
+        stepsTotal: number;
+        student: string;
+        submittedAt?: number;
+      }>
+    >;
+    detail: FunctionReference<
+      "query",
+      "public",
+      { attemptId: Id<"attempts"> },
+      {
+        autoScore?: number;
+        autoSubmitted: boolean;
+        comments: Array<{
+          _id: Id<"codeComments">;
+          author: string;
+          file: string;
+          line: number;
+          questionId: Id<"questions">;
+          text: string;
+        }>;
+        feedback?: string;
+        integrity: {
+          awayMs?: number;
+          copyBlocked?: number;
+          dropBlocked: number;
+          fullscreenExits?: number;
+          largeInserts: number;
+          multiTab?: number;
+          pasteBlocked: number;
+          resizes?: number;
+          shortcutsBlocked?: number;
+          tabSwitches?: number;
+        };
+        integrityColor: "green" | "yellow" | "red";
+        manualScore?: number;
+        maxScore: number;
+        questions: Array<{
+          autoScore?: number;
+          checkResults?: Array<{ id: string; passed: boolean }>;
+          code: {
+            assets: Array<{ alt?: string; name: string; url: string }>;
+            files: Array<{ content: string; name: string }>;
+            steps: Array<{
+              checks: Array<
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "not_exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; id: string; label: string; type: "linked" }
+              >;
+              hint?: string;
+              instructions: string;
+              title: string;
+            }>;
+          };
+          files?: Array<{ content: string; name: string }>;
+          hiddenChecks: Array<
+            | { id: string; label: string; selector: string; type: "exists" }
+            | {
+                id: string;
+                label: string;
+                selector: string;
+                type: "not_exists";
+              }
+            | {
+                id: string;
+                label: string;
+                max?: number;
+                min?: number;
+                selector: string;
+                type: "count";
+              }
+            | {
+                caseSensitive?: boolean;
+                contains?: string;
+                equals?: string;
+                every?: boolean;
+                id: string;
+                label: string;
+                selector: string;
+                type: "text";
+              }
+            | {
+                attribute: string;
+                contains?: string;
+                equals?: string;
+                every?: boolean;
+                id: string;
+                label: string;
+                selector: string;
+                type: "attr";
+              }
+            | {
+                equals?: string;
+                every?: boolean;
+                id: string;
+                label: string;
+                oneOf?: Array<string>;
+                property: string;
+                selector: string;
+                type: "css";
+                viewport?: number;
+              }
+            | { href: string; id: string; label: string; type: "linked" }
+          >;
+          prompt: string;
+          questionId: Id<"questions">;
+          savedAt?: number;
+        }>;
+        status: "in_progress" | "submitted";
+        student: string;
+      }
+    >;
+    addComment: FunctionReference<
+      "mutation",
+      "public",
+      {
+        attemptId: Id<"attempts">;
+        file: string;
+        line: number;
+        questionId: Id<"questions">;
+        text: string;
+      },
+      Id<"codeComments">
+    >;
+    removeComment: FunctionReference<
+      "mutation",
+      "public",
+      { commentId: Id<"codeComments"> },
+      null
+    >;
+    setGrade: FunctionReference<
+      "mutation",
+      "public",
+      { attemptId: Id<"attempts">; feedback?: string; manualScore?: number },
       null
     >;
   };

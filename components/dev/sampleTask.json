@@ -1,0 +1,108 @@
+{
+  "type": "code",
+  "prompt": "Build a profile card about yourself: a photo, your name, a short bio and your hobbies, styled with CSS.\n\nEvery line is typed by hand, one step at a time. A step's checks tick as soon as your code is right.",
+  "points": 10,
+  "starterFiles": [
+    {
+      "name": "index.html",
+      "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>My profile card</title>\n</head>\n<body>\n\n</body>\n</html>\n"
+    },
+    { "name": "style.css", "content": "/* Your styles go here */\n" }
+  ],
+  "steps": [
+    {
+      "title": "Link your stylesheet",
+      "instructions": "Your page and your styles live in two files. A browser only uses a CSS file when the HTML points to it.\n\nInside `<head>`, under the `<title>`, add:\n\n```html\n<link rel=\"stylesheet\" href=\"style.css\">\n```",
+      "hint": "`<link>` has no closing tag. Check that `href` is exactly `style.css`.",
+      "checks": [{ "label": "style.css is linked from <head>", "type": "linked", "href": "style.css" }]
+    },
+    {
+      "title": "Make the card",
+      "instructions": "Everything on your card goes inside one box. Inside `<body>`, add a `<div>` with the class `card`:\n\n```html\n<div class=\"card\"></div>\n```\n\nA class is a name you choose, so CSS can find the element later.",
+      "hint": "Write the class name without a dot: `class=\"card\"`. The dot is only used in CSS.",
+      "checks": [{ "label": "There is a <div class=\"card\">", "type": "exists", "selector": "div.card" }]
+    },
+    {
+      "title": "Add your photo",
+      "instructions": "Inside the card, add a picture. Use `avatar.jpg` from **Images you can use**, and describe it with `alt` for people who can't see it:\n\n```html\n<img src=\"avatar.jpg\" alt=\"My photo\">\n```",
+      "checks": [
+        { "label": "The card has an <img>", "type": "exists", "selector": ".card img" },
+        { "label": "The image shows avatar.jpg", "type": "attr", "selector": ".card img", "attribute": "src", "contains": "avatar.jpg" },
+        { "label": "The image has alt text", "type": "attr", "selector": ".card img", "attribute": "alt" }
+      ]
+    },
+    {
+      "title": "Your name",
+      "instructions": "Under the image, add your name as the page's main heading with `<h1>`. A page has one `<h1>`: its title.",
+      "checks": [
+        { "label": "The card has an <h1>", "type": "exists", "selector": ".card h1" },
+        { "label": "Only one <h1> on the page", "type": "count", "selector": "h1", "max": 1 }
+      ]
+    },
+    {
+      "title": "A short bio",
+      "instructions": "Under your name, add one sentence about yourself in a paragraph with the class `bio`:\n\n```html\n<p class=\"bio\">…</p>\n```",
+      "checks": [{ "label": "The card has a <p class=\"bio\">", "type": "exists", "selector": ".card p.bio" }]
+    },
+    {
+      "title": "Three hobbies",
+      "instructions": "Lists use `<ul>` (an unordered list) with one `<li>` per item. Add a `<ul>` with three of your hobbies to the card.",
+      "hint": "Every `<li>` goes inside the `<ul>`, and each one is closed with `</li>`.",
+      "checks": [
+        { "label": "The card has a <ul>", "type": "exists", "selector": ".card ul" },
+        { "label": "The list has exactly 3 items", "type": "count", "selector": ".card ul li", "min": 3, "max": 3 }
+      ]
+    },
+    {
+      "title": "Style the card",
+      "instructions": "Now open **style.css**. Give `.card` a white background, some space inside and round corners:\n\n```css\n.card {\n  background-color: #ffffff;\n  padding: 24px;\n  border-radius: 16px;\n}\n```\n\n`padding` is the space between the card's edge and what's inside it.",
+      "checks": [
+        { "label": ".card has a white background", "type": "css", "selector": ".card", "property": "background-color", "equals": "#ffffff" },
+        { "label": ".card has 24px of padding", "type": "css", "selector": ".card", "property": "padding", "equals": "24px" },
+        { "label": ".card has 16px round corners", "type": "css", "selector": ".card", "property": "border-radius", "equals": "16px" }
+      ]
+    },
+    {
+      "title": "A round photo",
+      "instructions": "Make the photo small and round. Add a `.card img` rule that sets `width: 96px;` and `border-radius: 50%;`.",
+      "hint": "`.card img` means: every `<img>` inside an element with the class `card`.",
+      "checks": [
+        { "label": "The photo is 96px wide", "type": "css", "selector": ".card img", "property": "width", "equals": "96px" },
+        { "label": "The photo is round", "type": "css", "selector": ".card img", "property": "border-radius", "equals": "50%" }
+      ]
+    },
+    {
+      "title": "No bullets",
+      "instructions": "Lists come with bullets and an indent. Remove both in a `.card ul` rule:\n\n```css\n.card ul {\n  list-style: none;\n  padding-left: 0;\n}\n```",
+      "checks": [
+        { "label": "The list has no bullets", "type": "css", "selector": ".card ul", "property": "list-style-type", "equals": "none" },
+        { "label": "The list has no indent", "type": "css", "selector": ".card ul", "property": "padding-left", "equals": "0" }
+      ]
+    },
+    {
+      "title": "Center the card",
+      "instructions": "Flexbox lines things up. Make `body` a flex container and center what's inside it:\n\n```css\nbody {\n  display: flex;\n  justify-content: center;\n}\n```",
+      "checks": [
+        { "label": "body uses flexbox", "type": "css", "selector": "body", "property": "display", "equals": "flex" },
+        { "label": "body centers the card", "type": "css", "selector": "body", "property": "justify-content", "equals": "center" }
+      ]
+    }
+  ],
+  "hiddenChecks": [
+    { "label": "No style attributes: all styles are in style.css", "type": "not_exists", "selector": "[style]" },
+    { "label": "Every image has alt text", "type": "attr", "selector": "img", "attribute": "alt" }
+  ],
+  "solution": [
+    {
+      "name": "index.html",
+      "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>My profile card</title>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <div class=\"card\">\n    <img src=\"avatar.jpg\" alt=\"My photo\">\n    <h1>Nino Beridze</h1>\n    <p class=\"bio\">First-year computer science student who likes maps and mountains.</p>\n    <ul>\n      <li>Hiking</li>\n      <li>Chess</li>\n      <li>Drawing</li>\n    </ul>\n  </div>\n</body>\n</html>\n"
+    },
+    {
+      "name": "style.css",
+      "content": "body {\n  display: flex;\n  justify-content: center;\n  background-color: #eeede8;\n}\n\n.card {\n  background-color: #ffffff;\n  padding: 24px;\n  border-radius: 16px;\n  width: 320px;\n}\n\n.card img {\n  width: 96px;\n  border-radius: 50%;\n}\n\n.card ul {\n  list-style: none;\n  padding-left: 0;\n}\n"
+    }
+  ],
+  "assets": [
+    { "name": "avatar.jpg", "url": "https://ik.imagekit.io/demo/default-image.jpg?tr=w-300,h-300", "alt": "A sample photo" }
+  ]
+}

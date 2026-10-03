@@ -2,7 +2,59 @@
 
 > Where students write HTML and CSS by hand, see the page live, and get checked and
 > explained as they go. Companion to `KALAMI.md` (§4.4 tasks, §6 integrity) and
-> `kalami-stuff/STUDIO.md` (Phase D: code questions). Nothing here is built yet.
+> `kalami-stuff/STUDIO.md` (Phase D: code questions).
+
+---
+
+## 0. Built so far (2026-10-03)
+
+The first end-to-end flow: **agent drafts a task → lecturer tries it and publishes →
+student joins, works step by step → submits → lecturer sees the work.**
+
+| Piece | Where |
+|---|---|
+| Checks engine: forgiving HTML/CSS parser, cascade (specificity, `!important`, inheritance, browser defaults, shorthands, media queries), rules `exists` `not_exists` `count` `text` `attr` `css` `linked` | `kalami-stuff/convex/lib/checks` (+ tests) |
+| Code questions with steps, hidden checks, a required solution and ImageKit images. Saving refuses a task whose solution fails a check | `convex/model/codeTasks.ts`, `validators.ts` |
+| New assessment kind `task` (homework: no timer, score on submit) | `convex/model/assessments.ts` |
+| Students: `enrollments`, `attempts`, `responses`; join by code, my courses, course page, task, autosave with step progress, submit with the server's grade | `convex/learn.ts`, `convex/model/learn.ts` (+ tests) |
+| Staff: live list of student work with steps done, score and blocked pastes; open any student's code read-only | `convex/submissions.ts`, `components/studio/Submissions.tsx` |
+| MCP: `add_questions` takes `code` questions; `check_code_task` dry-runs a task and lists every check that fails; instructions teach agents the freeCodeCamp-style rules | `kalami-stuff/lib/mcp/server.ts` |
+| Sandbox UI: steps with live ticks, file tabs (CodeMirror 6), preview (desktop/phone width), watermark, hints, images, narrow-screen tabs | `kalami-stuff/components/sandbox` (copied to the student app) |
+| Studio: code task summary on the question card, "Try it as a student" with a Solution button | `components/studio/AssessmentBuilder.tsx`, `TaskTryout.tsx` |
+| Student app: join form and course list on the dashboard, `/courses/[id]`, `/tasks/[id]` | `kalami/components/{dashboard,courses,tasks}` |
+| Dev page with a sample 10-step task, no login needed; switch student / lecturer / review and ka / en | `kalami` `/dev/sandbox` |
+| Hand editor for code tasks: steps, checks, hidden checks, variants, images, starter and solution files, and a live "can students finish it?" report | `kalami-stuff/components/studio/CodeTaskForm.tsx` |
+| Explain layer in Georgian and English: hover cards for tags, attributes, properties, values and pseudo-classes; the mistake finder (typos with "did you mean", invalid values, missing `;` or `:`, unclosed or misnested tags, CSS not linked, selectors that match nothing, missing images, dots in class names) as red underlines and a list next to the steps | `components/sandbox/assist/` (+ tests) |
+| Per-student variants: `{{name}}` and `{{student.firstName}}` in instructions, files and checks; values picked from the student's id; the solution is tested against every value | `convex/lib/checks/variants.ts` |
+| Auto-submit: a cron grades work still in progress once a task closes | `convex/crons.ts`, `learn.autoSubmit` |
+| Grading: red-pen notes on lines (click a line number), an overall note and a score that replaces the automatic one; students see them after submitting | `convex/submissions.ts`, `components/studio/TaskTryout.tsx` |
+| Integrity: tab switches and time away, window shrinking, the task open in two tabs, blocked shortcuts, copy blocked on the task text; strict = fullscreen gate and work hidden while away; green / yellow / red per student in the studio | `kalami/components/integrity/useIntegrity.ts`, `convex/lib/integrity.ts` |
+| Tasks with several code questions (parts) | `kalami/components/tasks/TaskView.tsx` |
+| Join codes: 8 wrong codes pause joining for 15 minutes | `convex/model/learn.ts` |
+| "Up next" on the student dashboard: open tasks across courses, nearest deadline first | `learn.upNext` |
+
+The sandbox and the checks engine are edited in **kalami-stuff** only. `npm run sync:student`
+there regenerates the student API and copies both folders into this repo.
+
+**Still open:**
+
+1. Pin images to the Kalami ImageKit account: set `CODE_ASSET_URL_PREFIX` (Convex env) and
+   `NEXT_PUBLIC_CODE_ASSET_URL_PREFIX` (both apps) to the account's URL endpoint. Until then any
+   `https://ik.imagekit.io/` URL is accepted. Uploading images from the studio comes later.
+2. Strict mode counts and hides, but doesn't lock an attempt after N exits (needs an unlock button
+   for the lecturer).
+3. The Georgian texts in `assist/dictionary.ts` and `assist/lint.ts` were drafted by Claude: read
+   them once.
+4. The UI around the sandbox is still English; only explanations and mistakes follow the
+   student's language.
+5. X-ray inspector and the class error radar (§6 layer 4, S5).
+
+**Why not Sandpack:** it is built to bundle and run JavaScript through CodeSandbox's hosted
+bundler, so student work (and exams) would depend on a third party and send code to it. Its
+preview is cross-origin, so X-ray and scroll-keeping can't work, and it doesn't grade anything:
+the checks engine and the server re-check are needed either way. For HTML and CSS the preview is
+a sandboxed `srcdoc` iframe of about 70 lines. Sandpack or WebContainers are worth a look again
+when students write JavaScript projects with npm packages.
 
 ---
 
@@ -17,6 +69,7 @@
 | Phones | The layout must work on a narrow screen. A real phone editing experience waits until students are asked (survey). |
 | Assistant | No AI: explanations, mistake finder, guided steps, X-ray (§6). An AI tutor comes only after a university backs Kalami. |
 | Games | Later: CSS Diner / Flexbox Froggy-style levels for HTML/CSS, built on the same editor and checks engine. |
+| Images | Only images the task provides, hosted on ImageKit and sized there. Students use the short name (`<img src="cat.jpg">`) and can't upload their own. |
 
 ---
 
@@ -100,7 +153,8 @@ Because it is the same code everywhere, the browser and the server never disagre
 
 - HTML: parse5 (it builds the same tree a browser builds, mistakes included), with source
   positions; selectors are matched with css-select.
-- CSS: parsed with css-tree. For each element it works out which declaration wins: selector
+- CSS: a small forgiving parser of our own (browser recovery rules; css-tree is still the plan for
+  the mistake finder's value checks). For each element it works out which declaration wins: selector
   match, specificity, source order, `!important`, the inline `style` attribute, inheritance of
   inherited properties, and the common shorthands (`margin`, `padding`, `border`, `background`,
   `font`, `flex`, `gap`). Media queries are evaluated at the rule's viewport width (default 1280).

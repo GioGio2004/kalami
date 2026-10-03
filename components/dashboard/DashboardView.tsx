@@ -1,11 +1,16 @@
 "use client";
 
+import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent, type ReactNode } from "react";
 import type { Me } from "@/components/CurrentUserProvider";
 import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
 import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
-import { ArrowRight, Camera, Check, Clock, Mic, Monitor, Notebook, Shield } from "@/components/ui/icons";
+import { Button } from "@/components/ui/buttons";
+import { ArrowRight, Camera, Check, Clock, Code, Mic, Monitor, Notebook, Shield } from "@/components/ui/icons";
+import { api } from "@/convex-api/api";
+import { errorMessage } from "@/lib/errors";
 
 function greetingFor(hour: number) {
   if (hour < 5) return "Working late";
@@ -32,6 +37,8 @@ function Chip({ children, dark = false }: { children: ReactNode; dark?: boolean 
 
 export function DashboardView({ me }: { me: Me }) {
   const [greeting] = useState(() => greetingFor(new Date().getHours()));
+  const courses = useQuery(api.learn.myCourses, {});
+  const upNext = useQuery(api.learn.upNext, {});
   const student = me.student;
   const facts = student
     ? [
@@ -79,8 +86,38 @@ export function DashboardView({ me }: { me: Me }) {
               <Notebook className="size-5" />
             </Chip>
             <h2 className="text-2xl font-medium tracking-tight">My courses</h2>
-            <span className="ml-auto rounded-full bg-panel px-3 py-1 text-sm tabular-nums text-graphite">0</span>
+            <span className="ml-auto rounded-full bg-panel px-3 py-1 text-sm tabular-nums text-graphite">
+              {courses?.length ?? "…"}
+            </span>
           </div>
+          {courses !== undefined && courses.length > 0 ? (
+            <ul className="mt-7 grid gap-3 sm:grid-cols-2">
+              {courses.map((course) => (
+                <li key={course._id}>
+                  <Link
+                    href={`/courses/${course._id}`}
+                    className="group flex h-full flex-col rounded-2xl border border-line p-5 transition hover:border-ink/25 hover:bg-panel/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  >
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="text-lg font-medium leading-snug">{course.title}</span>
+                      {course.openCount > 0 && (
+                        <span className="shrink-0 rounded-full bg-highlighter px-2.5 py-1 text-xs font-semibold">
+                          {course.openCount} open
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-1 text-sm text-graphite">
+                      {[course.lecturer, course.semester].filter(Boolean).join(" · ")}
+                    </span>
+                    <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium">
+                      Open
+                      <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
           <div className="mt-7 rounded-2xl border-2 border-dashed border-line p-5 sm:p-6">
             <p className="font-medium">No courses yet</p>
             <p className="mt-1 text-sm text-graphite">Here&apos;s what happens next:</p>
@@ -98,6 +135,7 @@ export function DashboardView({ me }: { me: Me }) {
               ))}
             </ol>
           </div>
+          )}
         </RevealItem>
 
         <RevealItem as="section" kind="scale" hover className="flex flex-col rounded-[2rem] bg-charcoal p-6 text-paper sm:p-8 lg:col-span-4">
@@ -142,23 +180,47 @@ export function DashboardView({ me }: { me: Me }) {
             </Chip>
             <h2 className="text-2xl font-medium tracking-tight">Up next</h2>
           </div>
-          <p className="mt-7 -rotate-1 font-hand text-[1.7rem] text-graphite">Nothing due. Enjoy it.</p>
-          <p className="mt-2 text-[15px] leading-relaxed text-graphite">
-            Open quizzes and deadlines line up here, nearest first.
-          </p>
+          {upNext !== undefined && upNext.length > 0 ? (
+            <ul className="mt-6 space-y-2">
+              {upNext.map((item) => (
+                <li key={item._id}>
+                  <Link
+                    href={item.playable ? `/tasks/${item._id}` : `/courses/${item.courseId}`}
+                    className="group flex items-center gap-3 rounded-2xl border border-line p-4 transition hover:border-ink/25 hover:bg-panel/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{item.title}</span>
+                      <span className="block truncate text-sm text-graphite">
+                        {item.courseTitle}
+                        {item.closesAt &&
+                          ` · due ${new Date(item.closesAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}
+                      </span>
+                    </span>
+                    <span className="shrink-0 rounded-full bg-panel px-3 py-1 text-xs font-semibold">
+                      {item.started ? "Continue" : "Start"}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <>
+              <p className="mt-7 -rotate-1 font-hand text-[1.7rem] text-graphite">Nothing due. Enjoy it.</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-graphite">
+                Open tasks and deadlines line up here, nearest first.
+              </p>
+            </>
+          )}
         </RevealItem>
 
         <RevealItem as="section" kind="scale" hover className="rounded-[2rem] bg-highlighter p-6 sm:p-8 lg:col-span-7">
           <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
             <div>
-              <span className="inline-block rounded-full bg-ink px-3 py-1 text-xs font-semibold text-highlighter">
-                Coming soon
-              </span>
-              <h2 className="mt-3 text-3xl font-medium tracking-[-0.03em]">Got a join code?</h2>
+              <h2 className="text-3xl font-medium tracking-[-0.03em]">Got a join code?</h2>
               <p className="mt-2 max-w-md text-[15px] leading-relaxed text-ink/75">
-                Your lecturer will give you a 6-character code. Joining a course with it is coming
-                soon, so keep it handy.
+                Your lecturer gives you a 6-character code. Type it here to join their course.
               </p>
+              <JoinForm />
             </div>
             <div
               className="notch-sides flex items-center gap-4 rounded-[1.4rem] bg-ink py-3 pl-5 pr-4 text-paper [--notch-y:50%]"
@@ -173,5 +235,57 @@ export function DashboardView({ me }: { me: Me }) {
         </RevealItem>
       </RevealGroup>
     </Enter>
+  );
+}
+
+function JoinForm() {
+  const join = useMutation(api.learn.join);
+  const router = useRouter();
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await join({ code });
+      if (result.ok) {
+        router.push(`/courses/${result.courseId}`);
+        return;
+      }
+      setError(result.message);
+      setBusy(false);
+    } catch (caught) {
+      setError(errorMessage(caught));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-5 max-w-md">
+      <div className="flex gap-2">
+        <label htmlFor="join-code" className="sr-only">
+          Join code
+        </label>
+        <input
+          id="join-code"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="K7MP4Q"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={12}
+          required
+          className="h-12 min-w-0 flex-1 rounded-full border border-ink/15 bg-card px-5 font-mono text-lg font-semibold tracking-[0.14em] outline-none placeholder:text-ink/25 focus:border-ink focus:ring-4 focus:ring-ink/10"
+        />
+        <Button type="submit" size="lg" disabled={busy || code.trim().length < 4}>
+          <Code className="size-4" />
+          {busy ? "Joining…" : "Join"}
+        </Button>
+      </div>
+      {error && <p className="mt-2 text-sm font-medium text-red-pen">{error}</p>}
+    </form>
   );
 }
