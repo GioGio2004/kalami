@@ -1452,33 +1452,6 @@ export type PublicApiType = {
       }
     >;
   };
-  mcpTokens: {
-    list: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      Array<{
-        _creationTime: number;
-        _id: Id<"mcpTokens">;
-        lastUsedAt?: number;
-        name: string;
-        prefix: string;
-        revokedAt?: number;
-      }>
-    >;
-    create: FunctionReference<
-      "mutation",
-      "public",
-      { name: string },
-      { token: string; tokenId: Id<"mcpTokens"> }
-    >;
-    revoke: FunctionReference<
-      "mutation",
-      "public",
-      { tokenId: Id<"mcpTokens"> },
-      null
-    >;
-  };
   questions: {
     add: FunctionReference<
       "mutation",
