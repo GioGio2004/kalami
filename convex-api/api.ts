@@ -5,167 +5,6 @@ export const api: PublicApiType = anyApi as unknown as PublicApiType;
 export const internal: InternalApiType = anyApi as unknown as InternalApiType;
 
 export type PublicApiType = {
-  honesty: {
-    current: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      {
-        en: {
-          intro: string;
-          sections: Array<{ heading: string; items: Array<string> }>;
-          title: string;
-        };
-        ka: {
-          intro: string;
-          sections: Array<{ heading: string; items: Array<string> }>;
-          title: string;
-        };
-        version: number;
-      }
-    >;
-  };
-  universities: {
-    listActive: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      Array<{
-        _id: Id<"universities">;
-        name: { en: string; ka: string };
-        slug: string;
-        status: "active" | "archived";
-      }>
-    >;
-    listAdministered: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      Array<{
-        _id: Id<"universities">;
-        name: { en: string; ka: string };
-        slug: string;
-        status: "active" | "archived";
-      }>
-    >;
-    create: FunctionReference<
-      "mutation",
-      "public",
-      { nameEn: string; nameKa: string; slug: string },
-      Id<"universities">
-    >;
-  };
-  users: {
-    store: FunctionReference<
-      "mutation",
-      "public",
-      Record<string, never>,
-      Id<"users">
-    >;
-    me: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      null | {
-        _id: Id<"users">;
-        avatarUrl?: string;
-        email: string;
-        firstName?: string;
-        honestyAccepted: boolean;
-        isStaff: boolean;
-        isSuperAdmin: boolean;
-        lastName?: string;
-        locale: "ka" | "en";
-        memberships: Array<{
-          role: "student" | "lecturer" | "uni_admin" | "super_admin";
-          universityId?: Id<"universities">;
-        }>;
-        needsOnboarding: boolean;
-        student: null | {
-          faculty?: string;
-          group?: string;
-          studentNumber?: string;
-          universityId: Id<"universities">;
-          universityName: { en: string; ka: string };
-          year?: number;
-        };
-        studioIntroSeenAt?: number;
-      }
-    >;
-    markStudioIntroSeen: FunctionReference<
-      "mutation",
-      "public",
-      Record<string, never>,
-      null
-    >;
-    completeStudentOnboarding: FunctionReference<
-      "mutation",
-      "public",
-      {
-        faculty: string;
-        firstName: string;
-        group: string;
-        honestyVersion: number;
-        lastName: string;
-        locale: "ka" | "en";
-        studentNumber?: string;
-        universityId: Id<"universities">;
-        year: number;
-      },
-      null
-    >;
-  };
-  invites: {
-    create: FunctionReference<
-      "mutation",
-      "public",
-      {
-        email: string;
-        role: "lecturer" | "uni_admin";
-        universityId: Id<"universities">;
-      },
-      { inviteId: Id<"invites">; token: string }
-    >;
-    listForUniversity: FunctionReference<
-      "query",
-      "public",
-      { universityId: Id<"universities"> },
-      Array<{
-        _creationTime: number;
-        _id: Id<"invites">;
-        acceptedAt?: number;
-        email: string;
-        expiresAt: number;
-        revokedAt?: number;
-        role: "lecturer" | "uni_admin";
-        token?: string;
-      }>
-    >;
-    getByToken: FunctionReference<
-      "query",
-      "public",
-      { token: string },
-      null | {
-        email: string;
-        expiresAt: number;
-        role: "lecturer" | "uni_admin";
-        status: "pending" | "accepted" | "revoked";
-        universityName: { en: string; ka: string };
-      }
-    >;
-    accept: FunctionReference<
-      "mutation",
-      "public",
-      { token: string },
-      { role: "lecturer" | "uni_admin"; universityId: Id<"universities"> }
-    >;
-    revoke: FunctionReference<
-      "mutation",
-      "public",
-      { inviteId: Id<"invites"> },
-      null
-    >;
-  };
   assessments: {
     create: FunctionReference<
       "mutation",
@@ -561,6 +400,308 @@ export type PublicApiType = {
       "mutation",
       "public",
       { courseId: Id<"courses">; enabled: boolean },
+      null
+    >;
+  };
+  honesty: {
+    current: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      {
+        en: {
+          intro: string;
+          sections: Array<{ heading: string; items: Array<string> }>;
+          title: string;
+        };
+        ka: {
+          intro: string;
+          sections: Array<{ heading: string; items: Array<string> }>;
+          title: string;
+        };
+        version: number;
+      }
+    >;
+  };
+  invites: {
+    create: FunctionReference<
+      "mutation",
+      "public",
+      {
+        email: string;
+        role: "lecturer" | "uni_admin";
+        universityId: Id<"universities">;
+      },
+      { inviteId: Id<"invites">; token: string }
+    >;
+    listForUniversity: FunctionReference<
+      "query",
+      "public",
+      { universityId: Id<"universities"> },
+      Array<{
+        _creationTime: number;
+        _id: Id<"invites">;
+        acceptedAt?: number;
+        email: string;
+        expiresAt: number;
+        revokedAt?: number;
+        role: "lecturer" | "uni_admin";
+        token?: string;
+      }>
+    >;
+    getByToken: FunctionReference<
+      "query",
+      "public",
+      { token: string },
+      null | {
+        email: string;
+        expiresAt: number;
+        role: "lecturer" | "uni_admin";
+        status: "pending" | "accepted" | "revoked";
+        universityName: { en: string; ka: string };
+      }
+    >;
+    accept: FunctionReference<
+      "mutation",
+      "public",
+      { token: string },
+      { role: "lecturer" | "uni_admin"; universityId: Id<"universities"> }
+    >;
+    revoke: FunctionReference<
+      "mutation",
+      "public",
+      { inviteId: Id<"invites"> },
+      null
+    >;
+  };
+  learn: {
+    join: FunctionReference<
+      "mutation",
+      "public",
+      { code: string },
+      { courseId: Id<"courses">; ok: true } | { message: string; ok: false }
+    >;
+    myCourses: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _id: Id<"courses">;
+        archived: boolean;
+        description?: string;
+        lecturer: string;
+        openCount: number;
+        semester?: string;
+        title: string;
+      }>
+    >;
+    upNext: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _id: Id<"assessments">;
+        closesAt?: number;
+        courseId: Id<"courses">;
+        courseTitle: string;
+        kind: "task" | "quiz" | "midterm" | "final";
+        playable: boolean;
+        started: boolean;
+        title: string;
+      }>
+    >;
+    course: FunctionReference<
+      "query",
+      "public",
+      { courseId: Id<"courses"> },
+      {
+        _id: Id<"courses">;
+        archived: boolean;
+        assessments: Array<{
+          _id: Id<"assessments">;
+          closesAt?: number;
+          kind: "task" | "quiz" | "midterm" | "final";
+          opensAt?: number;
+          playable: boolean;
+          questionCount: number;
+          result: null | {
+            score?: number;
+            status: "in_progress" | "submitted";
+            submittedAt?: number;
+          };
+          state: "upcoming" | "open" | "closed";
+          title: string;
+          totalPoints: number;
+        }>;
+        description?: string;
+        lecturer: string;
+        semester?: string;
+        title: string;
+      }
+    >;
+    task: FunctionReference<
+      "query",
+      "public",
+      { assessmentId: Id<"assessments"> },
+      {
+        assessment: {
+          _id: Id<"assessments">;
+          closesAt?: number;
+          instructions?: string;
+          integrityLevel: "off" | "standard" | "strict";
+          resultsVisibility: "hidden" | "score" | "full_after_close";
+          state: "open" | "closed";
+          title: string;
+          totalPoints: number;
+        };
+        attempt: null | {
+          autoSubmitted: boolean;
+          feedback?: string;
+          maxScore: number;
+          score?: number;
+          startedAt: number;
+          status: "in_progress" | "submitted";
+          submittedAt?: number;
+        };
+        comments: Array<{
+          _id: Id<"codeComments">;
+          author: string;
+          file: string;
+          line: number;
+          questionId: Id<"questions">;
+          text: string;
+        }>;
+        course: { _id: Id<"courses">; title: string };
+        hiddenChecks: Array<{
+          id: string;
+          label: string;
+          questionId: Id<"questions">;
+        }>;
+        questions: Array<{
+          _id: Id<"questions">;
+          code: {
+            assets: Array<{ alt?: string; name: string; url: string }>;
+            files: Array<{ content: string; name: string }>;
+            steps: Array<{
+              checks: Array<
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "not_exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; id: string; label: string; type: "linked" }
+              >;
+              hint?: string;
+              instructions: string;
+              title: string;
+            }>;
+          };
+          points: number;
+          prompt: string;
+        }>;
+        responses: Array<{
+          autoScore?: number;
+          checkResults?: Array<{ id: string; passed: boolean }>;
+          files: Array<{ content: string; name: string }>;
+          progress?: { passed: Array<string>; step: number };
+          questionId: Id<"questions">;
+          savedAt: number;
+        }>;
+        unsupported: number;
+      }
+    >;
+    saveCodeWork: FunctionReference<
+      "mutation",
+      "public",
+      {
+        assessmentId: Id<"assessments">;
+        files: Array<{ content: string; name: string }>;
+        integrity?: {
+          awayMs?: number;
+          copyBlocked?: number;
+          dropBlocked?: number;
+          fullscreenExits?: number;
+          largeInserts?: number;
+          multiTab?: number;
+          pasteBlocked?: number;
+          resizes?: number;
+          shortcutsBlocked?: number;
+          tabSwitches?: number;
+        };
+        questionId: Id<"questions">;
+      },
+      { progress: { passed: Array<string>; step: number }; savedAt: number }
+    >;
+    reportIntegrityCounts: FunctionReference<
+      "mutation",
+      "public",
+      {
+        assessmentId: Id<"assessments">;
+        counts: {
+          awayMs?: number;
+          copyBlocked?: number;
+          dropBlocked?: number;
+          fullscreenExits?: number;
+          largeInserts?: number;
+          multiTab?: number;
+          pasteBlocked?: number;
+          resizes?: number;
+          shortcutsBlocked?: number;
+          tabSwitches?: number;
+        };
+      },
+      null
+    >;
+    submit: FunctionReference<
+      "mutation",
+      "public",
+      { assessmentId: Id<"assessments"> },
       null
     >;
   };
@@ -1619,237 +1760,6 @@ export type PublicApiType = {
       null
     >;
   };
-  learn: {
-    join: FunctionReference<
-      "mutation",
-      "public",
-      { code: string },
-      { courseId: Id<"courses">; ok: true } | { message: string; ok: false }
-    >;
-    myCourses: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      Array<{
-        _id: Id<"courses">;
-        archived: boolean;
-        description?: string;
-        lecturer: string;
-        openCount: number;
-        semester?: string;
-        title: string;
-      }>
-    >;
-    upNext: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      Array<{
-        _id: Id<"assessments">;
-        closesAt?: number;
-        courseId: Id<"courses">;
-        courseTitle: string;
-        kind: "task" | "quiz" | "midterm" | "final";
-        playable: boolean;
-        started: boolean;
-        title: string;
-      }>
-    >;
-    course: FunctionReference<
-      "query",
-      "public",
-      { courseId: Id<"courses"> },
-      {
-        _id: Id<"courses">;
-        archived: boolean;
-        assessments: Array<{
-          _id: Id<"assessments">;
-          closesAt?: number;
-          kind: "task" | "quiz" | "midterm" | "final";
-          opensAt?: number;
-          playable: boolean;
-          questionCount: number;
-          result: null | {
-            score?: number;
-            status: "in_progress" | "submitted";
-            submittedAt?: number;
-          };
-          state: "upcoming" | "open" | "closed";
-          title: string;
-          totalPoints: number;
-        }>;
-        description?: string;
-        lecturer: string;
-        semester?: string;
-        title: string;
-      }
-    >;
-    task: FunctionReference<
-      "query",
-      "public",
-      { assessmentId: Id<"assessments"> },
-      {
-        assessment: {
-          _id: Id<"assessments">;
-          closesAt?: number;
-          instructions?: string;
-          integrityLevel: "off" | "standard" | "strict";
-          resultsVisibility: "hidden" | "score" | "full_after_close";
-          state: "open" | "closed";
-          title: string;
-          totalPoints: number;
-        };
-        attempt: null | {
-          autoSubmitted: boolean;
-          feedback?: string;
-          maxScore: number;
-          score?: number;
-          startedAt: number;
-          status: "in_progress" | "submitted";
-          submittedAt?: number;
-        };
-        comments: Array<{
-          _id: Id<"codeComments">;
-          author: string;
-          file: string;
-          line: number;
-          questionId: Id<"questions">;
-          text: string;
-        }>;
-        course: { _id: Id<"courses">; title: string };
-        hiddenChecks: Array<{
-          id: string;
-          label: string;
-          questionId: Id<"questions">;
-        }>;
-        questions: Array<{
-          _id: Id<"questions">;
-          code: {
-            assets: Array<{ alt?: string; name: string; url: string }>;
-            files: Array<{ content: string; name: string }>;
-            steps: Array<{
-              checks: Array<
-                | {
-                    id: string;
-                    label: string;
-                    selector: string;
-                    type: "exists";
-                  }
-                | {
-                    id: string;
-                    label: string;
-                    selector: string;
-                    type: "not_exists";
-                  }
-                | {
-                    id: string;
-                    label: string;
-                    max?: number;
-                    min?: number;
-                    selector: string;
-                    type: "count";
-                  }
-                | {
-                    caseSensitive?: boolean;
-                    contains?: string;
-                    equals?: string;
-                    every?: boolean;
-                    id: string;
-                    label: string;
-                    selector: string;
-                    type: "text";
-                  }
-                | {
-                    attribute: string;
-                    contains?: string;
-                    equals?: string;
-                    every?: boolean;
-                    id: string;
-                    label: string;
-                    selector: string;
-                    type: "attr";
-                  }
-                | {
-                    equals?: string;
-                    every?: boolean;
-                    id: string;
-                    label: string;
-                    oneOf?: Array<string>;
-                    property: string;
-                    selector: string;
-                    type: "css";
-                    viewport?: number;
-                  }
-                | { href: string; id: string; label: string; type: "linked" }
-              >;
-              hint?: string;
-              instructions: string;
-              title: string;
-            }>;
-          };
-          points: number;
-          prompt: string;
-        }>;
-        responses: Array<{
-          autoScore?: number;
-          checkResults?: Array<{ id: string; passed: boolean }>;
-          files: Array<{ content: string; name: string }>;
-          progress?: { passed: Array<string>; step: number };
-          questionId: Id<"questions">;
-          savedAt: number;
-        }>;
-        unsupported: number;
-      }
-    >;
-    saveCodeWork: FunctionReference<
-      "mutation",
-      "public",
-      {
-        assessmentId: Id<"assessments">;
-        files: Array<{ content: string; name: string }>;
-        integrity?: {
-          awayMs?: number;
-          copyBlocked?: number;
-          dropBlocked?: number;
-          fullscreenExits?: number;
-          largeInserts?: number;
-          multiTab?: number;
-          pasteBlocked?: number;
-          resizes?: number;
-          shortcutsBlocked?: number;
-          tabSwitches?: number;
-        };
-        questionId: Id<"questions">;
-      },
-      { progress: { passed: Array<string>; step: number }; savedAt: number }
-    >;
-    reportIntegrityCounts: FunctionReference<
-      "mutation",
-      "public",
-      {
-        assessmentId: Id<"assessments">;
-        counts: {
-          awayMs?: number;
-          copyBlocked?: number;
-          dropBlocked?: number;
-          fullscreenExits?: number;
-          largeInserts?: number;
-          multiTab?: number;
-          pasteBlocked?: number;
-          resizes?: number;
-          shortcutsBlocked?: number;
-          tabSwitches?: number;
-        };
-      },
-      null
-    >;
-    submit: FunctionReference<
-      "mutation",
-      "public",
-      { assessmentId: Id<"assessments"> },
-      null
-    >;
-  };
   submissions: {
     forAssessment: FunctionReference<
       "query",
@@ -2060,6 +1970,96 @@ export type PublicApiType = {
       "mutation",
       "public",
       { attemptId: Id<"attempts">; feedback?: string; manualScore?: number },
+      null
+    >;
+  };
+  universities: {
+    listActive: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _id: Id<"universities">;
+        name: { en: string; ka: string };
+        slug: string;
+        status: "active" | "archived";
+      }>
+    >;
+    listAdministered: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _id: Id<"universities">;
+        name: { en: string; ka: string };
+        slug: string;
+        status: "active" | "archived";
+      }>
+    >;
+    create: FunctionReference<
+      "mutation",
+      "public",
+      { nameEn: string; nameKa: string; slug: string },
+      Id<"universities">
+    >;
+  };
+  users: {
+    store: FunctionReference<
+      "mutation",
+      "public",
+      Record<string, never>,
+      Id<"users">
+    >;
+    me: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      null | {
+        _id: Id<"users">;
+        avatarUrl?: string;
+        email: string;
+        firstName?: string;
+        honestyAccepted: boolean;
+        isStaff: boolean;
+        isSuperAdmin: boolean;
+        lastName?: string;
+        locale: "ka" | "en";
+        memberships: Array<{
+          role: "student" | "lecturer" | "uni_admin" | "super_admin";
+          universityId?: Id<"universities">;
+        }>;
+        needsOnboarding: boolean;
+        student: null | {
+          faculty?: string;
+          group?: string;
+          studentNumber?: string;
+          universityId: Id<"universities">;
+          universityName: { en: string; ka: string };
+          year?: number;
+        };
+        studioIntroSeenAt?: number;
+      }
+    >;
+    markStudioIntroSeen: FunctionReference<
+      "mutation",
+      "public",
+      Record<string, never>,
+      null
+    >;
+    completeStudentOnboarding: FunctionReference<
+      "mutation",
+      "public",
+      {
+        faculty: string;
+        firstName: string;
+        group: string;
+        honestyVersion: number;
+        lastName: string;
+        locale: "ka" | "en";
+        studentNumber?: string;
+        universityId: Id<"universities">;
+        year: number;
+      },
       null
     >;
   };
