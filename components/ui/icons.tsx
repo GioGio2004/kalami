@@ -200,6 +200,15 @@ export function Mail(props: IconProps) {
   );
 }
 
+export function Flag(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5.5 20.5v-16" />
+      <path d="M5.5 4.5h11l-2.5 4 2.5 4h-11" />
+    </Icon>
+  );
+}
+
 export function Clock(props: IconProps) {
   return (
     <Icon {...props}>

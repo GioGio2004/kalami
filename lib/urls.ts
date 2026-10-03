@@ -5,6 +5,11 @@ export const STAFF_APP_URL =
   process.env.NEXT_PUBLIC_STAFF_APP_URL ||
   (isProduction ? "https://staff.kalami.space" : "http://localhost:3101");
 
+/** Code tasks open in the sandbox; quizzes, midterms and finals in the quiz player. */
+export function assessmentPath(kind: "task" | "quiz" | "midterm" | "final", assessmentId: string): string {
+  return kind === "task" ? `/tasks/${assessmentId}` : `/quizzes/${assessmentId}`;
+}
+
 /** This app's own Clerk pages, used even when the NEXT_PUBLIC_CLERK_* URL vars are missing. */
 export const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in";
 export const SIGN_UP_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || "/sign-up";

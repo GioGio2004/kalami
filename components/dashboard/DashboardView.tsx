@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/buttons";
 import { ArrowRight, Camera, Check, Clock, Code, Mic, Monitor, Notebook, Shield } from "@/components/ui/icons";
 import { api } from "@/convex-api/api";
 import { errorMessage } from "@/lib/errors";
+import { assessmentPath } from "@/lib/urls";
 
 function greetingFor(hour: number) {
   if (hour < 5) return "Working late";
@@ -185,7 +186,7 @@ export function DashboardView({ me }: { me: Me }) {
               {upNext.map((item) => (
                 <li key={item._id}>
                   <Link
-                    href={item.playable ? `/tasks/${item._id}` : `/courses/${item.courseId}`}
+                    href={item.playable ? assessmentPath(item.kind, item._id) : `/courses/${item.courseId}`}
                     className="group flex items-center gap-3 rounded-2xl border border-line p-4 transition hover:border-ink/25 hover:bg-panel/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                   >
                     <span className="min-w-0 flex-1">

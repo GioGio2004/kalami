@@ -678,6 +678,169 @@ export type PublicApiType = {
       },
       { progress: { passed: Array<string>; step: number }; savedAt: number }
     >;
+    quiz: FunctionReference<
+      "query",
+      "public",
+      { assessmentId: Id<"assessments"> },
+      {
+        answers: Array<{
+          questionId: Id<"questions">;
+          savedAt: number;
+          value:
+            | { files: Array<{ content: string; name: string }>; type: "code" }
+            | { optionId: string; type: "single" }
+            | { optionIds: Array<string>; type: "multiple" }
+            | { text: string; type: "short" }
+            | { text: string; type: "essay" };
+        }>;
+        assessment: {
+          _id: Id<"assessments">;
+          attemptsAllowed: number;
+          closesAt?: number;
+          instructions?: string;
+          integrityLevel: "off" | "standard" | "strict";
+          kind: "task" | "quiz" | "midterm" | "final";
+          questionCount: number;
+          resultsVisibility: "hidden" | "score" | "full_after_close";
+          state: "open" | "closed";
+          timeLimitMin?: number;
+          title: string;
+          totalPoints: number;
+        };
+        attempt: null | {
+          _id: Id<"attempts">;
+          autoSubmitted: boolean;
+          deadlineAt?: number;
+          feedback?: string;
+          maxScore: number;
+          number: number;
+          pendingGrading: boolean;
+          score?: number;
+          startedAt: number;
+          status: "in_progress" | "submitted";
+          submittedAt?: number;
+        };
+        attemptsUsed: number;
+        comments: Array<{
+          _id: Id<"codeComments">;
+          author: string;
+          file: string;
+          line: number;
+          questionId: Id<"questions">;
+          text: string;
+        }>;
+        course: { _id: Id<"courses">; title: string };
+        questions: Array<{
+          _id: Id<"questions">;
+          code?: {
+            assets: Array<{ alt?: string; name: string; url: string }>;
+            files: Array<{ content: string; name: string }>;
+            steps: Array<{
+              checks: Array<
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "not_exists";
+                  }
+                | {
+                    id: string;
+                    label: string;
+                    max?: number;
+                    min?: number;
+                    selector: string;
+                    type: "count";
+                  }
+                | {
+                    caseSensitive?: boolean;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "text";
+                  }
+                | {
+                    attribute: string;
+                    contains?: string;
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    selector: string;
+                    type: "attr";
+                  }
+                | {
+                    equals?: string;
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    oneOf?: Array<string>;
+                    property: string;
+                    selector: string;
+                    type: "css";
+                    viewport?: number;
+                  }
+                | { href: string; id: string; label: string; type: "linked" }
+              >;
+              hint?: string;
+              instructions: string;
+              title: string;
+            }>;
+          };
+          options?: Array<{ id: string; text: string }>;
+          points: number;
+          prompt: string;
+          type: "single" | "multiple" | "short" | "essay" | "code";
+        }>;
+        review: Array<{
+          acceptedAnswers?: Array<string>;
+          correctOptionIds?: Array<string>;
+          explanation?: string;
+          points?: number;
+          questionId: Id<"questions">;
+        }>;
+      }
+    >;
+    startAttempt: FunctionReference<
+      "mutation",
+      "public",
+      { assessmentId: Id<"assessments"> },
+      Id<"attempts">
+    >;
+    saveQuizAnswer: FunctionReference<
+      "mutation",
+      "public",
+      {
+        answer:
+          | { optionId: string; type: "single" }
+          | { optionIds: Array<string>; type: "multiple" }
+          | { text: string; type: "short" }
+          | { text: string; type: "essay" };
+        assessmentId: Id<"assessments">;
+        integrity?: {
+          awayMs?: number;
+          copyBlocked?: number;
+          dropBlocked?: number;
+          fullscreenExits?: number;
+          largeInserts?: number;
+          multiTab?: number;
+          pasteBlocked?: number;
+          resizes?: number;
+          shortcutsBlocked?: number;
+          tabSwitches?: number;
+        };
+        questionId: Id<"questions">;
+      },
+      { savedAt: number }
+    >;
     reportIntegrityCounts: FunctionReference<
       "mutation",
       "public",
@@ -1739,6 +1902,7 @@ export type PublicApiType = {
       "public",
       { assessmentId: Id<"assessments"> },
       Array<{
+        answered: number;
         attemptId: Id<"attempts">;
         autoSubmitted: boolean;
         graded: boolean;
@@ -1757,6 +1921,9 @@ export type PublicApiType = {
         integrityColor: "green" | "yellow" | "red";
         integrityScore: number;
         maxScore: number;
+        needsGrading: boolean;
+        number: number;
+        questionsTotal: number;
         score?: number;
         startedAt: number;
         status: "in_progress" | "submitted";
@@ -1771,6 +1938,89 @@ export type PublicApiType = {
       "public",
       { attemptId: Id<"attempts"> },
       {
+        answers: Array<{
+          autoScore?: number;
+          key:
+            | null
+            | { correctOptionId: string; type: "single" }
+            | { correctOptionIds: Array<string>; type: "multiple" }
+            | {
+                acceptedAnswers: Array<string>;
+                caseSensitive: boolean;
+                type: "short";
+              }
+            | { rubric?: string; type: "essay" }
+            | {
+                hiddenChecks: Array<
+                  | {
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "exists";
+                    }
+                  | {
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "not_exists";
+                    }
+                  | {
+                      id: string;
+                      label: string;
+                      max?: number;
+                      min?: number;
+                      selector: string;
+                      type: "count";
+                    }
+                  | {
+                      caseSensitive?: boolean;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "text";
+                    }
+                  | {
+                      attribute: string;
+                      contains?: string;
+                      equals?: string;
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      selector: string;
+                      type: "attr";
+                    }
+                  | {
+                      equals?: string;
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      oneOf?: Array<string>;
+                      property: string;
+                      selector: string;
+                      type: "css";
+                      viewport?: number;
+                    }
+                  | { href: string; id: string; label: string; type: "linked" }
+                >;
+                solution: Array<{ content: string; name: string }>;
+                type: "code";
+              };
+          manualPoints?: number;
+          options?: Array<{ id: string; text: string }>;
+          points: number;
+          prompt: string;
+          questionId: Id<"questions">;
+          savedAt?: number;
+          type: "single" | "multiple" | "short" | "essay";
+          value?:
+            | { optionId: string; type: "single" }
+            | { optionIds: Array<string>; type: "multiple" }
+            | { text: string; type: "short" }
+            | { text: string; type: "essay" };
+        }>;
         autoScore?: number;
         autoSubmitted: boolean;
         comments: Array<{
@@ -1797,6 +2047,7 @@ export type PublicApiType = {
         integrityColor: "green" | "yellow" | "red";
         manualScore?: number;
         maxScore: number;
+        number: number;
         questions: Array<{
           autoScore?: number;
           checkResults?: Array<{ id: string; passed: boolean }>;
@@ -1920,6 +2171,16 @@ export type PublicApiType = {
         status: "in_progress" | "submitted";
         student: string;
       }
+    >;
+    setQuestionPoints: FunctionReference<
+      "mutation",
+      "public",
+      {
+        attemptId: Id<"attempts">;
+        points?: number;
+        questionId: Id<"questions">;
+      },
+      null
     >;
     addComment: FunctionReference<
       "mutation",

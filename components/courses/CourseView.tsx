@@ -7,6 +7,7 @@ import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { buttonClass } from "@/components/ui/buttons";
 import { ArrowLeft, ArrowRight, Clock, Code, ListChecks, Lock } from "@/components/ui/icons";
 import type { api } from "@/convex-api/api";
+import { assessmentPath } from "@/lib/urls";
 
 type Course = FunctionReturnType<typeof api.learn.course>;
 type Item = Course["assessments"][number];
@@ -53,7 +54,7 @@ function action(item: Item) {
         : "Start";
   return (
     <Link
-      href={`/tasks/${item._id}`}
+      href={assessmentPath(item.kind, item._id)}
       className={buttonClass(label === "View" ? "outline" : "ink", "sm")}
     >
       {label}
