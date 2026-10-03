@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Markdown } from "@/components/sandbox/Markdown";
+import { ComputerOnly } from "@/components/tasks/ComputerOnly";
 import { Button } from "@/components/ui/buttons";
 import { ArrowLeft, Check, Clock, Cross, ListChecks, Monitor, Shield } from "@/components/ui/icons";
 import { errorMessage } from "@/lib/errors";
+import { useCanFullscreen, useIsMobile } from "@/lib/useDevice";
 import { formatWhen, KIND_LABEL, type Quiz, type QuizQuestion, type SavedValue } from "./types";
 
 const INTEGRITY_RULES: Record<Quiz["assessment"]["integrityLevel"], string[]> = {
@@ -34,9 +36,13 @@ export function QuizCover({
   const { assessment, attempt } = quiz;
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mobile = useIsMobile();
+  const canFullscreen = useCanFullscreen();
   const submitted = attempt?.status === "submitted";
   const attemptsLeft = assessment.attemptsAllowed - quiz.attemptsUsed;
-  const canStart = assessment.state === "open" && attemptsLeft > 0 && assessment.questionCount > 0;
+  // Strict exams need fullscreen, which some phones (iPhones) can't give a web page.
+  const needsComputer = assessment.integrityLevel === "strict" && !canFullscreen;
+  const canStart = assessment.state === "open" && attemptsLeft > 0 && assessment.questionCount > 0 && !needsComputer;
 
   async function start() {
     setStarting(true);
@@ -94,6 +100,21 @@ export function QuizCover({
             </>
           )}
           {error && <p className="mt-5 rounded-2xl bg-red-pen/10 px-4 py-3 text-sm text-red-pen">{error}</p>}
+          {!submitted && mobile && assessment.codeQuestionCount > 0 && !needsComputer && (
+            <p className="mt-5 flex items-start gap-2.5 rounded-2xl bg-highlighter/40 px-4 py-3 text-sm leading-relaxed">
+              <Monitor className="mt-0.5 size-4 shrink-0" />
+              {assessment.codeQuestionCount === 1
+                ? "One question is code, which only opens on a computer. You can start here and finish it on a computer before time runs out."
+                : `${assessment.codeQuestionCount} questions are code, which only open on a computer. You can start here and finish those on a computer before time runs out.`}
+            </p>
+          )}
+          {!submitted && needsComputer && assessment.state === "open" && (
+            <div className="mt-6">
+              <ComputerOnly title="Take this one on a computer">
+                It runs in fullscreen, and this device can’t show a web page in fullscreen.
+              </ComputerOnly>
+            </div>
+          )}
           {canStart ? (
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Button variant={submitted ? "outline" : "lime"} size="lg" onClick={start} disabled={starting}>
@@ -101,7 +122,7 @@ export function QuizCover({
               </Button>
               {assessment.timeLimitMin && <span className="text-sm text-graphite">The timer starts when you press it.</span>}
             </div>
-          ) : !submitted ? (
+          ) : !submitted && !needsComputer ? (
             <p className="mt-7 text-[15px] font-medium text-graphite">
               {assessment.state === "closed"
                 ? "This is closed."

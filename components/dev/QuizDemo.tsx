@@ -35,6 +35,23 @@ const QUESTIONS: Quiz["questions"] = [
   },
   { _id: id<"questions">("q3"), type: "short", prompt: "What does `CSS` stand for?", points: 1.5 },
   { _id: id<"questions">("q4"), type: "essay", prompt: "Why do semantic tags like `<nav>` matter? Two or three sentences.", points: 3 },
+  {
+    _id: id<"questions">("q5"),
+    type: "code",
+    prompt: "Write your first heading.",
+    points: 2,
+    code: {
+      files: [{ name: "index.html", content: "<h1></h1>\n" }],
+      steps: [
+        {
+          title: "A heading with your name",
+          instructions: "Put your first name inside the `<h1>`.",
+          checks: [{ id: "s1c1", label: "The h1 has text", type: "text", selector: "h1", contains: "a" }],
+        },
+      ],
+      assets: [],
+    },
+  },
 ];
 
 const KEY: Record<string, { correct?: string[]; accepted?: string[] }> = {
@@ -71,8 +88,9 @@ export function QuizDemo() {
       timeLimitMin: 5,
       integrityLevel: "standard",
       resultsVisibility: "full_after_close",
-      totalPoints: 7.5,
+      totalPoints: 9.5,
       questionCount: QUESTIONS.length,
+      codeQuestionCount: 1,
       attemptsAllowed: 2,
     },
     attemptsUsed: 0,

@@ -135,9 +135,11 @@ export function useIntegrity({
       }, 0);
     };
     let width = window.innerWidth;
+    // On a touch screen the width shrinks when the phone turns upright, which isn't a split screen.
+    const touchOnly = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     const onResize = () => {
       // Shrinking a lot usually means a split screen next to something else.
-      if (window.innerWidth < width * 0.8) count("resizes");
+      if (!touchOnly && window.innerWidth < width * 0.8) count("resizes");
       width = window.innerWidth;
     };
     document.addEventListener("visibilitychange", onVisibility);

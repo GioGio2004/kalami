@@ -5,8 +5,9 @@ import Link from "next/link";
 import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
 import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { buttonClass } from "@/components/ui/buttons";
-import { ArrowLeft, ArrowRight, Clock, Code, ListChecks, Lock } from "@/components/ui/icons";
+import { ArrowLeft, ArrowRight, Clock, Code, ListChecks, Lock, Monitor } from "@/components/ui/icons";
 import type { api } from "@/convex-api/api";
+import { useIsMobile } from "@/lib/useDevice";
 import { assessmentPath } from "@/lib/urls";
 
 type Course = FunctionReturnType<typeof api.learn.course>;
@@ -35,7 +36,7 @@ function status(item: Item): string {
   return item.closesAt ? `Open until ${when(item.closesAt)}` : "Open";
 }
 
-function action(item: Item) {
+function action(item: Item, mobile: boolean) {
   if (!item.playable) {
     return <span className="text-sm text-graphite">Opens in a later update</span>;
   }
@@ -52,6 +53,17 @@ function action(item: Item) {
       : item.result?.status === "in_progress"
         ? "Continue"
         : "Start";
+  // Code tasks open on computers only; the link still shows where the task stands.
+  if (mobile && item.kind === "task" && label !== "View") {
+    return (
+      <Link
+        href={assessmentPath(item.kind, item._id)}
+        className="inline-flex items-center gap-1.5 rounded-full bg-panel px-3 py-1.5 text-sm text-graphite"
+      >
+        <Monitor className="size-4" /> On a computer
+      </Link>
+    );
+  }
   return (
     <Link
       href={assessmentPath(item.kind, item._id)}
@@ -64,6 +76,7 @@ function action(item: Item) {
 }
 
 export function CourseView({ course }: { course: Course }) {
+  const mobile = useIsMobile();
   return (
     <Enter kind="scale" className="rounded-[2.75rem] bg-panel px-4 pb-4 pt-8 sm:px-10 sm:pb-8 sm:pt-10 lg:px-12">
       <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-graphite hover:text-ink">
@@ -92,11 +105,11 @@ export function CourseView({ course }: { course: Course }) {
         <RevealGroup as="ul" stagger={0.08} className="mt-8 space-y-3">
           {course.assessments.map((item) => (
             <RevealItem as="li" kind="up" key={item._id}>
-              <div className="flex flex-wrap items-center gap-4 rounded-[1.6rem] bg-card p-5 sm:p-6">
-                <span className="grid size-12 shrink-0 place-items-center rounded-full bg-panel">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[1.6rem] bg-card p-5 sm:p-6">
+                <span className="hidden size-12 shrink-0 place-items-center rounded-full bg-panel sm:grid">
                   {item.kind === "task" ? <Code className="size-5" /> : <ListChecks className="size-5" />}
                 </span>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 basis-full sm:basis-0">
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-graphite">{KIND_LABEL[item.kind]}</p>
                   <p className="mt-0.5 text-lg font-medium leading-snug">{item.title}</p>
                   <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-graphite">
@@ -104,7 +117,7 @@ export function CourseView({ course }: { course: Course }) {
                     {status(item)}
                   </p>
                 </div>
-                {action(item)}
+                {action(item, mobile)}
               </div>
             </RevealItem>
           ))}

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import { CourseView } from "@/components/courses/CourseView";
 import { CurrentUserContext, type CurrentUser, type Me } from "@/components/CurrentUserProvider";
 import { DashboardView } from "@/components/dashboard/DashboardView";
+import { TaskOnPhone } from "@/components/tasks/TaskOnPhone";
 import {
   OnboardingWizard,
   type HonestyNotice,
@@ -74,12 +76,80 @@ function asUser(value: CurrentUser, children: ReactNode) {
 
 const gate = <StudentAccount>{() => null}</StudentAccount>;
 
+const HOUR = 60 * 60 * 1000;
+// Fixed, so the server's render and the browser's agree to the minute.
+const NOW = Date.UTC(2026, 9, 5, 8, 0);
+const id = <T extends string>(value: string) => value as string & { __tableName: T };
+const courseId = id<"courses">("sample_course");
+
+const myCourses: Parameters<typeof DashboardView>[0]["courses"] = [
+  { _id: courseId, title: "HTML & CSS Fundamentals", lecturer: "Gio Khvichia", semester: "Fall 2026", archived: false, openCount: 2 },
+  { _id: id<"courses">("sample_course_2"), title: "Basics of Web Technologies", lecturer: "Gio Khvichia", archived: false, openCount: 0 },
+];
+const upNext: Parameters<typeof DashboardView>[0]["upNext"] = [
+  { _id: id<"assessments">("a_quiz"), kind: "quiz", title: "Week 1 Quiz: HTML Basics", courseId, courseTitle: "HTML & CSS Fundamentals", closesAt: NOW + 30 * HOUR, started: false, playable: true },
+  { _id: id<"assessments">("a_task"), kind: "task", title: "Week 1 Lab: Your First HTML Document", courseId, courseTitle: "HTML & CSS Fundamentals", closesAt: NOW + 72 * HOUR, started: true, playable: true },
+];
+const course: ComponentProps<typeof CourseView>["course"] = {
+  _id: courseId,
+  title: "HTML & CSS Fundamentals",
+  description: "A hands-on introduction to building web pages: HTML structure, then styling with CSS.",
+  semester: "Fall 2026",
+  lecturer: "Gio Khvichia",
+  archived: false,
+  assessments: [
+    { _id: id<"assessments">("a_task"), kind: "task", title: "Week 1 Lab: Your First HTML Document", state: "open", closesAt: NOW + 72 * HOUR, totalPoints: 10, questionCount: 1, playable: true, result: { status: "in_progress" } },
+    { _id: id<"assessments">("a_quiz"), kind: "quiz", title: "Week 1 Quiz: HTML Basics", state: "open", closesAt: NOW + 30 * HOUR, totalPoints: 11, questionCount: 11, playable: true, result: null },
+    { _id: id<"assessments">("a_mid"), kind: "midterm", title: "Midterm", state: "upcoming", opensAt: NOW + 240 * HOUR, totalPoints: 30, questionCount: 20, playable: true, result: null },
+    { _id: id<"assessments">("a_old"), kind: "quiz", title: "Warm-up quiz", state: "closed", totalPoints: 5, questionCount: 5, playable: true, result: { status: "submitted", score: 4 } },
+  ],
+};
+const task: ComponentProps<typeof TaskOnPhone>["task"] = {
+  course: { _id: courseId, title: "HTML & CSS Fundamentals" },
+  assessment: {
+    _id: id<"assessments">("a_task"),
+    title: "Week 1 Lab: Your First HTML Document",
+    state: "open",
+    closesAt: NOW + 72 * HOUR,
+    integrityLevel: "standard",
+    resultsVisibility: "score",
+    totalPoints: 10,
+  },
+  questions: [],
+  attempt: { status: "in_progress", startedAt: NOW - HOUR, autoSubmitted: false, maxScore: 10 },
+  responses: [],
+  hiddenChecks: [],
+  comments: [],
+  unsupported: 0,
+};
+const sampleJoin = async (code: string) =>
+  code === "K7MP4Q" ? { ok: true as const, courseId } : { ok: false as const, message: "No open course has this code." };
+
+function studentPage(children: ReactNode) {
+  return (
+    <>
+      <PillHeader
+        homeHref="/dashboard"
+        links={[
+          { href: "/dashboard", label: "Dashboard" },
+          { href: "/honesty", label: "Honesty" },
+        ]}
+        actions={fakeAvatar}
+      />
+      <main className="mx-auto w-full max-w-[88rem] flex-1 px-3 pb-10 pt-5 sm:px-6">{children}</main>
+    </>
+  );
+}
+
 const views: Record<string, string> = {
   "onboarding-1": "Onboarding · step 1",
   "onboarding-2": "Onboarding · step 2",
   "onboarding-3": "Onboarding · step 3",
   "onboarding-reaccept": "Onboarding · re-accepting a new notice",
   dashboard: "Dashboard",
+  "dashboard-empty": "Dashboard · no courses yet",
+  course: "Course",
+  "task-phone": "Code task opened on a phone",
   "gate-staff": "Gate · staff account",
   "gate-signed-out": "Gate · signed out",
   "gate-error": "Gate · error",
@@ -124,14 +194,13 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
 
   switch (view) {
     case "dashboard":
-      return (
-        <>
-          <PillHeader homeHref="/dashboard" links={[{ href: "/dashboard", label: "Dashboard" }]} actions={fakeAvatar} />
-          <main className="mx-auto w-full max-w-[88rem] flex-1 px-3 pb-10 pt-5 sm:px-6">
-            <DashboardView me={student} />
-          </main>
-        </>
-      );
+      return studentPage(<DashboardView me={student} courses={myCourses} upNext={upNext} onJoin={sampleJoin} />);
+    case "dashboard-empty":
+      return studentPage(<DashboardView me={student} courses={[]} upNext={[]} onJoin={sampleJoin} />);
+    case "course":
+      return studentPage(<CourseView course={course} />);
+    case "task-phone":
+      return studentPage(<TaskOnPhone task={task} />);
     case "gate-staff":
       return asUser({ status: "ready", me: lecturer }, gate);
     case "gate-signed-out":

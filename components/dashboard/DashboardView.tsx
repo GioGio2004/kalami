@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
@@ -9,8 +9,9 @@ import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
 import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/buttons";
 import { ArrowRight, Camera, Check, Clock, Code, Mic, Monitor, Notebook, Shield } from "@/components/ui/icons";
-import { api } from "@/convex-api/api";
+import type { api } from "@/convex-api/api";
 import { errorMessage } from "@/lib/errors";
+import { useIsMobile } from "@/lib/useDevice";
 import { assessmentPath } from "@/lib/urls";
 
 function greetingFor(hour: number) {
@@ -36,10 +37,24 @@ function Chip({ children, dark = false }: { children: ReactNode; dark?: boolean 
   );
 }
 
-export function DashboardView({ me }: { me: Me }) {
+type MyCourse = FunctionReturnType<typeof api.learn.myCourses>[number];
+type UpNextItem = FunctionReturnType<typeof api.learn.upNext>[number];
+export type JoinResult = FunctionReturnType<typeof api.learn.join>;
+
+/** `courses` and `upNext` are undefined while loading. The page wires them to Convex, the gallery to samples. */
+export function DashboardView({
+  me,
+  courses,
+  upNext,
+  onJoin,
+}: {
+  me: Me;
+  courses: MyCourse[] | undefined;
+  upNext: UpNextItem[] | undefined;
+  onJoin: (code: string) => Promise<JoinResult>;
+}) {
   const [greeting] = useState(() => greetingFor(new Date().getHours()));
-  const courses = useQuery(api.learn.myCourses, {});
-  const upNext = useQuery(api.learn.upNext, {});
+  const mobile = useIsMobile();
   const student = me.student;
   const facts = student
     ? [
@@ -197,9 +212,16 @@ export function DashboardView({ me }: { me: Me }) {
                           ` · due ${new Date(item.closesAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}
                       </span>
                     </span>
-                    <span className="shrink-0 rounded-full bg-panel px-3 py-1 text-xs font-semibold">
-                      {item.started ? "Continue" : "Start"}
-                    </span>
+                    {mobile && item.kind === "task" ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-panel px-3 py-1 text-xs text-graphite">
+                        <Monitor className="size-3.5" />
+                        Computer
+                      </span>
+                    ) : (
+                      <span className="shrink-0 rounded-full bg-panel px-3 py-1 text-xs font-semibold">
+                        {item.started ? "Continue" : "Start"}
+                      </span>
+                    )}
                   </Link>
                 </li>
               ))}
@@ -215,13 +237,13 @@ export function DashboardView({ me }: { me: Me }) {
         </RevealItem>
 
         <RevealItem as="section" kind="scale" hover className="rounded-[2rem] bg-highlighter p-6 sm:p-8 lg:col-span-7">
-          <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
             <div>
               <h2 className="text-3xl font-medium tracking-[-0.03em]">Got a join code?</h2>
               <p className="mt-2 max-w-md text-[15px] leading-relaxed text-ink/75">
                 Your lecturer gives you a 6-character code. Type it here to join their course.
               </p>
-              <JoinForm />
+              <JoinForm onJoin={onJoin} />
             </div>
             <div
               className="notch-sides flex items-center gap-4 rounded-[1.4rem] bg-ink py-3 pl-5 pr-4 text-paper [--notch-y:50%]"
@@ -239,8 +261,7 @@ export function DashboardView({ me }: { me: Me }) {
   );
 }
 
-function JoinForm() {
-  const join = useMutation(api.learn.join);
+function JoinForm({ onJoin }: { onJoin: (code: string) => Promise<JoinResult> }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -251,7 +272,7 @@ function JoinForm() {
     setBusy(true);
     setError(null);
     try {
-      const result = await join({ code });
+      const result = await onJoin(code);
       if (result.ok) {
         router.push(`/courses/${result.courseId}`);
         return;

@@ -5,9 +5,11 @@ import { useIntegrity } from "@/components/integrity/useIntegrity";
 import { Markdown } from "@/components/sandbox/Markdown";
 import { TaskPlayer } from "@/components/sandbox/TaskPlayer";
 import type { CodeFile, IntegrityEvent } from "@/components/sandbox/types";
+import { ComputerOnly } from "@/components/tasks/ComputerOnly";
 import { Button } from "@/components/ui/buttons";
 import { ArrowLeft, ArrowRight, Check, Clock, Flag, Monitor } from "@/components/ui/icons";
 import { errorMessage } from "@/lib/errors";
+import { useIsMobile } from "@/lib/useDevice";
 import { AnswerInput } from "./AnswerInput";
 import { isAnswered, KIND_LABEL, type Answer, type QuestionId, type Quiz, type QuizActions, type SavedValue } from "./types";
 
@@ -79,6 +81,7 @@ export function QuizPlayer({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const mobile = useIsMobile();
   const pending = useRef(new Map<QuestionId, Pending>());
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const inFlight = useRef<Promise<void> | null>(null);
@@ -219,7 +222,7 @@ export function QuizPlayer({
   return (
     <div className="relative space-y-3">
       <header className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[1.8rem] bg-panel px-5 py-4 sm:px-6">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-full sm:basis-0">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-graphite">
             {KIND_LABEL[assessment.kind]} · {quiz.course.title}
           </p>
@@ -236,7 +239,7 @@ export function QuizPlayer({
             {clock(remaining)}
           </span>
         )}
-        <span aria-live="polite" className={`text-sm ${saveState === "error" ? "text-red-pen" : "text-graphite"}`}>
+        <span aria-live="polite" className={`mr-auto text-sm sm:mr-0 ${saveState === "error" ? "text-red-pen" : "text-graphite"}`}>
           {saveState === "saved"
             ? "Saved"
             : saveState === "saving"
@@ -300,10 +303,16 @@ export function QuizPlayer({
           onCut={blockCopy}
           onContextMenu={(event) => event.preventDefault()}
         >
-          {question.type !== "code" && <Markdown source={question.prompt} className="text-lg leading-relaxed" />}
+          {/* Code questions show their prompt inside the sandbox; phones get it here instead. */}
+          {(question.type !== "code" || mobile) && <Markdown source={question.prompt} className="text-lg leading-relaxed" />}
         </div>
         <div className="mt-6">
-          {question.type === "code" && question.code ? (
+          {question.type === "code" && question.code && mobile ? (
+            <ComputerOnly title="This question needs a computer">
+              Answer the others here, then open this {KIND_LABEL[assessment.kind].toLowerCase()} on a computer for this
+              one before time runs out. Everything you answer is saved.
+            </ComputerOnly>
+          ) : question.type === "code" && question.code ? (
             <div className="h-[72dvh] min-h-[30rem]">
               <TaskPlayer
                 key={question._id}
@@ -340,14 +349,20 @@ export function QuizPlayer({
         </div>
       </section>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 px-1">
-        <Button variant="outline" onClick={() => go(index - 1)} disabled={index === 0}>
+      <footer className="flex items-center justify-between gap-2 px-1">
+        <Button variant="outline" onClick={() => go(index - 1)} disabled={index === 0} aria-label="Previous question">
           <ArrowLeft className="size-4" />
-          Previous
+          <span className="hidden sm:inline">Previous</span>
         </Button>
         <Button variant="ghost" onClick={toggleFlag} aria-pressed={flags.has(question._id)}>
           <Flag className={`size-4 ${flags.has(question._id) ? "text-red-pen" : ""}`} />
-          {flags.has(question._id) ? "Flagged" : "Flag for review"}
+          {flags.has(question._id) ? (
+            "Flagged"
+          ) : (
+            <>
+              Flag<span className="hidden sm:inline"> for review</span>
+            </>
+          )}
         </Button>
         {index < quiz.questions.length - 1 ? (
           <Button onClick={() => go(index + 1)}>
@@ -356,7 +371,8 @@ export function QuizPlayer({
           </Button>
         ) : (
           <Button variant="lime" onClick={() => setConfirming(true)} disabled={locked}>
-            Review and submit
+            <span className="sm:hidden">Submit</span>
+            <span className="hidden sm:inline">Review and submit</span>
           </Button>
         )}
       </footer>

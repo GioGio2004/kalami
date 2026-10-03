@@ -18,7 +18,8 @@ export default function LandingPage() {
     <>
       <ScrollProgress />
       <LandingNav />
-      <main>
+      {/* Clip sideways: items that slide in from the right would otherwise widen phones' pages. */}
+      <main className="overflow-x-clip">
         <Hero />
         <Marquee
           className="mt-16 text-2xl font-medium tracking-[-0.02em] text-graphite sm:text-4xl"

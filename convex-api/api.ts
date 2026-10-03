@@ -299,6 +299,7 @@ export type PublicApiType = {
         role: "owner" | "assistant" | "admin" | "super_admin";
         semester?: string;
         status: "draft" | "published" | "archived";
+        students: number;
         title: string;
         universityId: Id<"universities">;
         universityName: { en: string; ka: string };
@@ -353,6 +354,7 @@ export type PublicApiType = {
         role: "owner" | "assistant" | "admin" | "super_admin";
         semester?: string;
         status: "draft" | "published" | "archived";
+        students: number;
         title: string;
         universityId: Id<"universities">;
         universityName: { en: string; ka: string };
@@ -697,6 +699,7 @@ export type PublicApiType = {
           _id: Id<"assessments">;
           attemptsAllowed: number;
           closesAt?: number;
+          codeQuestionCount: number;
           instructions?: string;
           integrityLevel: "off" | "standard" | "strict";
           kind: "task" | "quiz" | "midterm" | "final";
@@ -913,6 +916,7 @@ export type PublicApiType = {
         role: "owner" | "assistant" | "admin" | "super_admin";
         semester?: string;
         status: "draft" | "published" | "archived";
+        students: number;
         title: string;
         universityId: Id<"universities">;
         universityName: { en: string; ka: string };
@@ -967,6 +971,7 @@ export type PublicApiType = {
         role: "owner" | "assistant" | "admin" | "super_admin";
         semester?: string;
         status: "draft" | "published" | "archived";
+        students: number;
         title: string;
         universityId: Id<"universities">;
         universityName: { en: string; ka: string };
@@ -1900,38 +1905,54 @@ export type PublicApiType = {
     forAssessment: FunctionReference<
       "query",
       "public",
-      { assessmentId: Id<"assessments"> },
-      Array<{
-        answered: number;
-        attemptId: Id<"attempts">;
-        autoSubmitted: boolean;
-        graded: boolean;
-        integrity: {
-          awayMs?: number;
-          copyBlocked?: number;
-          dropBlocked: number;
-          fullscreenExits?: number;
-          largeInserts: number;
-          multiTab?: number;
-          pasteBlocked: number;
-          resizes?: number;
-          shortcutsBlocked?: number;
-          tabSwitches?: number;
+      {
+        assessmentId: Id<"assessments">;
+        paginationOpts: {
+          cursor: string | null;
+          endCursor?: string | null;
+          id?: number;
+          maximumBytesRead?: number;
+          maximumRowsRead?: number;
+          numItems: number;
         };
-        integrityColor: "green" | "yellow" | "red";
-        integrityScore: number;
-        maxScore: number;
-        needsGrading: boolean;
-        number: number;
-        questionsTotal: number;
-        score?: number;
-        startedAt: number;
-        status: "in_progress" | "submitted";
-        stepsDone: number;
-        stepsTotal: number;
-        student: string;
-        submittedAt?: number;
-      }>
+      },
+      {
+        continueCursor: string;
+        isDone: boolean;
+        page: Array<{
+          answered: number;
+          attemptId: Id<"attempts">;
+          autoSubmitted: boolean;
+          graded: boolean;
+          integrity: {
+            awayMs?: number;
+            copyBlocked?: number;
+            dropBlocked: number;
+            fullscreenExits?: number;
+            largeInserts: number;
+            multiTab?: number;
+            pasteBlocked: number;
+            resizes?: number;
+            shortcutsBlocked?: number;
+            tabSwitches?: number;
+          };
+          integrityColor: "green" | "yellow" | "red";
+          integrityScore: number;
+          maxScore: number;
+          needsGrading: boolean;
+          number: number;
+          questionsTotal: number;
+          score?: number;
+          startedAt: number;
+          status: "in_progress" | "submitted";
+          stepsDone: number;
+          stepsTotal: number;
+          student: string;
+          submittedAt?: number;
+        }>;
+        pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+        splitCursor?: string | null;
+      }
     >;
     detail: FunctionReference<
       "query",
