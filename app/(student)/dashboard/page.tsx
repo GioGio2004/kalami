@@ -2,8 +2,12 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useCurrentUser } from "@/components/CurrentUserProvider";
+import type { UseCourse } from "@/components/dashboard/CourseCard";
 import { DashboardView } from "@/components/dashboard/DashboardView";
 import { api } from "@/convex-api/api";
+
+/** A course's work loads only when its card is opened. */
+const useCourse: UseCourse = (courseId) => useQuery(api.learn.course, { courseId });
 
 export default function DashboardPage() {
   const current = useCurrentUser();
@@ -15,5 +19,13 @@ export default function DashboardPage() {
   if (!ready) {
     return null;
   }
-  return <DashboardView me={current.me} courses={courses} upNext={upNext} onJoin={(code) => join({ code })} />;
+  return (
+    <DashboardView
+      me={current.me}
+      courses={courses}
+      upNext={upNext}
+      onJoin={(code) => join({ code })}
+      useCourse={useCourse}
+    />
+  );
 }

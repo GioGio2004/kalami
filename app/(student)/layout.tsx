@@ -1,5 +1,6 @@
 import { UserButton } from "@clerk/nextjs";
 import type { ReactNode } from "react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { StudentGate } from "@/components/StudentGate";
 import { PillHeader } from "@/components/ui/PillHeader";
 
@@ -12,7 +13,12 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
           { href: "/dashboard", label: "Dashboard" },
           { href: "/honesty", label: "Honesty" },
         ]}
-        actions={<UserButton />}
+        actions={
+          <>
+            <NotificationBell />
+            <UserButton />
+          </>
+        }
       />
       <main className="mx-auto w-full max-w-[88rem] flex-1 px-3 pb-10 pt-5 sm:px-6">{children}</main>
     </StudentGate>

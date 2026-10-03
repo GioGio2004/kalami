@@ -2318,5 +2318,39 @@ export type PublicApiType = {
       null
     >;
   };
+  notifications: {
+    inbox: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      {
+        items: Array<{
+          _creationTime: number;
+          _id: Id<"notifications">;
+          assessmentKind: "task" | "quiz" | "midterm" | "final";
+          courseId: Id<"courses">;
+          courseTitle: string;
+          dueAt?: number;
+          href: string;
+          kind: "published" | "due_24h" | "due_1h";
+          read: boolean;
+          title: string;
+        }>;
+        unread: number;
+      }
+    >;
+    markRead: FunctionReference<
+      "mutation",
+      "public",
+      { notificationId: Id<"notifications"> },
+      null
+    >;
+    markAllRead: FunctionReference<
+      "mutation",
+      "public",
+      Record<string, never>,
+      null
+    >;
+  };
 };
 export type InternalApiType = {};

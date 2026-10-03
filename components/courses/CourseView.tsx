@@ -4,79 +4,13 @@ import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
 import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
-import { buttonClass } from "@/components/ui/buttons";
-import { ArrowLeft, ArrowRight, Clock, Code, ListChecks, Lock, Monitor } from "@/components/ui/icons";
+import { ArrowLeft } from "@/components/ui/icons";
 import type { api } from "@/convex-api/api";
-import { useIsMobile } from "@/lib/useDevice";
-import { assessmentPath } from "@/lib/urls";
+import { AssessmentRow } from "./AssessmentRow";
 
 type Course = FunctionReturnType<typeof api.learn.course>;
-type Item = Course["assessments"][number];
-
-const KIND_LABEL: Record<Item["kind"], string> = {
-  task: "Task",
-  quiz: "Quiz",
-  midterm: "Midterm",
-  final: "Final exam",
-};
-
-function when(ms: number) {
-  return new Date(ms).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
-function status(item: Item): string {
-  if (item.result?.status === "submitted") {
-    return item.result.score !== undefined
-      ? `Submitted · ${item.result.score} / ${item.totalPoints} points`
-      : "Submitted";
-  }
-  if (item.state === "upcoming") return item.opensAt ? `Opens ${when(item.opensAt)}` : "Not open yet";
-  if (item.state === "closed") return item.result ? "Closed · not submitted" : "Closed";
-  if (item.result?.status === "in_progress") return "In progress";
-  return item.closesAt ? `Open until ${when(item.closesAt)}` : "Open";
-}
-
-function action(item: Item, mobile: boolean) {
-  if (!item.playable) {
-    return <span className="text-sm text-graphite">Opens in a later update</span>;
-  }
-  if (item.state === "upcoming") {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-sm text-graphite">
-        <Lock className="size-4" /> Locked
-      </span>
-    );
-  }
-  const label =
-    item.result?.status === "submitted" || item.state === "closed"
-      ? "View"
-      : item.result?.status === "in_progress"
-        ? "Continue"
-        : "Start";
-  // Code tasks open on computers only; the link still shows where the task stands.
-  if (mobile && item.kind === "task" && label !== "View") {
-    return (
-      <Link
-        href={assessmentPath(item.kind, item._id)}
-        className="inline-flex items-center gap-1.5 rounded-full bg-panel px-3 py-1.5 text-sm text-graphite"
-      >
-        <Monitor className="size-4" /> On a computer
-      </Link>
-    );
-  }
-  return (
-    <Link
-      href={assessmentPath(item.kind, item._id)}
-      className={buttonClass(label === "View" ? "outline" : "ink", "sm")}
-    >
-      {label}
-      <ArrowRight className="size-4" />
-    </Link>
-  );
-}
 
 export function CourseView({ course }: { course: Course }) {
-  const mobile = useIsMobile();
   return (
     <Enter kind="scale" className="rounded-[2.75rem] bg-panel px-4 pb-4 pt-8 sm:px-10 sm:pb-8 sm:pt-10 lg:px-12">
       <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-graphite hover:text-ink">
@@ -105,20 +39,7 @@ export function CourseView({ course }: { course: Course }) {
         <RevealGroup as="ul" stagger={0.08} className="mt-8 space-y-3">
           {course.assessments.map((item) => (
             <RevealItem as="li" kind="up" key={item._id}>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[1.6rem] bg-card p-5 sm:p-6">
-                <span className="hidden size-12 shrink-0 place-items-center rounded-full bg-panel sm:grid">
-                  {item.kind === "task" ? <Code className="size-5" /> : <ListChecks className="size-5" />}
-                </span>
-                <div className="min-w-0 flex-1 basis-full sm:basis-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-graphite">{KIND_LABEL[item.kind]}</p>
-                  <p className="mt-0.5 text-lg font-medium leading-snug">{item.title}</p>
-                  <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-graphite">
-                    <Clock className="size-4" />
-                    {status(item)}
-                  </p>
-                </div>
-                {action(item, mobile)}
-              </div>
+              <AssessmentRow item={item} />
             </RevealItem>
           ))}
         </RevealGroup>

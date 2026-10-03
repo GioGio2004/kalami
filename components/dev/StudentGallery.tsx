@@ -4,7 +4,10 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { CourseView } from "@/components/courses/CourseView";
 import { CurrentUserContext, type CurrentUser, type Me } from "@/components/CurrentUserProvider";
+import type { UseCourse } from "@/components/dashboard/CourseCard";
 import { DashboardView } from "@/components/dashboard/DashboardView";
+import { Bell } from "@/components/notifications/NotificationBell";
+import type { Inbox } from "@/components/notifications/NotificationsPanel";
 import { TaskOnPhone } from "@/components/tasks/TaskOnPhone";
 import {
   OnboardingWizard,
@@ -124,8 +127,58 @@ const task: ComponentProps<typeof TaskOnPhone>["task"] = {
 };
 const sampleJoin = async (code: string) =>
   code === "K7MP4Q" ? { ok: true as const, courseId } : { ok: false as const, message: "No open course has this code." };
+const emptyCourse: ComponentProps<typeof CourseView>["course"] = {
+  ...course,
+  _id: myCourses[1]._id,
+  title: myCourses[1].title,
+  description: undefined,
+  semester: undefined,
+  assessments: [],
+};
+const useSampleCourse: UseCourse = (id) => (id === courseId ? course : emptyCourse);
 
-function studentPage(children: ReactNode) {
+const inbox: Inbox = {
+  unread: 2,
+  items: [
+    {
+      _id: id<"notifications">("n1"),
+      _creationTime: NOW - 2 * HOUR,
+      kind: "due_24h",
+      assessmentKind: "quiz",
+      title: "Week 1 Quiz: HTML Basics",
+      courseTitle: "HTML & CSS Fundamentals",
+      courseId,
+      dueAt: NOW + 22 * HOUR,
+      href: "/quizzes/a_quiz",
+      read: false,
+    },
+    {
+      _id: id<"notifications">("n2"),
+      _creationTime: NOW - 26 * HOUR,
+      kind: "published",
+      assessmentKind: "task",
+      title: "Week 1 Lab: Your First HTML Document",
+      courseTitle: "HTML & CSS Fundamentals",
+      courseId,
+      dueAt: NOW + 72 * HOUR,
+      href: "/tasks/a_task",
+      read: false,
+    },
+    {
+      _id: id<"notifications">("n3"),
+      _creationTime: NOW - 4 * 24 * HOUR,
+      kind: "published",
+      assessmentKind: "quiz",
+      title: "Warm-up quiz",
+      courseTitle: "HTML & CSS Fundamentals",
+      courseId,
+      href: "/quizzes/a_old",
+      read: true,
+    },
+  ],
+};
+
+function studentPage(children: ReactNode, { bellOpen = false, empty = false } = {}) {
   return (
     <>
       <PillHeader
@@ -134,7 +187,12 @@ function studentPage(children: ReactNode) {
           { href: "/dashboard", label: "Dashboard" },
           { href: "/honesty", label: "Honesty" },
         ]}
-        actions={fakeAvatar}
+        actions={
+          <>
+            <Bell inbox={empty ? { unread: 0, items: [] } : inbox} onMarkAllRead={() => undefined} defaultOpen={bellOpen} now={NOW} />
+            {fakeAvatar}
+          </>
+        }
       />
       <main className="mx-auto w-full max-w-[88rem] flex-1 px-3 pb-10 pt-5 sm:px-6">{children}</main>
     </>
@@ -148,6 +206,7 @@ const views: Record<string, string> = {
   "onboarding-reaccept": "Onboarding · re-accepting a new notice",
   dashboard: "Dashboard",
   "dashboard-empty": "Dashboard · no courses yet",
+  notifications: "Dashboard · notifications open",
   course: "Course",
   "task-phone": "Code task opened on a phone",
   "gate-staff": "Gate · staff account",
@@ -194,9 +253,19 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
 
   switch (view) {
     case "dashboard":
-      return studentPage(<DashboardView me={student} courses={myCourses} upNext={upNext} onJoin={sampleJoin} />);
+      return studentPage(
+        <DashboardView me={student} courses={myCourses} upNext={upNext} onJoin={sampleJoin} useCourse={useSampleCourse} />,
+      );
     case "dashboard-empty":
-      return studentPage(<DashboardView me={student} courses={[]} upNext={[]} onJoin={sampleJoin} />);
+      return studentPage(
+        <DashboardView me={student} courses={[]} upNext={[]} onJoin={sampleJoin} useCourse={useSampleCourse} />,
+        { empty: true },
+      );
+    case "notifications":
+      return studentPage(
+        <DashboardView me={student} courses={myCourses} upNext={upNext} onJoin={sampleJoin} useCourse={useSampleCourse} />,
+        { bellOpen: true },
+      );
     case "course":
       return studentPage(<CourseView course={course} />);
     case "task-phone":
