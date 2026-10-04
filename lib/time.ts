@@ -19,11 +19,11 @@ export function formatShort(ms: number): string {
 }
 
 /** "just now", "5 minutes ago", "in 2 hours", "yesterday"; the full date past a week. */
-export function relativeTime(ms: number, now: number): string {
+export function relativeTime(ms: number, now: number, locale: "en" | "ka" = "en"): string {
   const diff = ms - now;
   const abs = Math.abs(diff);
-  if (abs < MINUTE) return "just now";
-  const format = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  if (abs < MINUTE) return locale === "ka" ? "ახლახან" : "just now";
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
   if (abs < HOUR) return format.format(Math.round(diff / MINUTE), "minute");
   if (abs < DAY) return format.format(Math.round(diff / HOUR), "hour");
   if (abs < 7 * DAY) return format.format(Math.round(diff / DAY), "day");

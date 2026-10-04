@@ -1,12 +1,14 @@
 "use client";
 
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/Logo";
 
-type NavLink = { href: string; label: string };
+/** `badge`: a count shown next to the label (unread messages), hidden at 0. */
+/** `wideOnly`: hidden on phones, where the strip has room for two or three links. */
+type NavLink = { href: string; label: string; badge?: number; wideOnly?: boolean };
 
 /** The floating pill header used across the app (the landing page has its own). */
 export function PillHeader({
@@ -45,7 +47,7 @@ export function PillHeader({
                   key={link.href}
                   href={link.href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative shrink-0 rounded-full px-3 py-2 text-sm transition-colors sm:px-3.5 sm:text-[15px] ${
+                  className={`relative shrink-0 rounded-full px-3 py-2 text-sm transition-colors sm:px-3.5 sm:text-[15px] ${link.wideOnly ? "hidden sm:block" : ""} ${
                     active ? "font-medium text-ink" : "text-graphite hover:bg-panel hover:text-ink"
                   }`}
                 >
@@ -56,7 +58,10 @@ export function PillHeader({
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
-                  <span className="relative">{link.label}</span>
+                  <span className="relative inline-flex items-center">
+                    {link.label}
+                    <NavBadge count={link.badge ?? 0} />
+                  </span>
                 </Link>
               );
             })}
@@ -65,5 +70,26 @@ export function PillHeader({
         <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>
       </motion.header>
     </div>
+  );
+}
+
+/** The red count next to a link, styled and animated like the notification bell's. */
+function NavBadge({ count }: { count: number }) {
+  return (
+    <AnimatePresence>
+      {count > 0 && (
+        <motion.span
+          key="badge"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0 }}
+          transition={{ type: "spring", stiffness: 420, damping: 18 }}
+          className="ml-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-red-pen px-1 text-[11px] font-semibold text-paper tabular-nums"
+        >
+          <span aria-hidden>{count > 99 ? "99+" : count}</span>
+          <span className="sr-only">, {count} unread</span>
+        </motion.span>
+      )}
+    </AnimatePresence>
   );
 }

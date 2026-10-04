@@ -33,6 +33,10 @@ export function TextInput({ className = "", ...props }: ComponentProps<"input">)
   return <input className={`${inputClass} ${className}`} {...props} />;
 }
 
+export function TextArea({ className = "", rows = 3, ...props }: ComponentProps<"textarea">) {
+  return <textarea rows={rows} className={`${inputClass} resize-y leading-relaxed ${className}`} {...props} />;
+}
+
 export function SelectInput({ className = "", children, ...props }: ComponentProps<"select">) {
   return (
     <div className="relative">

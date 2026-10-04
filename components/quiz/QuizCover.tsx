@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ContactCard } from "@/components/contact/ContactCard";
 import { Markdown } from "@/components/sandbox/Markdown";
 import { ComputerOnly } from "@/components/tasks/ComputerOnly";
 import { Button } from "@/components/ui/buttons";
@@ -9,6 +10,8 @@ import { ArrowLeft, Check, Clock, Cross, ListChecks, Monitor, Shield } from "@/c
 import { errorMessage } from "@/lib/errors";
 import { useCanFullscreen, useIsMobile } from "@/lib/useDevice";
 import { formatWhen, KIND_LABEL, type Quiz, type QuizAnswers, type QuizQuestion, type SavedValue } from "./types";
+
+const QUESTION_ABOUT_THIS = { en: "Question about this?", ka: "კითხვა გაქვს ამაზე?" };
 
 const INTEGRITY_RULES: Record<Quiz["assessment"]["integrityLevel"], string[]> = {
   off: ["Practice: nothing is watched, but pasting into answers is still off."],
@@ -133,6 +136,16 @@ export function QuizCover({
                   : "You’ve used all your attempts."}
             </p>
           ) : null}
+          {/* Only here, before or after an attempt: never inside the running quiz. */}
+          <div className="mt-7 border-t border-dashed border-ink/15 pt-4">
+            <ContactCard
+              variant="compact"
+              label={QUESTION_ABOUT_THIS}
+              courseId={quiz.course._id}
+              assessmentId={assessment._id}
+              initialTopic={submitted ? "grade" : "assignment"}
+            />
+          </div>
         </section>
 
         <section className="rounded-[2rem] bg-charcoal p-6 text-paper sm:p-8 lg:col-span-5">

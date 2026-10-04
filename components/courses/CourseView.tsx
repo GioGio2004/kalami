@@ -2,6 +2,7 @@
 
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
+import { ContactCard } from "@/components/contact/ContactCard";
 import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
 import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { buttonClass } from "@/components/ui/buttons";
@@ -13,6 +14,8 @@ type Course = FunctionReturnType<typeof api.learn.course>;
 type Material = Course["materials"][number];
 
 const sectionHeading = "px-1 text-xs font-semibold uppercase tracking-[0.12em] text-graphite";
+
+const CANT_OPEN = { en: "Can't open it?", ka: "არ იხსნება?" };
 
 export function CourseView({ course }: { course: Course }) {
   const hasMaterials = course.materials.length > 0;
@@ -43,7 +46,7 @@ export function CourseView({ course }: { course: Course }) {
           <RevealGroup as="ul" stagger={0.08} className="mt-3 space-y-3">
             {course.materials.map((material) => (
               <RevealItem as="li" kind="up" key={material._id}>
-                <MaterialRow material={material} />
+                <MaterialRow material={material} courseId={course._id} />
               </RevealItem>
             ))}
           </RevealGroup>
@@ -66,12 +69,14 @@ export function CourseView({ course }: { course: Course }) {
           ))}
         </RevealGroup>
       )}
+
+      <ContactCard courseId={course._id} className="mt-8" />
     </Enter>
   );
 }
 
 /** One week's materials: a shared Google Drive folder or a link the lecturer keeps elsewhere. */
-function MaterialRow({ material }: { material: Material }) {
+function MaterialRow({ material, courseId }: { material: Material; courseId: Course["_id"] }) {
   const drive = material.source === "drive";
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[1.6rem] bg-card p-5 sm:p-6">
@@ -101,16 +106,25 @@ function MaterialRow({ material }: { material: Material }) {
           )}
         </p>
       </div>
-      <a
-        href={material.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={buttonClass("ink", "sm")}
-      >
-        Open materials
-        <span className="sr-only">: {material.title} (opens in a new tab)</span>
-        <ArrowUpRight className="size-4" />
-      </a>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <a
+          href={material.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonClass("ink", "sm")}
+        >
+          Open materials
+          <span className="sr-only">: {material.title} (opens in a new tab)</span>
+          <ArrowUpRight className="size-4" />
+        </a>
+        <ContactCard
+          variant="compact"
+          label={CANT_OPEN}
+          courseId={courseId}
+          materialId={material._id}
+          initialTopic="materials_access"
+        />
+      </div>
     </div>
   );
 }

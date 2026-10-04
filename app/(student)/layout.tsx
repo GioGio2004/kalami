@@ -2,17 +2,12 @@ import { UserButton } from "@clerk/nextjs";
 import type { ReactNode } from "react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { StudentGate } from "@/components/StudentGate";
-import { PillHeader } from "@/components/ui/PillHeader";
+import { StudentNav } from "@/components/StudentNav";
 
 export default function StudentLayout({ children }: { children: ReactNode }) {
   return (
     <StudentGate>
-      <PillHeader
-        homeHref="/dashboard"
-        links={[
-          { href: "/dashboard", label: "Dashboard" },
-          { href: "/honesty", label: "Honesty" },
-        ]}
+      <StudentNav
         actions={
           <>
             <NotificationBell />

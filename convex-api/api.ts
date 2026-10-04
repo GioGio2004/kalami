@@ -2612,6 +2612,7 @@ export type PublicApiType = {
       {
         canEdit: boolean;
         drive: null | {
+          canTakeOver: boolean;
           error?: string;
           folderUrl?: string;
           mine: boolean;
@@ -2691,6 +2692,191 @@ export type PublicApiType = {
       "public",
       { materialId: Id<"materials"> },
       null
+    >;
+    moveToMyDrive: FunctionReference<
+      "mutation",
+      "public",
+      { courseId: Id<"courses"> },
+      null
+    >;
+  };
+  messages: {
+    contactOptionsFor: FunctionReference<
+      "query",
+      "public",
+      {
+        assessmentId?: Id<"assessments">;
+        courseId?: Id<"courses">;
+        materialId?: Id<"materials">;
+      },
+      {
+        adminAvailable: boolean;
+        context: {
+          assessment?: {
+            _id: Id<"assessments">;
+            kind: "task" | "quiz" | "midterm" | "final";
+            title: string;
+          };
+          course?: { _id: Id<"courses">; locale: "ka" | "en"; title: string };
+          material?: { _id: Id<"materials">; title: string; url: string };
+        };
+        lecturers: Array<{
+          name: string;
+          userId: Id<"users">;
+          via: Array<string>;
+        }>;
+        student: { email: string; locale: "ka" | "en"; name: string };
+      }
+    >;
+    start: FunctionReference<
+      "mutation",
+      "public",
+      {
+        assessmentId?: Id<"assessments">;
+        body: string;
+        clientOpId: string;
+        courseId?: Id<"courses">;
+        customTopic?: string;
+        lecturerId?: Id<"users">;
+        materialId?: Id<"materials">;
+        recipient: "lecturer" | "admin";
+        subject: string;
+        topic:
+          | "materials_access"
+          | "missing_material"
+          | "assignment"
+          | "grade"
+          | "submission"
+          | "absence"
+          | "app_problem"
+          | "other";
+      },
+      Id<"conversations">
+    >;
+    mine: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _id: Id<"conversations">;
+        courseId?: Id<"courses">;
+        courseTitle?: string;
+        customTopic?: string;
+        lastMessageAt: number;
+        lastMessageFrom: "student" | "staff";
+        messageCount: number;
+        recipient: "lecturer" | "admin";
+        recipientName: string;
+        status: "open" | "answered" | "resolved";
+        subject: string;
+        topic:
+          | "materials_access"
+          | "missing_material"
+          | "assignment"
+          | "grade"
+          | "submission"
+          | "absence"
+          | "app_problem"
+          | "other";
+        unread: boolean;
+      }>
+    >;
+    thread: FunctionReference<
+      "query",
+      "public",
+      { conversationId: Id<"conversations"> },
+      {
+        _id: Id<"conversations">;
+        context: {
+          assessment?: {
+            _id: Id<"assessments">;
+            kind: "task" | "quiz" | "midterm" | "final";
+            title: string;
+          };
+          course?: { _id: Id<"courses">; locale: "ka" | "en"; title: string };
+          material?: { _id: Id<"materials">; title: string; url: string };
+        };
+        customTopic?: string;
+        messages: Array<{
+          _creationTime: number;
+          _id: Id<"conversationMessages">;
+          body: string;
+          emailed: boolean;
+          from: "student" | "staff";
+          mine: boolean;
+          senderName: string;
+        }>;
+        recipient: "lecturer" | "admin";
+        recipientName: string;
+        status: "open" | "answered" | "resolved";
+        studentEmail?: string;
+        studentName: string;
+        subject: string;
+        topic:
+          | "materials_access"
+          | "missing_material"
+          | "assignment"
+          | "grade"
+          | "submission"
+          | "absence"
+          | "app_problem"
+          | "other";
+        truncated: boolean;
+        viewer: "student" | "lecturer" | "admin";
+      }
+    >;
+    reply: FunctionReference<
+      "mutation",
+      "public",
+      { body: string; clientOpId: string; conversationId: Id<"conversations"> },
+      Id<"conversationMessages">
+    >;
+    resolve: FunctionReference<
+      "mutation",
+      "public",
+      { conversationId: Id<"conversations">; resolved: boolean },
+      null
+    >;
+    markRead: FunctionReference<
+      "mutation",
+      "public",
+      { conversationId: Id<"conversations"> },
+      null
+    >;
+    unreadCount: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      number
+    >;
+    inbox: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _id: Id<"conversations">;
+        as: "lecturer" | "admin";
+        courseId?: Id<"courses">;
+        courseTitle?: string;
+        customTopic?: string;
+        lastMessageAt: number;
+        lastMessageFrom: "student" | "staff";
+        messageCount: number;
+        recipient: "lecturer" | "admin";
+        status: "open" | "answered" | "resolved";
+        studentName: string;
+        subject: string;
+        topic:
+          | "materials_access"
+          | "missing_material"
+          | "assignment"
+          | "grade"
+          | "submission"
+          | "absence"
+          | "app_problem"
+          | "other";
+        unread: boolean;
+      }>
     >;
   };
 };

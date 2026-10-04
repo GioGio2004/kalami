@@ -2,12 +2,17 @@
 
 import { ConvexError } from "convex/values";
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import { useState, type ComponentProps, type ReactNode } from "react";
+import { Composer, type StartArgs } from "@/components/contact/Composer";
+import { ContactCard, ContactComposerProvider, type ComposerHostProps } from "@/components/contact/ContactCard";
 import { CourseView } from "@/components/courses/CourseView";
 import { CurrentUserContext, type CurrentUser, type Me } from "@/components/CurrentUserProvider";
 import type { UseCourse } from "@/components/dashboard/CourseCard";
 import { DashboardView, type MyGroup, type MyInvite } from "@/components/dashboard/DashboardView";
 import { JoinView, type JoinInvite } from "@/components/join/JoinView";
+import type { Conversation, Thread } from "@/components/messages/labels";
+import { MessagesView } from "@/components/messages/MessagesView";
+import { ThreadView } from "@/components/messages/ThreadView";
 import { Bell } from "@/components/notifications/NotificationBell";
 import type { Inbox } from "@/components/notifications/NotificationsPanel";
 import { TaskOnPhone } from "@/components/tasks/TaskOnPhone";
@@ -17,8 +22,11 @@ import {
   type University,
 } from "@/components/onboarding/OnboardingWizard";
 import { StudentAccount } from "@/components/StudentAccount";
+import { StudentNav } from "@/components/StudentNav";
+import { Button } from "@/components/ui/buttons";
 import { PillHeader } from "@/components/ui/PillHeader";
 import { LoadingScreen } from "@/components/ui/StatusScreen";
+import { buildDraft, type ContactOptions } from "@/lib/contact";
 
 // Development-only screen gallery with sample data: lets signed-in screens be
 // reviewed without an account. The route 404s in production.
@@ -261,13 +269,10 @@ const inbox: Inbox = {
 
 function studentPage(children: ReactNode, { bellOpen = false, empty = false } = {}) {
   return (
-    <>
-      <PillHeader
-        homeHref="/dashboard"
-        links={[
-          { href: "/dashboard", label: "Dashboard" },
-          { href: "/honesty", label: "Honesty" },
-        ]}
+    // Every contact card in the gallery opens the sample composer instead of the Convex one.
+    <ContactComposerProvider render={renderSampleComposer}>
+      <StudentNav
+        unread={empty ? 0 : conversations.filter((item) => item.unread).length}
         actions={
           <>
             <Bell
@@ -282,9 +287,199 @@ function studentPage(children: ReactNode, { bellOpen = false, empty = false } = 
         }
       />
       <main className="mx-auto w-full max-w-[88rem] flex-1 px-3 pb-10 pt-5 sm:px-6">{children}</main>
+    </ContactComposerProvider>
+  );
+}
+
+// --- Contact card and messages ------------------------------------------------------------
+
+const gio = { userId: id<"users">("sample_gio"), name: "Gio Khvichia", via: ["HTML & CSS Fundamentals"] };
+const nino = { userId: id<"users">("sample_nino"), name: "Nino Beridze", via: ["Web Lab, Thursdays"] };
+const week1 = course.materials[0];
+const sampleCourse = { _id: courseId, title: course.title, locale: "en" as const };
+const sampleStudent = { name: "Ana Beridze", email: student.email, locale: "en" as const };
+
+/** Opened from "Can't open it?" on Week 1: the course's lecturer, and the week attached. */
+const weekOptions: ContactOptions = {
+  student: sampleStudent,
+  lecturers: [gio],
+  adminAvailable: true,
+  context: { course: sampleCourse, material: { _id: week1._id, title: week1.title, url: week1.url } },
+};
+/** Opened from the dashboard: every lecturer across the student's courses and groups. */
+const generalOptions: ContactOptions = {
+  student: sampleStudent,
+  lecturers: [{ ...gio, via: ["HTML & CSS Fundamentals", "CS-101 · Fall 2026"] }, nino],
+  adminAvailable: true,
+  context: {},
+};
+
+/** What the server would send for a card's ids. */
+function sampleOptionsFor({ courseId: forCourse, materialId, assessmentId }: ComposerHostProps["target"]): ContactOptions {
+  if (forCourse === undefined) return generalOptions;
+  const material = course.materials.find((item) => item._id === materialId);
+  const assessment = course.assessments.find((item) => item._id === assessmentId);
+  return {
+    ...weekOptions,
+    context: {
+      course: sampleCourse,
+      ...(material ? { material: { _id: material._id, title: material.title, url: material.url } } : {}),
+      ...(assessment ? { assessment: { _id: assessment._id, title: assessment.title, kind: assessment.kind } } : {}),
+    },
+  };
+}
+
+const sampleSend = async (args: StartArgs) => {
+  await wait(900);
+  return args.topic === "app_problem" ? "sample_conversation_2" : "sample_conversation";
+};
+
+function SampleComposer({ open, onClose, lang, target }: ComposerHostProps) {
+  return (
+    <Composer
+      open={open}
+      onClose={onClose}
+      lang={lang}
+      options={sampleOptionsFor(target)}
+      recent={conversations}
+      initialTopic={target.initialTopic}
+      onSend={sampleSend}
+      now={NOW}
+    />
+  );
+}
+const renderSampleComposer = (props: ComposerHostProps) => <SampleComposer {...props} />;
+
+/** A composer that starts open over the page; closing it leaves the page (whose cards open it again). */
+function OpenComposer(props: Omit<ComponentProps<typeof Composer>, "open" | "onClose" | "onSend" | "now" | "lang">) {
+  const [open, setOpen] = useState(true);
+  return (
+    <>
+      {!open && (
+        <div className="mb-3 flex justify-end">
+          <Button variant="lime" size="sm" onClick={() => setOpen(true)}>
+            Open the composer again
+          </Button>
+        </div>
+      )}
+      <Composer {...props} lang="en" open={open} onClose={() => setOpen(false)} onSend={sampleSend} now={NOW} />
     </>
   );
 }
+
+const weekAnswer = { what: "It says “You need access” and offers to request it." };
+const firstDraft = buildDraft({
+  lang: "en",
+  topic: "materials_access",
+  customTopic: "",
+  recipient: "lecturer",
+  recipientName: gio.name,
+  studentName: sampleStudent.name,
+  context: weekOptions.context,
+  answers: weekAnswer,
+});
+
+const conversations: Conversation[] = [
+  {
+    _id: id<"conversations">("sample_conversation"),
+    recipient: "lecturer",
+    recipientName: gio.name,
+    topic: "materials_access",
+    subject: firstDraft.subject,
+    status: "answered",
+    lastMessageAt: NOW - 2 * HOUR,
+    lastMessageFrom: "staff",
+    messageCount: 3,
+    unread: true,
+    courseId,
+    courseTitle: course.title,
+  },
+  {
+    _id: id<"conversations">("sample_conversation_2"),
+    recipient: "admin",
+    recipientName: "Kalami team",
+    topic: "app_problem",
+    subject: "Problem in Kalami",
+    status: "open",
+    lastMessageAt: NOW - 26 * HOUR,
+    lastMessageFrom: "student",
+    messageCount: 1,
+    unread: false,
+  },
+  {
+    _id: id<"conversations">("sample_conversation_3"),
+    recipient: "lecturer",
+    recipientName: gio.name,
+    topic: "other",
+    customTopic: "Lab partner for week 3",
+    subject: "Lab partner for week 3",
+    status: "resolved",
+    lastMessageAt: NOW - 9 * 24 * HOUR,
+    lastMessageFrom: "student",
+    messageCount: 2,
+    unread: false,
+    courseId,
+    courseTitle: course.title,
+  },
+];
+
+const thread: Thread = {
+  _id: conversations[0]._id,
+  viewer: "student",
+  recipient: "lecturer",
+  recipientName: gio.name,
+  studentName: sampleStudent.name,
+  topic: "materials_access",
+  subject: firstDraft.subject,
+  status: "answered",
+  context: weekOptions.context,
+  truncated: false,
+  messages: [
+    {
+      _id: id<"conversationMessages">("sample_message_1"),
+      _creationTime: NOW - 5 * HOUR,
+      from: "student",
+      senderName: sampleStudent.name,
+      mine: true,
+      body: firstDraft.body,
+      emailed: true,
+    },
+    {
+      _id: id<"conversationMessages">("sample_message_2"),
+      _creationTime: NOW - 3 * HOUR,
+      from: "staff",
+      senderName: gio.name,
+      mine: false,
+      body: "Thanks for telling me, Ana. Checking it now.",
+      emailed: true,
+    },
+    {
+      _id: id<"conversationMessages">("sample_message_3"),
+      _creationTime: NOW - 2 * HOUR,
+      from: "staff",
+      senderName: gio.name,
+      mine: false,
+      body: "The folder was still private, sorry about that. It's shared now:\nhttps://drive.google.com/drive/folders/sample-week-1\n\nTry again and tell me if it still doesn't open.",
+      emailed: true,
+    },
+  ],
+};
+const resolvedThread: Thread = {
+  ...thread,
+  status: "resolved",
+  messages: [
+    ...thread.messages,
+    {
+      _id: id<"conversationMessages">("sample_message_4"),
+      _creationTime: NOW - HOUR,
+      from: "student",
+      senderName: sampleStudent.name,
+      mine: true,
+      body: "It opens now. Thank you!",
+      emailed: true,
+    },
+  ],
+};
 
 const views: Record<string, string> = {
   "onboarding-1": "Onboarding · step 1",
@@ -311,6 +506,14 @@ const views: Record<string, string> = {
   "invite-expired": "Email invite · expired",
   "invite-used": "Email invite · already accepted",
   "task-phone": "Code task opened on a phone",
+  "contact-card": "Contact · the card and the compact triggers (en and ka)",
+  "contact-composer": "Contact · composer: lecturer, can't open Week 1 (an earlier message on it)",
+  "contact-composer-admin": "Contact · composer: something in Kalami isn't working (Kalami team suggested)",
+  "contact-sent": "Contact · message sent",
+  messages: "Messages · list",
+  "messages-empty": "Messages · nothing yet",
+  thread: "Messages · a conversation with replies",
+  "thread-resolved": "Messages · a resolved conversation",
   "gate-staff": "Gate · staff account",
   "gate-signed-out": "Gate · signed out",
   "gate-error": "Gate · error",
@@ -387,6 +590,51 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
       return studentPage(<CourseView course={emptyCourse} />);
     case "task-phone":
       return studentPage(<TaskOnPhone task={task} />);
+    case "contact-card":
+      return studentPage(<ContactCardSamples />);
+    case "contact-composer":
+      return studentPage(
+        <>
+          <OpenComposer
+            options={weekOptions}
+            recent={conversations}
+            initialTopic="materials_access"
+            initialRecipient={{ recipient: "lecturer", lecturerId: gio.userId }}
+            initialAnswers={weekAnswer}
+          />
+          <CourseView course={course} />
+        </>,
+      );
+    case "contact-composer-admin":
+      return studentPage(
+        <>
+          <OpenComposer
+            options={generalOptions}
+            initialTopic="app_problem"
+            initialAnswers={{ what: "The quiz froze after question 3, and the timer kept running." }}
+          />
+          <DashboardView {...dashboardProps} invites={[]} />
+        </>,
+      );
+    case "contact-sent":
+      return studentPage(
+        <>
+          <OpenComposer
+            options={weekOptions}
+            initialTopic="materials_access"
+            initialSent={{ conversationId: "sample_conversation", recipientName: gio.name }}
+          />
+          <CourseView course={course} />
+        </>,
+      );
+    case "messages":
+      return studentPage(<MessagesView conversations={conversations} now={NOW} />);
+    case "messages-empty":
+      return studentPage(<MessagesView conversations={[]} now={NOW} />, { empty: true });
+    case "thread":
+      return studentPage(<ThreadView thread={thread} onReply={sampleAction} onResolve={sampleAction} />);
+    case "thread-resolved":
+      return studentPage(<ThreadView thread={resolvedThread} onReply={sampleAction} onResolve={sampleAction} />);
     case "gate-staff":
       return asUser({ status: "ready", me: lecturer }, gate);
     case "gate-signed-out":
@@ -396,4 +644,46 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
     default:
       return <LoadingScreen />;
   }
+}
+
+/** The full card in both languages, and the compact triggers as they appear in rows and result screens. */
+function ContactCardSamples() {
+  const quiz = course.assessments[1];
+  return (
+    <div className="rounded-[2.25rem] bg-panel px-3 pb-3 pt-8 sm:rounded-[2.75rem] sm:px-10 sm:pb-8 sm:pt-10">
+      <p className="px-2 text-xs font-semibold uppercase tracking-[0.12em] text-graphite sm:px-1">The card</p>
+      <div className="mt-3 grid gap-3 *:min-w-0 lg:grid-cols-2">
+        <ContactCard lang="en" />
+        <ContactCard lang="ka" />
+      </div>
+      <p className="mt-8 px-2 text-xs font-semibold uppercase tracking-[0.12em] text-graphite sm:px-1">Compact triggers</p>
+      <div className="mt-3 grid justify-items-start gap-3 rounded-[1.6rem] bg-card p-5 sm:rounded-[2rem] sm:p-6">
+        <ContactCard
+          variant="compact"
+          lang="en"
+          label={{ en: "Can't open it?", ka: "არ იხსნება?" }}
+          courseId={courseId}
+          materialId={week1._id}
+          initialTopic="materials_access"
+        />
+        <ContactCard
+          variant="compact"
+          lang="en"
+          label={{ en: "Question about this?", ka: "კითხვა გაქვს ამაზე?" }}
+          courseId={courseId}
+          assessmentId={quiz._id}
+          initialTopic="grade"
+        />
+        <ContactCard variant="compact" lang="en" label={{ en: "Keeps happening?", ka: "ისევ ასე ხდება?" }} initialTopic="app_problem" />
+        <ContactCard
+          variant="compact"
+          lang="ka"
+          label={{ en: "Can't open it?", ka: "არ იხსნება?" }}
+          courseId={courseId}
+          materialId={week1._id}
+          initialTopic="materials_access"
+        />
+      </div>
+    </div>
+  );
 }

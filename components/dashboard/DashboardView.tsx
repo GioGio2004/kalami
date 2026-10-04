@@ -4,6 +4,7 @@ import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { ContactCard } from "@/components/contact/ContactCard";
 import type { Me } from "@/components/CurrentUserProvider";
 import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
 import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
@@ -37,8 +38,8 @@ export type MyGroup = FunctionReturnType<typeof api.groups.mine>[number];
 
 /**
  * The student's home: one column of cards that open on tap. Open group invites
- * sit on top; then what's due, each course, the join code, the student's groups
- * and the honesty notice. `courses`, `upNext`, `invites` and `groups` are
+ * sit on top; then what's due, each course, the join code, the student's groups,
+ * the honesty notice and the contact card. `courses`, `upNext`, `invites` and `groups` are
  * undefined while loading.
  */
 export function DashboardView({
@@ -240,6 +241,11 @@ export function DashboardView({
                 </Link>
               </div>
             </ExpandableCard>
+          </RevealItem>
+
+          {/* Last in the side column, so on phones it comes after the student's own work. */}
+          <RevealItem kind="scale">
+            <ContactCard lang={me.locale} />
           </RevealItem>
         </div>
       </RevealGroup>

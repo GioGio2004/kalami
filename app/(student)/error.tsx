@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { ContactCard } from "@/components/contact/ContactCard";
 import { Button, ButtonLink } from "@/components/ui/buttons";
 import { errorMessage } from "@/lib/errors";
+
+const KEEPS_HAPPENING = { en: "Keeps happening?", ka: "ისევ ასე ხდება?" };
 
 /** Catches thrown queries and failed renders on student pages; the header stays put. */
 export default function StudentError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
@@ -24,6 +27,7 @@ export default function StudentError({ error, retry }: { error: Error & { digest
           Back to my dashboard
         </ButtonLink>
       </div>
+      <ContactCard variant="compact" label={KEEPS_HAPPENING} initialTopic="app_problem" className="mt-6" />
     </div>
   );
 }
