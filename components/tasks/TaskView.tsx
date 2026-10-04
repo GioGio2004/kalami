@@ -11,49 +11,61 @@ import { Button } from "@/components/ui/buttons";
 import { ArrowLeft, Check, Monitor } from "@/components/ui/icons";
 import { api } from "@/convex-api/api";
 import { errorMessage } from "@/lib/errors";
+import { loadDrafts, saveLabel, useAutosave, type Draft } from "@/lib/useAutosave";
 
 type Task = FunctionReturnType<typeof api.learn.task>;
 type QuestionId = Task["questions"][number]["_id"];
-type SaveState = "saved" | "unsaved" | "saving" | "error";
 
 /** Autosave waits this long after the last keystroke. */
 const AUTOSAVE_MS = 1500;
-
-function savedLabel(state: SaveState, error: string | null) {
-  switch (state) {
-    case "saved":
-      return "Saved";
-    case "saving":
-      return "Saving…";
-    case "unsaved":
-      return "Unsaved changes";
-    case "error":
-      return error ?? "Couldn't save. Retrying when you type.";
-  }
-}
 
 export function TaskView({ task, studentName, locale }: { task: Task; studentName: string; locale: "ka" | "en" }) {
   const submitted = task.attempt?.status === "submitted";
   const readOnly = submitted || task.assessment.state === "closed";
   const [index, setIndex] = useState(0);
   const question = task.questions[Math.min(index, task.questions.length - 1)];
+  const draftKey = `kalami:draft:task:${task.assessment._id}`;
 
   const save = useMutation(api.learn.saveCodeWork);
   const submit = useMutation(api.learn.submit);
   const reportCounts = useMutation(api.learn.reportIntegrityCounts);
-  const [saveState, setSaveState] = useState<SaveState>("saved");
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [unsaved, setUnsaved] = useState<number[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Unsaved files per question, and the latest local copy so switching parts keeps the work.
-  const pending = useRef(new Map<QuestionId, CodeFile[]>());
+  // The server's clock, from every save that comes back; the files carry no time until then.
+  const skew = useRef(0);
+  const serverNow = useCallback(() => Date.now() + skew.current, []);
+  const autosave = useAutosave<QuestionId, CodeFile[]>({
+    draftKey,
+    now: serverNow,
+    save: async (questionId, files) => {
+      const result = await save({ assessmentId: task.assessment._id, questionId, files });
+      skew.current = result.savedAt - Date.now();
+    },
+  });
+  const { adopt } = autosave;
+
+  // Once, on mount: work this tab had on its way last time, if the server has nothing newer.
+  const [initial] = useState(() => {
+    const drafts = loadDrafts<QuestionId, CodeFile[]>(draftKey);
+    const kept = new Map<QuestionId, Draft<CodeFile[]>>();
+    for (const [questionId, draft] of drafts) {
+      const server = task.responses.find((r) => r.questionId === questionId)?.savedAt ?? -1;
+      if (draft.at > server && !readOnly) kept.set(questionId, draft);
+    }
+    return kept;
+  });
+  // The latest local copy per part, so switching parts keeps the work; the player only reads it when it opens.
   const latest = useRef(new Map<QuestionId, CodeFile[]>());
-  // What each part showed when the student left it; the player only reads it when it opens.
-  const [snapshots, setSnapshots] = useState(new Map<QuestionId, CodeFile[]>());
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const inFlight = useRef<Promise<void> | null>(null);
+  const [snapshots, setSnapshots] = useState(
+    () => new Map<QuestionId, CodeFile[]>([...initial].map(([questionId, draft]) => [questionId, draft.item])),
+  );
+  useEffect(() => {
+    for (const [questionId, draft] of initial) latest.current.set(questionId, draft.item);
+    if (initial.size > 0) adopt([...initial]);
+  }, [initial, adopt]);
 
   const integrity = useIntegrity({
     level: task.assessment.integrityLevel,
@@ -62,61 +74,16 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
     report: (counts) => reportCounts({ assessmentId: task.assessment._id, counts }),
   });
 
-  const flush = useCallback(async () => {
-    clearTimeout(timer.current);
-    if (inFlight.current) await inFlight.current;
-    if (pending.current.size === 0) return;
-    const batch = [...pending.current];
-    pending.current.clear();
-    setSaveState("saving");
-    const run = (async () => {
-      for (const [questionId, files] of batch) {
-        try {
-          await save({ assessmentId: task.assessment._id, questionId, files });
-        } catch (error) {
-          // Keep the work for the next try.
-          if (!pending.current.has(questionId)) pending.current.set(questionId, files);
-          setSaveError(errorMessage(error));
-          setSaveState("error");
-          return;
-        }
-      }
-      setSaveError(null);
-      setSaveState(pending.current.size === 0 ? "saved" : "unsaved");
-    })();
-    inFlight.current = run;
-    await run;
-    inFlight.current = null;
-  }, [save, task.assessment._id]);
-
   const onFilesChange = useCallback(
     (files: CodeFile[]) => {
       if (question === undefined) return;
-      pending.current.set(question._id, files);
       latest.current.set(question._id, files);
-      setSaveState("unsaved");
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => void flush(), AUTOSAVE_MS);
+      autosave.queue(question._id, files, AUTOSAVE_MS);
     },
-    [flush, question],
+    [autosave, question],
   );
 
   const onIntegrity = useCallback((event: IntegrityEvent) => integrity.count(event), [integrity]);
-
-  // Save on the way out; warn if a save is still pending when the tab closes.
-  useEffect(() => {
-    const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (pending.current.size > 0) {
-        void flush();
-        event.preventDefault();
-      }
-    };
-    window.addEventListener("beforeunload", beforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", beforeUnload);
-      void flush();
-    };
-  }, [flush]);
 
   const comments: LineComment[] = useMemo(
     () =>
@@ -126,13 +93,24 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
     [task.comments, question?._id],
   );
 
-  async function onSubmit() {
+  async function onSubmit(force = false) {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await flush();
+      const saved = await autosave.flush();
+      if (!saved && !force) {
+        setUnsaved(
+          autosave
+            .unsavedKeys()
+            .map((id) => task.questions.findIndex((q) => q._id === id) + 1)
+            .filter((n) => n > 0),
+        );
+        return;
+      }
       await submit({ assessmentId: task.assessment._id });
+      autosave.clear();
       setConfirming(false);
+      setUnsaved(null);
     } catch (error) {
       setSubmitError(errorMessage(error));
     } finally {
@@ -166,7 +144,7 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
           <button
             key={q._id}
             onClick={() => {
-              void flush();
+              void autosave.flush();
               setSnapshots(new Map(latest.current));
               setIndex(i);
             }}
@@ -181,20 +159,36 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
   const actions = (
     <>
       {parts}
-      {readOnly ? null : confirming ? (
+      {readOnly ? null : unsaved !== null ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-red-pen">
+            {unsaved.length === 1 ? "One part isn’t saved yet" : `${unsaved.length} parts aren’t saved yet`}
+            {task.questions.length > 1 && unsaved.length > 0 && ` (part ${unsaved.join(", ")})`}.
+          </span>
+          <Button size="sm" variant="ghost" onClick={() => setUnsaved(null)} disabled={submitting}>
+            Keep working
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => void onSubmit(false)} disabled={submitting}>
+            Try again
+          </Button>
+          <Button size="sm" variant="danger" onClick={() => void onSubmit(true)} disabled={submitting}>
+            Submit anyway
+          </Button>
+        </div>
+      ) : confirming ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-graphite">Submit for grading? You can&apos;t change it afterwards.</span>
           <Button size="sm" variant="ghost" onClick={() => setConfirming(false)} disabled={submitting}>
             Keep working
           </Button>
-          <Button size="sm" variant="lime" onClick={onSubmit} disabled={submitting}>
+          <Button size="sm" variant="lime" onClick={() => void onSubmit(false)} disabled={submitting}>
             {submitting ? "Submitting…" : "Yes, submit"}
           </Button>
         </div>
       ) : (
         <>
-          <span aria-live="polite" className={`text-sm ${saveState === "error" ? "text-red-pen" : "text-graphite"}`}>
-            {savedLabel(saveState, saveError)}
+          <span aria-live="polite" className={`text-sm ${autosave.state === "error" ? "text-red-pen" : "text-graphite"}`}>
+            {saveLabel(autosave.state, autosave.error, autosave.unsavedCount)}
           </span>
           <Button size="sm" onClick={() => setConfirming(true)}>
             <Check className="size-4" />
@@ -262,7 +256,7 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
         comments={comments}
         onFilesChange={onFilesChange}
         onIntegrity={onIntegrity}
-        onSaveNow={() => void flush()}
+        onSaveNow={() => void autosave.flush()}
       />
       {integrity.blocked && (
         <div className="absolute inset-0 z-20 grid place-items-center rounded-[2rem] bg-paper/95 p-6 backdrop-blur-sm">

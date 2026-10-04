@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/buttons";
 import { ArrowLeft, Check, Clock, Cross, ListChecks, Monitor, Shield } from "@/components/ui/icons";
 import { errorMessage } from "@/lib/errors";
 import { useCanFullscreen, useIsMobile } from "@/lib/useDevice";
-import { formatWhen, KIND_LABEL, type Quiz, type QuizQuestion, type SavedValue } from "./types";
+import { formatWhen, KIND_LABEL, type Quiz, type QuizAnswers, type QuizQuestion, type SavedValue } from "./types";
 
 const INTEGRITY_RULES: Record<Quiz["assessment"]["integrityLevel"], string[]> = {
   off: ["Practice: nothing is watched, but pasting into answers is still off."],
@@ -27,9 +27,11 @@ const INTEGRITY_RULES: Record<Quiz["assessment"]["integrityLevel"], string[]> = 
 /** The start screen before an attempt, and the results after one. */
 export function QuizCover({
   quiz,
+  answers,
   onStart,
 }: {
   quiz: Quiz;
+  answers: QuizAnswers;
   /** Strict quizzes ask for fullscreen first; that has to happen inside the click. */
   onStart: () => Promise<unknown>;
 }) {
@@ -81,7 +83,7 @@ export function QuizCover({
       <div className="mt-8 grid gap-4 *:min-w-0 lg:grid-cols-12">
         <section className="rounded-[2rem] bg-card p-6 sm:p-8 lg:col-span-7">
           {submitted ? (
-            <Results quiz={quiz} />
+            <Results quiz={quiz} answers={answers} />
           ) : (
             <>
               {assessment.instructions ? (
@@ -159,12 +161,14 @@ export function QuizCover({
   );
 }
 
-function Results({ quiz }: { quiz: Quiz }) {
+function Results({ quiz, answers }: { quiz: Quiz; answers: QuizAnswers }) {
   const attempt = quiz.attempt!;
   const { assessment } = quiz;
   const waiting =
-    assessment.resultsVisibility === "full_after_close" && assessment.state === "open" && assessment.closesAt
-      ? `Your score and the answers appear after it closes on ${formatWhen(assessment.closesAt)}.`
+    assessment.resultsVisibility === "full_after_close" && assessment.state === "open"
+      ? assessment.closesAt
+        ? `Your score and the answers appear after it closes on ${formatWhen(assessment.closesAt)}.`
+        : "Your score and the answers appear once your lecturer closes it."
       : "Your lecturer will share the results.";
   return (
     <div>
@@ -192,7 +196,7 @@ function Results({ quiz }: { quiz: Quiz }) {
               key={question._id}
               index={index}
               question={question}
-              value={quiz.answers.find((a) => a.questionId === question._id)?.value}
+              value={answers.find((a) => a.questionId === question._id)?.value}
               review={quiz.review.find((r) => r.questionId === question._id)}
             />
           ))}

@@ -199,6 +199,7 @@ export type PublicApiType = {
           prompt: string;
           type: "single" | "multiple" | "short" | "essay" | "code";
         }>;
+        started: number;
       }
     >;
     update: FunctionReference<
@@ -301,8 +302,8 @@ export type PublicApiType = {
         status: "draft" | "published" | "archived";
         students: number;
         title: string;
-        universityId: Id<"universities">;
-        universityName: { en: string; ka: string };
+        universityId?: Id<"universities">;
+        universityName?: { en: string; ka: string };
         updatedAt: number;
       }>
     >;
@@ -356,8 +357,8 @@ export type PublicApiType = {
         status: "draft" | "published" | "archived";
         students: number;
         title: string;
-        universityId: Id<"universities">;
-        universityName: { en: string; ka: string };
+        universityId?: Id<"universities">;
+        universityName?: { en: string; ka: string };
         updatedAt: number;
       }
     >;
@@ -375,7 +376,7 @@ export type PublicApiType = {
         locale?: "ka" | "en";
         semester?: string;
         title: string;
-        universityId?: Id<"universities">;
+        universityId?: Id<"universities"> | null;
       },
       Id<"courses">
     >;
@@ -432,14 +433,14 @@ export type PublicApiType = {
       {
         email: string;
         role: "lecturer" | "uni_admin";
-        universityId: Id<"universities">;
+        universityId?: Id<"universities">;
       },
       { inviteId: Id<"invites">; token: string }
     >;
     listForUniversity: FunctionReference<
       "query",
       "public",
-      { universityId: Id<"universities"> },
+      { universityId?: Id<"universities"> },
       Array<{
         _creationTime: number;
         _id: Id<"invites">;
@@ -460,14 +461,14 @@ export type PublicApiType = {
         expiresAt: number;
         role: "lecturer" | "uni_admin";
         status: "pending" | "accepted" | "revoked";
-        universityName: { en: string; ka: string };
+        universityName?: { en: string; ka: string };
       }
     >;
     accept: FunctionReference<
       "mutation",
       "public",
       { token: string },
-      { role: "lecturer" | "uni_admin"; universityId: Id<"universities"> }
+      { role: "lecturer" | "uni_admin"; universityId?: Id<"universities"> }
     >;
     revoke: FunctionReference<
       "mutation",
@@ -537,6 +538,14 @@ export type PublicApiType = {
         }>;
         description?: string;
         lecturer: string;
+        materials: Array<{
+          _id: Id<"materials">;
+          description?: string;
+          host: string;
+          source: "drive" | "link";
+          title: string;
+          url: string;
+        }>;
         semester?: string;
         title: string;
       }
@@ -685,16 +694,6 @@ export type PublicApiType = {
       "public",
       { assessmentId: Id<"assessments"> },
       {
-        answers: Array<{
-          questionId: Id<"questions">;
-          savedAt: number;
-          value:
-            | { files: Array<{ content: string; name: string }>; type: "code" }
-            | { optionId: string; type: "single" }
-            | { optionIds: Array<string>; type: "multiple" }
-            | { text: string; type: "short" }
-            | { text: string; type: "essay" };
-        }>;
         assessment: {
           _id: Id<"assessments">;
           attemptsAllowed: number;
@@ -810,6 +809,24 @@ export type PublicApiType = {
           points?: number;
           questionId: Id<"questions">;
         }>;
+        serverNow: number;
+      }
+    >;
+    quizAnswers: FunctionReference<
+      "query",
+      "public",
+      { assessmentId: Id<"assessments"> },
+      {
+        answers: Array<{
+          questionId: Id<"questions">;
+          savedAt: number;
+          value:
+            | { files: Array<{ content: string; name: string }>; type: "code" }
+            | { optionId: string; type: "single" }
+            | { optionIds: Array<string>; type: "multiple" }
+            | { text: string; type: "short" }
+            | { text: string; type: "essay" };
+        }>;
       }
     >;
     startAttempt: FunctionReference<
@@ -875,7 +892,7 @@ export type PublicApiType = {
     whoami: FunctionReference<
       "query",
       "public",
-      { token: string },
+      { client?: string; token: string },
       null | {
         email: string;
         isSuperAdmin: boolean;
@@ -895,7 +912,7 @@ export type PublicApiType = {
     listCourses: FunctionReference<
       "query",
       "public",
-      { token: string },
+      { client?: string; token: string },
       Array<{
         _creationTime: number;
         _id: Id<"courses">;
@@ -910,23 +927,21 @@ export type PublicApiType = {
         };
         createdVia: "web" | "mcp";
         description?: string;
-        joinCode: string;
-        joinEnabled: boolean;
         locale: "ka" | "en";
         role: "owner" | "assistant" | "admin" | "super_admin";
         semester?: string;
         status: "draft" | "published" | "archived";
         students: number;
         title: string;
-        universityId: Id<"universities">;
-        universityName: { en: string; ka: string };
+        universityId?: Id<"universities">;
+        universityName?: { en: string; ka: string };
         updatedAt: number;
       }>
     >;
     getCourse: FunctionReference<
       "query",
       "public",
-      { courseId: Id<"courses">; token: string },
+      { client?: string; courseId: Id<"courses">; token: string },
       {
         _creationTime: number;
         _id: Id<"courses">;
@@ -965,16 +980,14 @@ export type PublicApiType = {
         };
         createdVia: "web" | "mcp";
         description?: string;
-        joinCode: string;
-        joinEnabled: boolean;
         locale: "ka" | "en";
         role: "owner" | "assistant" | "admin" | "super_admin";
         semester?: string;
         status: "draft" | "published" | "archived";
         students: number;
         title: string;
-        universityId: Id<"universities">;
-        universityName: { en: string; ka: string };
+        universityId?: Id<"universities">;
+        universityName?: { en: string; ka: string };
         updatedAt: number;
       }
     >;
@@ -982,8 +995,10 @@ export type PublicApiType = {
       "mutation",
       "public",
       {
+        client?: string;
         description?: string;
         locale?: "ka" | "en";
+        requestId?: string;
         semester?: string;
         title: string;
         token: string;
@@ -994,7 +1009,7 @@ export type PublicApiType = {
     getAssessment: FunctionReference<
       "query",
       "public",
-      { assessmentId: Id<"assessments">; token: string },
+      { assessmentId: Id<"assessments">; client?: string; token: string },
       {
         assessment: {
           _creationTime: number;
@@ -1163,15 +1178,18 @@ export type PublicApiType = {
           prompt: string;
           type: "single" | "multiple" | "short" | "essay" | "code";
         }>;
+        started: number;
       }
     >;
     createAssessmentAsAgent: FunctionReference<
       "mutation",
       "public",
       {
+        client?: string;
         courseId: Id<"courses">;
         instructions?: string;
         kind: "task" | "quiz" | "midterm" | "final";
+        requestId?: string;
         settings?: {
           attemptsAllowed?: number;
           closesAt?: number;
@@ -1192,6 +1210,7 @@ export type PublicApiType = {
       "public",
       {
         assessmentId: Id<"assessments">;
+        client?: string;
         instructions?: string;
         kind?: "task" | "quiz" | "midterm" | "final";
         settings?: {
@@ -1214,6 +1233,7 @@ export type PublicApiType = {
       "public",
       {
         assessmentId: Id<"assessments">;
+        client?: string;
         questions: Array<
           | {
               explanation?: string;
@@ -1340,6 +1360,7 @@ export type PublicApiType = {
               variables?: Array<{ name: string; values: Array<string> }>;
             }
         >;
+        requestId?: string;
         token: string;
       },
       Array<Id<"questions">>
@@ -1348,6 +1369,7 @@ export type PublicApiType = {
       "mutation",
       "public",
       {
+        client?: string;
         question:
           | {
               explanation?: string;
@@ -1481,7 +1503,7 @@ export type PublicApiType = {
     deleteQuestionAsAgent: FunctionReference<
       "mutation",
       "public",
-      { questionId: Id<"questions">; token: string },
+      { client?: string; questionId: Id<"questions">; token: string },
       null
     >;
     reorderQuestionsAsAgent: FunctionReference<
@@ -1489,6 +1511,7 @@ export type PublicApiType = {
       "public",
       {
         assessmentId: Id<"assessments">;
+        client?: string;
         questionIds: Array<Id<"questions">>;
         token: string;
       },
@@ -1498,6 +1521,7 @@ export type PublicApiType = {
       "query",
       "public",
       {
+        client?: string;
         question: {
           assets?: Array<{ alt?: string; name: string; url: string }>;
           explanation?: string;
@@ -1924,6 +1948,7 @@ export type PublicApiType = {
           attemptId: Id<"attempts">;
           autoSubmitted: boolean;
           graded: boolean;
+          gradingError?: string;
           integrity: {
             awayMs?: number;
             copyBlocked?: number;
@@ -2053,6 +2078,7 @@ export type PublicApiType = {
           text: string;
         }>;
         feedback?: string;
+        gradingError?: string;
         integrity: {
           awayMs?: number;
           copyBlocked?: number;
@@ -2288,8 +2314,8 @@ export type PublicApiType = {
           faculty?: string;
           group?: string;
           studentNumber?: string;
-          universityId: Id<"universities">;
-          universityName: { en: string; ka: string };
+          universityId?: Id<"universities">;
+          universityName?: { en: string; ka: string };
           year?: number;
         };
         studioIntroSeenAt?: number;
@@ -2305,15 +2331,15 @@ export type PublicApiType = {
       "mutation",
       "public",
       {
-        faculty: string;
+        faculty?: string;
         firstName: string;
-        group: string;
+        group?: string;
         honestyVersion: number;
         lastName: string;
         locale: "ka" | "en";
         studentNumber?: string;
-        universityId: Id<"universities">;
-        year: number;
+        universityId?: Id<"universities">;
+        year?: number;
       },
       null
     >;
@@ -2324,6 +2350,8 @@ export type PublicApiType = {
       "public",
       Record<string, never>,
       {
+        emailBlocked: boolean;
+        emailEnabled: boolean;
         items: Array<{
           _creationTime: number;
           _id: Id<"notifications">;
@@ -2349,6 +2377,319 @@ export type PublicApiType = {
       "mutation",
       "public",
       Record<string, never>,
+      null
+    >;
+    setEmailPreference: FunctionReference<
+      "mutation",
+      "public",
+      { enabled: boolean },
+      null
+    >;
+  };
+  groups: {
+    listMine: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _creationTime: number;
+        _id: Id<"groups">;
+        archived: boolean;
+        courses: Array<{
+          _id: Id<"courses">;
+          status: "draft" | "published" | "archived";
+          title: string;
+        }>;
+        description?: string;
+        inviteEnabled: boolean;
+        members: number;
+        name: string;
+        pendingInvites: number;
+        updatedAt: number;
+      }>
+    >;
+    get: FunctionReference<
+      "query",
+      "public",
+      { groupId: Id<"groups"> },
+      {
+        _creationTime: number;
+        _id: Id<"groups">;
+        archived: boolean;
+        courses: Array<{
+          _id: Id<"courses">;
+          status: "draft" | "published" | "archived";
+          title: string;
+        }>;
+        description?: string;
+        inviteCode: string;
+        inviteEnabled: boolean;
+        inviteList: Array<{
+          _id: Id<"groupInvites">;
+          createdAt: number;
+          email: string;
+          emailedAt?: number;
+          expiresAt: number;
+        }>;
+        memberList: Array<{
+          email: string;
+          joinedAt: number;
+          name: string;
+          userId: Id<"users">;
+          via: "link" | "email";
+        }>;
+        members: number;
+        name: string;
+        ownerName: string;
+        pendingInvites: number;
+        updatedAt: number;
+      }
+    >;
+    create: FunctionReference<
+      "mutation",
+      "public",
+      { description?: string; name: string },
+      Id<"groups">
+    >;
+    update: FunctionReference<
+      "mutation",
+      "public",
+      {
+        archived?: boolean;
+        description?: string;
+        groupId: Id<"groups">;
+        name?: string;
+      },
+      null
+    >;
+    newInviteLink: FunctionReference<
+      "mutation",
+      "public",
+      { groupId: Id<"groups"> },
+      string
+    >;
+    setInviteLink: FunctionReference<
+      "mutation",
+      "public",
+      { enabled: boolean; groupId: Id<"groups"> },
+      null
+    >;
+    invite: FunctionReference<
+      "mutation",
+      "public",
+      { emails: Array<string>; groupId: Id<"groups"> },
+      {
+        alreadyInvited: Array<string>;
+        alreadyMembers: Array<string>;
+        emailed: number;
+        invalid: Array<string>;
+        invited: Array<string>;
+      }
+    >;
+    resendInviteEmail: FunctionReference<
+      "mutation",
+      "public",
+      { inviteId: Id<"groupInvites"> },
+      boolean
+    >;
+    withdrawInvite: FunctionReference<
+      "mutation",
+      "public",
+      { inviteId: Id<"groupInvites"> },
+      null
+    >;
+    removeStudent: FunctionReference<
+      "mutation",
+      "public",
+      { groupId: Id<"groups">; userId: Id<"users"> },
+      null
+    >;
+    shareCourse: FunctionReference<
+      "mutation",
+      "public",
+      { courseId: Id<"courses">; groupId: Id<"groups"> },
+      null
+    >;
+    unshareCourse: FunctionReference<
+      "mutation",
+      "public",
+      { courseId: Id<"courses">; groupId: Id<"groups"> },
+      null
+    >;
+    forCourse: FunctionReference<
+      "query",
+      "public",
+      { courseId: Id<"courses"> },
+      {
+        available: Array<{ _id: Id<"groups">; members: number; name: string }>;
+        shared: Array<{
+          _id: Id<"groups">;
+          archived: boolean;
+          members: number;
+          name: string;
+        }>;
+      }
+    >;
+    preview: FunctionReference<
+      "query",
+      "public",
+      { code: string },
+      null | {
+        alreadyMember: boolean;
+        courseCount: number;
+        groupName: string;
+        teacher: string;
+      }
+    >;
+    join: FunctionReference<
+      "mutation",
+      "public",
+      { code: string },
+      Id<"groups">
+    >;
+    previewEmailInvite: FunctionReference<
+      "query",
+      "public",
+      { token: string },
+      null | {
+        alreadyMember: boolean;
+        courseCount: number;
+        email: string;
+        expiresAt: number;
+        groupName: string;
+        status: "pending" | "accepted" | "revoked";
+        teacher: string;
+      }
+    >;
+    acceptEmailInvite: FunctionReference<
+      "mutation",
+      "public",
+      { token: string },
+      Id<"groups">
+    >;
+    myInvites: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        expiresAt: number;
+        groupName: string;
+        teacher: string;
+        token: string;
+      }>
+    >;
+    mine: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _id: Id<"groups">;
+        joinedAt: number;
+        name: string;
+        teacher: string;
+      }>
+    >;
+    leave: FunctionReference<
+      "mutation",
+      "public",
+      { groupId: Id<"groups"> },
+      null
+    >;
+  };
+  drive: {
+    connection: FunctionReference<
+      "action",
+      "public",
+      Record<string, never>,
+      { available: boolean; connected: boolean; problem?: string }
+    >;
+  };
+  materials: {
+    forCourse: FunctionReference<
+      "query",
+      "public",
+      { courseId: Id<"courses">; now: number },
+      {
+        canEdit: boolean;
+        drive: null | {
+          error?: string;
+          folderUrl?: string;
+          mine: boolean;
+          ownerName: string;
+        };
+        driveAvailable: boolean;
+        weeks: Array<{
+          _id: Id<"materials">;
+          description?: string;
+          driveError?: string;
+          order: number;
+          publishedAt?: number;
+          shared: boolean;
+          source: "drive" | "link";
+          stale: boolean;
+          status: "draft" | "published";
+          syncing?: "folder" | "share" | "unshare";
+          title: string;
+          url?: string;
+        }>;
+      }
+    >;
+    addLink: FunctionReference<
+      "mutation",
+      "public",
+      {
+        courseId: Id<"courses">;
+        description?: string;
+        title: string;
+        url: string;
+      },
+      Id<"materials">
+    >;
+    addDrive: FunctionReference<
+      "mutation",
+      "public",
+      { courseId: Id<"courses">; description?: string; title: string },
+      Id<"materials">
+    >;
+    update: FunctionReference<
+      "mutation",
+      "public",
+      {
+        description?: string;
+        materialId: Id<"materials">;
+        title?: string;
+        url?: string;
+      },
+      null
+    >;
+    move: FunctionReference<
+      "mutation",
+      "public",
+      { direction: "up" | "down"; materialId: Id<"materials"> },
+      null
+    >;
+    publish: FunctionReference<
+      "mutation",
+      "public",
+      { materialId: Id<"materials"> },
+      null
+    >;
+    unpublish: FunctionReference<
+      "mutation",
+      "public",
+      { materialId: Id<"materials"> },
+      null
+    >;
+    remove: FunctionReference<
+      "mutation",
+      "public",
+      { materialId: Id<"materials"> },
+      null
+    >;
+    retry: FunctionReference<
+      "mutation",
+      "public",
+      { materialId: Id<"materials"> },
       null
     >;
   };

@@ -9,11 +9,20 @@ import { ComputerOnly } from "@/components/tasks/ComputerOnly";
 import { Button } from "@/components/ui/buttons";
 import { ArrowLeft, ArrowRight, Check, Clock, Flag, Monitor } from "@/components/ui/icons";
 import { errorMessage } from "@/lib/errors";
+import { loadDrafts, saveLabel, useAutosave, type Draft } from "@/lib/useAutosave";
 import { useIsMobile } from "@/lib/useDevice";
 import { AnswerInput } from "./AnswerInput";
-import { isAnswered, KIND_LABEL, type Answer, type QuestionId, type Quiz, type QuizActions, type SavedValue } from "./types";
+import {
+  isAnswered,
+  KIND_LABEL,
+  type Answer,
+  type QuestionId,
+  type Quiz,
+  type QuizActions,
+  type QuizAnswers,
+  type SavedValue,
+} from "./types";
 
-type SaveState = "saved" | "unsaved" | "saving" | "error";
 type Pending = { kind: "answer"; answer: Answer } | { kind: "code"; files: CodeFile[] };
 
 /** Choices save at once; typing waits for a pause. */
@@ -35,17 +44,6 @@ function clock(ms: number): string {
   return `${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
 }
 
-/** The current time, ticking once a second while `active`. */
-function useNow(active: boolean): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!active) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [active]);
-  return now;
-}
-
 /** Flags are only a reminder for the student, so they live in this browser tab. */
 function loadFlags(key: string): Set<string> {
   try {
@@ -55,14 +53,20 @@ function loadFlags(key: string): Set<string> {
   }
 }
 
+function toValue(item: Pending): SavedValue {
+  return item.kind === "answer" ? item.answer : { type: "code", files: item.files };
+}
+
 /** One attempt in progress: a question per page, a navigator, the timer and autosave. */
 export function QuizPlayer({
   quiz,
+  answers,
   studentName,
   locale,
   actions,
 }: {
   quiz: Quiz;
+  answers: QuizAnswers;
   studentName: string;
   locale: "ka" | "en";
   actions: QuizActions;
@@ -71,20 +75,72 @@ export function QuizPlayer({
   const attempt = quiz.attempt!;
   const closed = assessment.state === "closed";
   const flagKey = `kalami:flags:${attempt._id}`;
+  const draftKey = `kalami:draft:${attempt._id}`;
+
+  // The server's clock, as far as we can tell: from the quiz, then from every save that comes back.
+  // Only read in callbacks and effects, never while rendering.
+  const skew = useRef(0);
+  useEffect(() => {
+    skew.current = quiz.serverNow - Date.now();
+  }, [quiz.serverNow]);
+  const serverNow = useCallback(() => Date.now() + skew.current, []);
+
+  const autosave = useAutosave<QuestionId, Pending>({
+    draftKey,
+    now: serverNow,
+    save: async (questionId, item) => {
+      const result = item.kind === "answer" ? await actions.saveAnswer(questionId, item.answer) : await actions.saveCode(questionId, item.files);
+      skew.current = result.savedAt - Date.now();
+    },
+  });
+  const { adopt, isUnsaved } = autosave;
+
+  // Once, on mount: the server's answers, plus work this tab had on its way when it was
+  // last here if the server hasn't got something newer for that question.
+  const [initial] = useState(() => {
+    const map = new Map<QuestionId, SavedValue>(answers.map((a) => [a.questionId, a.value]));
+    const drafts = loadDrafts<QuestionId, Pending>(draftKey);
+    const kept = new Map<QuestionId, Draft<Pending>>();
+    for (const [questionId, draft] of drafts) {
+      const server = answers.find((a) => a.questionId === questionId)?.savedAt ?? -1;
+      if (draft.at > server) {
+        map.set(questionId, toValue(draft.item));
+        kept.set(questionId, draft);
+      }
+    }
+    return { values: map, drafts: kept };
+  });
+  const [values, setValues] = useState(initial.values);
+  // When this student last changed each answer here (server time), so a server value
+  // arriving later than our change can't roll it back.
+  const lastLocal = useRef(new Map<QuestionId, number>());
+  useEffect(() => {
+    for (const [questionId, draft] of initial.drafts) lastLocal.current.set(questionId, draft.at);
+    if (initial.drafts.size > 0) adopt([...initial.drafts]);
+  }, [initial, adopt]);
+
+  // Answers saved from another tab or device show up here, unless we're mid-change on that question.
+  useEffect(() => {
+    setValues((current) => {
+      let next: Map<QuestionId, SavedValue> | null = null;
+      for (const answer of answers) {
+        if (isUnsaved(answer.questionId)) continue;
+        if ((lastLocal.current.get(answer.questionId) ?? 0) > answer.savedAt) continue;
+        if (JSON.stringify(current.get(answer.questionId)) === JSON.stringify(answer.value)) continue;
+        next ??= new Map(current);
+        next.set(answer.questionId, answer.value);
+      }
+      return next ?? current;
+    });
+  }, [answers, isUnsaved]);
 
   const [index, setIndex] = useState(0);
-  const [values, setValues] = useState(() => new Map<QuestionId, SavedValue>(quiz.answers.map((a) => [a.questionId, a.value])));
   const [flags, setFlags] = useState(() => loadFlags(flagKey));
-  const [saveState, setSaveState] = useState<SaveState>("saved");
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [unsavedPrompt, setUnsavedPrompt] = useState<number[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
   const mobile = useIsMobile();
-  const pending = useRef(new Map<QuestionId, Pending>());
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const inFlight = useRef<Promise<void> | null>(null);
   const submitStarted = useRef(false);
 
   const integrity = useIntegrity({
@@ -94,88 +150,66 @@ export function QuizPlayer({
     report: actions.reportIntegrity,
   });
 
-  const flush = useCallback(async () => {
-    clearTimeout(timer.current);
-    if (inFlight.current) await inFlight.current;
-    if (pending.current.size === 0) return;
-    const batch = [...pending.current];
-    pending.current.clear();
-    setSaveState("saving");
-    const run = (async () => {
-      for (const [questionId, save] of batch) {
-        try {
-          if (save.kind === "answer") await actions.saveAnswer(questionId, save.answer);
-          else await actions.saveCode(questionId, save.files);
-        } catch (error) {
-          // Keep it for the next try, unless something newer replaced it.
-          if (!pending.current.has(questionId)) pending.current.set(questionId, save);
-          setSaveError(errorMessage(error));
-          setSaveState("error");
-          return;
-        }
-      }
-      setSaveError(null);
-      setSaveState(pending.current.size === 0 ? "saved" : "unsaved");
-    })();
-    inFlight.current = run;
-    await run;
-    inFlight.current = null;
-  }, [actions]);
-
   const queue = useCallback(
-    (questionId: QuestionId, save: Pending, value: SavedValue, delay: number) => {
-      setValues((current) => new Map(current).set(questionId, value));
-      pending.current.set(questionId, save);
-      setSaveState("unsaved");
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => void flush(), delay);
+    (questionId: QuestionId, save: Pending, delay: number) => {
+      lastLocal.current.set(questionId, serverNow());
+      setValues((current) => new Map(current).set(questionId, toValue(save)));
+      autosave.queue(questionId, save, delay);
     },
-    [flush],
+    [autosave, serverNow],
   );
 
-  const submit = useCallback(async () => {
-    if (submitStarted.current) return;
-    submitStarted.current = true;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await flush();
-      await actions.submit();
-    } catch (error) {
-      submitStarted.current = false;
-      setSubmitting(false);
-      setSubmitError(errorMessage(error));
-    }
-  }, [actions, flush]);
+  /**
+   * Saves whatever is left, then submits. Unless `force`, refuses while
+   * something still isn't confirmed and asks the student what to do.
+   */
+  const submit = useCallback(
+    async (force = false) => {
+      if (submitStarted.current) return;
+      setSubmitting(true);
+      setSubmitError(null);
+      const saved = await autosave.flush();
+      if (!saved && !force) {
+        const numbers = autosave
+          .unsavedKeys()
+          .map((id) => quiz.questions.findIndex((q) => q._id === id) + 1)
+          .filter((n) => n > 0)
+          .sort((a, b) => a - b);
+        setSubmitting(false);
+        setUnsavedPrompt(numbers);
+        return;
+      }
+      submitStarted.current = true;
+      try {
+        await actions.submit();
+        autosave.clear();
+      } catch (error) {
+        submitStarted.current = false;
+        setSubmitting(false);
+        setSubmitError(errorMessage(error));
+      }
+    },
+    [actions, autosave, quiz.questions],
+  );
 
-  // The server's deadline. When it passes, what is saved gets submitted.
+  // The server's deadline, on the server's clock. When it passes, what is saved gets submitted.
   const deadlineAt = attempt.deadlineAt;
-  const now = useNow(deadlineAt !== undefined);
+  const [now, setNow] = useState(() => quiz.serverNow);
+  useEffect(() => {
+    if (deadlineAt === undefined) return;
+    const id = setInterval(() => setNow(serverNow()), 1000);
+    return () => clearInterval(id);
+  }, [deadlineAt, serverNow]);
   const remaining = deadlineAt === undefined ? undefined : deadlineAt - now;
   const timeUp = remaining !== undefined && remaining <= 0;
   useEffect(() => {
     if (deadlineAt === undefined) return;
-    const delay = Math.max(0, deadlineAt - Date.now());
+    const delay = Math.max(0, deadlineAt - serverNow());
     // setTimeout can't wait longer than ~24 days; the server submits those anyway.
     if (delay > 2_000_000_000) return;
-    const id = setTimeout(() => void submit(), delay);
+    const id = setTimeout(() => void submit(true), delay);
     return () => clearTimeout(id);
-  }, [deadlineAt, submit]);
-
-  // Save on the way out; warn if a save is still pending when the tab closes.
-  useEffect(() => {
-    const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (pending.current.size > 0) {
-        void flush();
-        event.preventDefault();
-      }
-    };
-    window.addEventListener("beforeunload", beforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", beforeUnload);
-      void flush();
-    };
-  }, [flush]);
+  }, [deadlineAt, serverNow, submit]);
 
   // Once the attempt is over, give the screen back.
   useEffect(
@@ -208,7 +242,7 @@ export function QuizPlayer({
   }
 
   function go(to: number) {
-    void flush();
+    void autosave.flush();
     setIndex(Math.max(0, Math.min(quiz.questions.length - 1, to)));
   }
 
@@ -239,14 +273,8 @@ export function QuizPlayer({
             {clock(remaining)}
           </span>
         )}
-        <span aria-live="polite" className={`mr-auto text-sm sm:mr-0 ${saveState === "error" ? "text-red-pen" : "text-graphite"}`}>
-          {saveState === "saved"
-            ? "Saved"
-            : saveState === "saving"
-              ? "Saving…"
-              : saveState === "unsaved"
-                ? "Unsaved"
-                : (saveError ?? "Couldn't save. Retrying when you answer.")}
+        <span aria-live="polite" className={`mr-auto text-sm sm:mr-0 ${autosave.state === "error" ? "text-red-pen" : "text-graphite"}`}>
+          {saveLabel(autosave.state, autosave.error, autosave.unsavedCount)}
         </span>
         <Button size="sm" onClick={() => setConfirming(true)} disabled={locked}>
           <Check className="size-4" />
@@ -263,18 +291,21 @@ export function QuizPlayer({
       <nav aria-label="Questions" className="no-scrollbar flex gap-1.5 overflow-x-auto rounded-full bg-panel p-1.5">
         {quiz.questions.map((q, i) => {
           const answered = isAnswered(values.get(q._id));
+          const unsaved = autosave.unsavedCount > 0 && isUnsaved(q._id);
           const flagged = flags.has(q._id);
           return (
             <button
               key={q._id}
               onClick={() => go(i)}
               aria-current={i === index ? "step" : undefined}
-              aria-label={`Question ${i + 1}${answered ? ", answered" : ""}${flagged ? ", flagged" : ""}`}
+              aria-label={`Question ${i + 1}${answered ? ", answered" : ""}${unsaved ? ", not saved yet" : ""}${flagged ? ", flagged" : ""}`}
               className={`relative grid size-9 shrink-0 place-items-center rounded-full text-sm font-semibold tabular-nums transition ${
                 i === index
                   ? "bg-ink text-paper"
                   : answered
-                    ? "bg-highlighter text-ink"
+                    ? unsaved
+                      ? "bg-highlighter/50 text-ink ring-2 ring-inset ring-warn"
+                      : "bg-highlighter text-ink"
                     : "bg-card text-graphite hover:text-ink"
               }`}
             >
@@ -323,11 +354,9 @@ export function QuizPlayer({
                 readOnly={locked}
                 locale={locale}
                 watermark={assessment.integrityLevel === "off" ? undefined : studentName}
-                onFilesChange={(files) =>
-                  queue(question._id, { kind: "code", files }, { type: "code", files }, CODE_SAVE_MS)
-                }
+                onFilesChange={(files) => queue(question._id, { kind: "code", files }, CODE_SAVE_MS)}
                 onIntegrity={(event: IntegrityEvent) => integrity.count(event)}
-                onSaveNow={() => void flush()}
+                onSaveNow={() => void autosave.flush()}
               />
             </div>
           ) : (
@@ -336,12 +365,7 @@ export function QuizPlayer({
               value={value}
               disabled={locked}
               onChange={(answer) =>
-                queue(
-                  question._id,
-                  { kind: "answer", answer },
-                  answer,
-                  answer.type === "short" || answer.type === "essay" ? TEXT_SAVE_MS : 0,
-                )
+                queue(question._id, { kind: "answer", answer }, answer.type === "short" || answer.type === "essay" ? TEXT_SAVE_MS : 0)
               }
               onBlocked={(event) => integrity.count(event)}
             />
@@ -377,31 +401,75 @@ export function QuizPlayer({
         )}
       </footer>
 
-      {(confirming || timeUp) && (
+      {(confirming || timeUp || unsavedPrompt !== null) && (
         <div className="fixed inset-0 z-30 grid place-items-center bg-ink/30 p-4 backdrop-blur-sm">
           <div role="dialog" aria-modal="true" aria-labelledby="submit-title" className="w-full max-w-md rounded-[2rem] bg-paper p-7 shadow-xl">
-            <h2 id="submit-title" className="text-2xl font-medium tracking-tight">
-              {timeUp ? "Time’s up" : "Submit your answers?"}
-            </h2>
-            <p className="mt-2 text-[15px] leading-relaxed text-graphite">
-              {timeUp
-                ? submitError
-                  ? "We couldn't submit from here, but your saved answers are submitted for you within a minute."
-                  : "Submitting what you saved…"
-                : unanswered > 0
-                  ? `${unanswered} question${unanswered === 1 ? " has" : "s have"} no answer. You can’t change anything afterwards.`
-                  : "Every question has an answer. You can’t change anything afterwards."}
-              {!timeUp && flags.size > 0 && ` ${flags.size} still flagged for review.`}
-            </p>
-            {!timeUp && (
-              <div className="mt-6 flex flex-wrap justify-end gap-2">
-                <Button variant="ghost" onClick={() => setConfirming(false)} disabled={submitting}>
-                  Keep working
-                </Button>
-                <Button variant="lime" onClick={() => void submit()} disabled={submitting}>
-                  {submitting ? "Submitting…" : "Yes, submit"}
-                </Button>
-              </div>
+            {unsavedPrompt !== null && !timeUp ? (
+              <>
+                <h2 id="submit-title" className="text-2xl font-medium tracking-tight">
+                  {unsavedPrompt.length === 1 ? "One answer isn’t saved yet" : `${unsavedPrompt.length} answers aren’t saved yet`}
+                </h2>
+                <p className="mt-2 text-[15px] leading-relaxed text-graphite">
+                  {unsavedPrompt.length > 0 && `Question${unsavedPrompt.length === 1 ? "" : "s"} ${unsavedPrompt.join(", ")}. `}
+                  {autosave.error ?? "Kalami couldn’t reach the server."} Try again, or submit without them.
+                </p>
+                <div className="mt-6 flex flex-wrap justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setUnsavedPrompt(null)}>
+                    Keep working
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setUnsavedPrompt(null);
+                      void submit(false);
+                    }}
+                  >
+                    Try again
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={() => {
+                      setUnsavedPrompt(null);
+                      void submit(true);
+                    }}
+                  >
+                    Submit without them
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="submit-title" className="text-2xl font-medium tracking-tight">
+                  {timeUp ? "Time’s up" : "Submit your answers?"}
+                </h2>
+                <p className="mt-2 text-[15px] leading-relaxed text-graphite">
+                  {timeUp
+                    ? submitError
+                      ? "We couldn't submit from here, but your saved answers are submitted for you within a minute."
+                      : "Submitting what you saved…"
+                    : unanswered > 0
+                      ? `${unanswered} question${unanswered === 1 ? " has" : "s have"} no answer. You can’t change anything afterwards.`
+                      : "Every question has an answer. You can’t change anything afterwards."}
+                  {!timeUp && flags.size > 0 && ` ${flags.size} still flagged for review.`}
+                </p>
+                {!timeUp && (
+                  <div className="mt-6 flex flex-wrap justify-end gap-2">
+                    <Button variant="ghost" onClick={() => setConfirming(false)} disabled={submitting}>
+                      Keep working
+                    </Button>
+                    <Button
+                      variant="lime"
+                      onClick={() => {
+                        setConfirming(false);
+                        void submit(false);
+                      }}
+                      disabled={submitting}
+                    >
+                      {submitting ? "Submitting…" : "Yes, submit"}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -8,16 +8,18 @@ import type { api } from "@/convex-api/api";
 export type Quiz = FunctionReturnType<typeof api.learn.quiz>;
 export type QuizQuestion = Quiz["questions"][number];
 export type QuestionId = QuizQuestion["_id"];
+/** The saved answers, kept apart from the quiz so an autosave doesn't re-send the questions. */
+export type QuizAnswers = FunctionReturnType<typeof api.learn.quizAnswers>["answers"];
 /** What the student saved, code included. */
-export type SavedValue = Quiz["answers"][number]["value"];
+export type SavedValue = QuizAnswers[number]["value"];
 /** What the quiz player sends for every type except code. */
 export type Answer = FunctionArgs<typeof api.learn.saveQuizAnswer>["answer"];
 
 /** The backend calls the player needs; the page wires them to Convex, the dev demo to local state. */
 export type QuizActions = {
   start: () => Promise<unknown>;
-  saveAnswer: (questionId: QuestionId, answer: Answer) => Promise<unknown>;
-  saveCode: (questionId: QuestionId, files: CodeFile[]) => Promise<unknown>;
+  saveAnswer: (questionId: QuestionId, answer: Answer) => Promise<{ savedAt: number }>;
+  saveCode: (questionId: QuestionId, files: CodeFile[]) => Promise<{ savedAt: number }>;
   submit: () => Promise<unknown>;
   reportIntegrity: (counts: Counts) => Promise<unknown>;
 };

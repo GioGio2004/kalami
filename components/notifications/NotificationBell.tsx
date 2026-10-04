@@ -15,11 +15,13 @@ import { NotificationsPanel, type Inbox } from "./NotificationsPanel";
 export function Bell({
   inbox,
   onMarkAllRead,
+  onSetEmail,
   defaultOpen = false,
   now: fixedNow,
 }: {
   inbox: Inbox | undefined;
   onMarkAllRead: () => void;
+  onSetEmail: (enabled: boolean) => void;
   defaultOpen?: boolean;
   /** For the gallery, so "2 hours ago" renders the same on the server and in the browser. */
   now?: number;
@@ -89,7 +91,14 @@ export function Bell({
           )}
         </AnimatePresence>
       </button>
-      <NotificationsPanel inbox={inbox} now={openedAt} open={open} onClose={close} onMarkAllRead={onMarkAllRead} />
+      <NotificationsPanel
+        inbox={inbox}
+        now={openedAt}
+        open={open}
+        onClose={close}
+        onMarkAllRead={onMarkAllRead}
+        onSetEmail={onSetEmail}
+      />
     </div>
   );
 }
@@ -100,8 +109,15 @@ export function NotificationBell() {
   const ready = current.status === "ready" && !current.me.needsOnboarding;
   const inbox = useQuery(api.notifications.inbox, ready ? {} : "skip");
   const markAllRead = useMutation(api.notifications.markAllRead);
+  const setEmailPreference = useMutation(api.notifications.setEmailPreference);
   const onMarkAllRead = useCallback(() => {
     markAllRead().catch(() => undefined);
   }, [markAllRead]);
-  return <Bell inbox={inbox} onMarkAllRead={onMarkAllRead} />;
+  const onSetEmail = useCallback(
+    (enabled: boolean) => {
+      setEmailPreference({ enabled }).catch(() => undefined);
+    },
+    [setEmailPreference],
+  );
+  return <Bell inbox={inbox} onMarkAllRead={onMarkAllRead} onSetEmail={onSetEmail} />;
 }

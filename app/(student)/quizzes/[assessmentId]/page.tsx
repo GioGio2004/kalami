@@ -13,7 +13,9 @@ import { api } from "@/convex-api/api";
 export default function QuizPage() {
   const params = useParams<{ assessmentId: string }>();
   const assessmentId = params.assessmentId as GenericId<"assessments">;
+  // Two subscriptions: the quiz itself (stable during an attempt) and the answers (change on every save).
   const quiz = useQuery(api.learn.quiz, { assessmentId });
+  const answers = useQuery(api.learn.quizAnswers, { assessmentId });
   const current = useCurrentUser();
   const start = useMutation(api.learn.startAttempt);
   const saveAnswer = useMutation(api.learn.saveQuizAnswer);
@@ -32,9 +34,9 @@ export default function QuizPage() {
     [assessmentId, start, saveAnswer, saveCode, submit, report],
   );
 
-  if (quiz === undefined || current.status !== "ready") {
+  if (quiz === undefined || answers === undefined || current.status !== "ready") {
     return <LoadingScreen label="Opening" />;
   }
   const name = [current.me.firstName, current.me.lastName].filter(Boolean).join(" ") || current.me.email;
-  return <QuizView quiz={quiz} studentName={name} locale={current.me.locale} actions={actions} />;
+  return <QuizView quiz={quiz} answers={answers.answers} studentName={name} locale={current.me.locale} actions={actions} />;
 }

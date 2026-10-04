@@ -67,12 +67,15 @@ export function NotificationsPanel({
   open,
   onClose,
   onMarkAllRead,
+  onSetEmail,
 }: {
   inbox: Inbox | undefined;
   now: number;
   open: boolean;
   onClose: () => void;
   onMarkAllRead: () => void;
+  /** The switch at the bottom: emails about new work and deadlines. */
+  onSetEmail: (enabled: boolean) => void;
 }) {
   const mobile = useIsMobile();
 
@@ -134,6 +137,27 @@ export function NotificationsPanel({
           </ul>
         )}
       </div>
+      {inbox !== undefined && (
+        <footer className="border-t border-line px-5 py-3">
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={inbox.emailEnabled && !inbox.emailBlocked}
+              disabled={inbox.emailBlocked}
+              onChange={(event) => onSetEmail(event.target.checked)}
+              className="mt-0.5 size-4 shrink-0 accent-ink"
+            />
+            <span className="min-w-0">
+              <span className="block font-medium">Email me about new work and deadlines</span>
+              <span className="block text-xs leading-relaxed text-graphite">
+                {inbox.emailBlocked
+                  ? "Paused: an email to your address bounced. Ask your lecturer to check it with Kalami."
+                  : "Sent to the address you signed up with. Every email has a link to stop them."}
+              </span>
+            </span>
+          </label>
+        </footer>
+      )}
     </div>
   );
 

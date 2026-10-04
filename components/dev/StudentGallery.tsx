@@ -139,6 +139,8 @@ const useSampleCourse: UseCourse = (id) => (id === courseId ? course : emptyCour
 
 const inbox: Inbox = {
   unread: 2,
+  emailEnabled: true,
+  emailBlocked: false,
   items: [
     {
       _id: id<"notifications">("n1"),
@@ -189,7 +191,13 @@ function studentPage(children: ReactNode, { bellOpen = false, empty = false } = 
         ]}
         actions={
           <>
-            <Bell inbox={empty ? { unread: 0, items: [] } : inbox} onMarkAllRead={() => undefined} defaultOpen={bellOpen} now={NOW} />
+            <Bell
+              inbox={empty ? { unread: 0, items: [], emailEnabled: true, emailBlocked: false } : inbox}
+              onMarkAllRead={() => undefined}
+              onSetEmail={() => undefined}
+              defaultOpen={bellOpen}
+              now={NOW}
+            />
             {fakeAvatar}
           </>
         }

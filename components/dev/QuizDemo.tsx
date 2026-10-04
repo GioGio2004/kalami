@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { QuizView } from "@/components/quiz/QuizView";
-import type { Quiz, QuizActions, SavedValue } from "@/components/quiz/types";
+import type { Quiz, QuizActions, QuizAnswers, SavedValue } from "@/components/quiz/types";
 
 // The quiz player with sample questions and no backend: start, answer, submit,
 // see the results. Development only (app/dev/quiz).
@@ -76,6 +76,7 @@ function points(questionId: string, value: SavedValue | undefined, max: number):
 
 export function QuizDemo() {
   const [level, setLevel] = useState<Quiz["assessment"]["integrityLevel"]>("standard");
+  const [answers, setAnswers] = useState<QuizAnswers>([]);
   const [quiz, setQuiz] = useState<Quiz>(() => ({
     course: { _id: id<"courses">("c1"), title: "HTML & CSS Fundamentals" },
     assessment: {
@@ -96,15 +97,16 @@ export function QuizDemo() {
     attemptsUsed: 0,
     attempt: null,
     questions: [],
-    answers: [],
     review: [],
     comments: [],
+    serverNow: Date.now(),
   }));
 
   const actions: QuizActions = useMemo(
     () => ({
       start: async () => {
         const startedAt = Date.now();
+        setAnswers([]);
         setQuiz((q) => ({
           ...q,
           attemptsUsed: q.attemptsUsed + 1,
@@ -119,22 +121,25 @@ export function QuizDemo() {
             pendingGrading: false,
           },
           questions: QUESTIONS,
-          answers: [],
           review: [],
+          serverNow: Date.now(),
         }));
       },
       saveAnswer: async (questionId, answer) => {
         await new Promise((resolve) => setTimeout(resolve, 250));
-        setQuiz((q) => ({
-          ...q,
-          answers: [...q.answers.filter((a) => a.questionId !== questionId), { questionId, value: answer, savedAt: Date.now() }],
-        }));
+        const savedAt = Date.now();
+        setAnswers((a) => [...a.filter((x) => x.questionId !== questionId), { questionId, value: answer, savedAt }]);
+        return { savedAt };
       },
-      saveCode: async () => undefined,
+      saveCode: async (questionId, files) => {
+        const savedAt = Date.now();
+        setAnswers((a) => [...a.filter((x) => x.questionId !== questionId), { questionId, value: { type: "code", files }, savedAt }]);
+        return { savedAt };
+      },
       submit: async () => {
         setQuiz((q) => {
           const review = QUESTIONS.map((question) => {
-            const value = q.answers.find((a) => a.questionId === question._id)?.value;
+            const value = answers.find((a) => a.questionId === question._id)?.value;
             return {
               questionId: question._id,
               points: points(question._id, value, question.points),
@@ -144,9 +149,10 @@ export function QuizDemo() {
             };
           });
           const score = review.reduce((sum, r) => sum + (r.points ?? 0), 0);
-          const essay = q.answers.find((a) => a.questionId === "q4")?.value;
+          const essay = answers.find((a) => a.questionId === "q4")?.value;
           return {
             ...q,
+            assessment: { ...q.assessment, state: "closed" },
             attempt: q.attempt && {
               ...q.attempt,
               status: "submitted",
@@ -161,7 +167,7 @@ export function QuizDemo() {
       },
       reportIntegrity: async () => undefined,
     }),
-    [],
+    [answers],
   );
 
   return (
@@ -181,7 +187,7 @@ export function QuizDemo() {
           </button>
         ))}
       </div>
-      <QuizView quiz={quiz} studentName="Nino Beridze" locale="en" actions={actions} />
+      <QuizView quiz={quiz} answers={answers} studentName="Nino Beridze" locale="en" actions={actions} />
     </main>
   );
 }

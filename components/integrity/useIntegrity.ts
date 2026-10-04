@@ -6,13 +6,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * The integrity collector (KALAMI.md §6): counters, never recordings.
  *
  * - every level: blocked shortcuts (print, view source, devtools)
- * - standard and strict: tab switches and time away, window shrinking
- *   (split screen), the task open in a second tab
+ * - standard and strict: tab switches and time away, the task open in a
+ *   second tab
  * - strict: fullscreen required; leaving it is counted, and the work is
  *   hidden while the window is out of focus
  *
  * Counters are sent in small batches every few seconds while they change,
- * and at once for serious events.
+ * and at once for serious events. They are what this browser reports: advice
+ * for the lecturer, never proof, and a few things that happen to honest
+ * students (a notification popping up, a laptop going to sleep) are filtered
+ * out below rather than counted against them.
  */
 
 export type Level = "off" | "standard" | "strict";
@@ -27,10 +30,13 @@ export type Counts = {
   fullscreenExits?: number;
   shortcutsBlocked?: number;
   multiTab?: number;
-  resizes?: number;
 };
 
 const FLUSH_MS = 10_000;
+/** Focus lost and back within this isn't a tab switch: a notification, Ctrl+F, a password manager. */
+const SHORT_BLUR_MS = 2_000;
+/** One episode away counts at most this much: a closed laptop isn't ten hours of cheating. */
+const MAX_AWAY_PER_EPISODE_MS = 10 * 60_000;
 
 function isBlockedShortcut(event: KeyboardEvent): boolean {
   const key = event.key.toLowerCase();
@@ -112,20 +118,24 @@ export function useIntegrity({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [enabled, count]);
 
-  // Leaving the tab or the window.
+  // Leaving the tab or the window. The work hides at once (strict); the counters
+  // only move once the student has really been gone for a moment.
   useEffect(() => {
     if (!watching) return;
     const leave = () => {
       if (awaySince.current !== null) return;
       awaySince.current = Date.now();
       setAway(true);
-      count("tabSwitches");
     };
     const back = () => {
       if (awaySince.current === null) return;
-      count("awayMs", Date.now() - awaySince.current);
+      const gone = Date.now() - awaySince.current;
       awaySince.current = null;
       setAway(false);
+      if (gone >= SHORT_BLUR_MS) {
+        count("tabSwitches");
+        count("awayMs", Math.min(gone, MAX_AWAY_PER_EPISODE_MS));
+      }
     };
     const onVisibility = () => (document.hidden ? leave() : back());
     const onBlur = () => {
@@ -134,23 +144,13 @@ export function useIntegrity({
         if (!document.hasFocus() && document.activeElement?.tagName !== "IFRAME") leave();
       }, 0);
     };
-    let width = window.innerWidth;
-    // On a touch screen the width shrinks when the phone turns upright, which isn't a split screen.
-    const touchOnly = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-    const onResize = () => {
-      // Shrinking a lot usually means a split screen next to something else.
-      if (!touchOnly && window.innerWidth < width * 0.8) count("resizes");
-      width = window.innerWidth;
-    };
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
     window.addEventListener("focus", back);
-    window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onBlur);
       window.removeEventListener("focus", back);
-      window.removeEventListener("resize", onResize);
       back();
     };
   }, [watching, count]);
