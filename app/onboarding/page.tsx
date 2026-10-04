@@ -1,13 +1,8 @@
-"use client";
+import { OnboardingScreen } from "@/components/OnboardingForm";
+import { joinReturnPath } from "@/lib/urls";
 
-import { OnboardingForm } from "@/components/OnboardingForm";
-import { Redirect } from "@/components/Redirect";
-import { StudentAccount } from "@/components/StudentAccount";
-
-export default function OnboardingPage() {
-  return (
-    <StudentAccount>
-      {(me) => (me.needsOnboarding ? <OnboardingForm me={me} /> : <Redirect to="/dashboard" />)}
-    </StudentAccount>
-  );
+/** `?next=/join/…` brings a student back to the invite they came from once setup is done. */
+export default async function OnboardingPage({ searchParams }: PageProps<"/onboarding">) {
+  const { next } = await searchParams;
+  return <OnboardingScreen next={joinReturnPath(next)} />;
 }

@@ -9,7 +9,7 @@ import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
 import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/buttons";
 import { ExpandableCard } from "@/components/ui/ExpandableCard";
-import { ArrowRight, Camera, Check, Clock, Code, Mic, Monitor, Shield } from "@/components/ui/icons";
+import { ArrowRight, Camera, Check, Clock, Code, Mail, Mic, Monitor, Shield, Users } from "@/components/ui/icons";
 import type { api } from "@/convex-api/api";
 import { errorMessage } from "@/lib/errors";
 import { formatShort } from "@/lib/time";
@@ -25,30 +25,42 @@ function greetingFor(hour: number) {
 }
 
 const NEXT_STEPS = [
-  { title: "Join a course", text: "With the code your lecturer gives you." },
+  { title: "Join your class", text: "With the invite link or code your teacher gives you." },
   { title: "Take quizzes and exams", text: "They open right here, in your notebook." },
   { title: "Know the rules first", text: "Integrity rules are explained before each exam." },
 ];
 
 type UpNextItem = FunctionReturnType<typeof api.learn.upNext>[number];
 export type JoinResult = FunctionReturnType<typeof api.learn.join>;
+export type MyInvite = FunctionReturnType<typeof api.groups.myInvites>[number];
+export type MyGroup = FunctionReturnType<typeof api.groups.mine>[number];
 
 /**
- * The student's home: one column of cards that open on tap. What's due comes
- * first, then each course, then the join code and the honesty notice.
- * `courses` and `upNext` are undefined while loading.
+ * The student's home: one column of cards that open on tap. Open group invites
+ * sit on top; then what's due, each course, the join code, the student's groups
+ * and the honesty notice. `courses`, `upNext`, `invites` and `groups` are
+ * undefined while loading.
  */
 export function DashboardView({
   me,
   courses,
   upNext,
+  invites,
+  groups,
   onJoin,
+  onAcceptInvite,
+  onLeaveGroup,
   useCourse,
 }: {
   me: Me;
   courses: MyCourse[] | undefined;
   upNext: UpNextItem[] | undefined;
+  /** Open invites to the student's own address, expired ones already left out. */
+  invites: MyInvite[] | undefined;
+  groups: MyGroup[] | undefined;
   onJoin: (code: string) => Promise<JoinResult>;
+  onAcceptInvite: (token: string) => Promise<unknown>;
+  onLeaveGroup: (groupId: MyGroup["_id"]) => Promise<unknown>;
   useCourse: UseCourse;
 }) {
   const [greeting] = useState(() => greetingFor(new Date().getHours()));
@@ -61,7 +73,7 @@ export function DashboardView({
   const student = me.student;
   const facts = student
     ? [
-        student.universityName[me.locale],
+        student.universityName?.[me.locale],
         student.faculty,
         student.group && `Group ${student.group}`,
         student.year && `Year ${student.year}`,
@@ -72,6 +84,18 @@ export function DashboardView({
 
   return (
     <Enter kind="scale" className="rounded-[2.25rem] bg-panel px-3 pb-3 pt-8 sm:rounded-[2.75rem] sm:px-10 sm:pb-8 sm:pt-14 lg:px-12">
+      {invites !== undefined && invites.length > 0 && (
+        // Pulled up into the panel's top padding, so the greeting keeps its place.
+        <Enter kind="drop" className="-mt-5 mb-6 sm:-mt-6 sm:mb-8">
+          <ul aria-label="Group invites" className="grid gap-2">
+            {invites.map((invite) => (
+              <li key={invite.token}>
+                <InviteStrip invite={invite} onAccept={onAcceptInvite} />
+              </li>
+            ))}
+          </ul>
+        </Enter>
+      )}
       <div className="px-2 sm:px-1">
         <Enter as="p" kind="left" delay={0.2} className="-rotate-2 font-hand text-[1.8rem] leading-none text-graphite">
           {greeting},
@@ -164,6 +188,17 @@ export function DashboardView({
               </div>
             </ExpandableCard>
           </RevealItem>
+
+          {groups !== undefined && groups.length > 0 && (
+            <RevealItem kind="scale">
+              <GroupsCard
+                groups={groups}
+                onLeave={onLeaveGroup}
+                open={isOpen("groups", false)}
+                onToggle={toggle("groups", false)}
+              />
+            </RevealItem>
+          )}
 
           <RevealItem kind="scale">
             <ExpandableCard
@@ -275,6 +310,151 @@ function UpNextCard({ items, open, onToggle }: { items: UpNextItem[] | undefined
         )}
       </div>
     </ExpandableCard>
+  );
+}
+
+/** "Nino invited you to Web Dev 101", with Accept. Accepted invites leave the list by themselves. */
+function InviteStrip({ invite, onAccept }: { invite: MyInvite; onAccept: (token: string) => Promise<unknown> }) {
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  async function accept() {
+    setState("busy");
+    setError(null);
+    try {
+      await onAccept(invite.token);
+      setState("done");
+    } catch (caught) {
+      setError(errorMessage(caught));
+      setState("idle");
+    }
+  }
+
+  return (
+    <div className="rounded-[1.6rem] bg-highlighter p-4 sm:rounded-[2rem] sm:p-5">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-ink text-highlighter">
+          <Mail className="size-5" />
+        </span>
+        <p className="min-w-0 flex-1 basis-44 text-[15px] leading-snug">
+          <span className="font-medium">{invite.teacher}</span> invited you to{" "}
+          <span className="font-medium">{invite.groupName}</span>
+        </p>
+        <Button onClick={accept} disabled={state !== "idle"} className="max-sm:w-full">
+          {state === "done" ? (
+            <>
+              <Check className="size-4" />
+              Joined
+            </>
+          ) : state === "busy" ? (
+            "Accepting…"
+          ) : (
+            "Accept"
+          )}
+        </Button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-3 text-sm font-medium text-red-pen">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** The groups the student is in, each with a Leave that asks first. */
+function GroupsCard({
+  groups,
+  onLeave,
+  open,
+  onToggle,
+}: {
+  groups: MyGroup[];
+  onLeave: (groupId: MyGroup["_id"]) => Promise<unknown>;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <ExpandableCard
+      icon={<Users className="size-5" />}
+      title="My groups"
+      summary={groups.map((group) => group.name).join(" · ")}
+      aside={
+        <span className="hidden shrink-0 rounded-full bg-panel px-2.5 py-1 text-xs font-semibold tabular-nums sm:inline">
+          {groups.length}
+        </span>
+      }
+      open={open}
+      onToggle={onToggle}
+    >
+      <div className="border-t border-line pt-4">
+        <p className="text-sm leading-relaxed text-graphite">
+          Courses your teachers share with a group show up here by themselves.
+        </p>
+        <ul className="mt-3 space-y-2">
+          {groups.map((group) => (
+            <li key={group._id}>
+              <GroupRow group={group} onLeave={onLeave} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </ExpandableCard>
+  );
+}
+
+function GroupRow({ group, onLeave }: { group: MyGroup; onLeave: (groupId: MyGroup["_id"]) => Promise<unknown> }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function leave() {
+    setBusy(true);
+    setError(null);
+    try {
+      // On success the group leaves the list and this row unmounts.
+      await onLeave(group._id);
+    } catch (caught) {
+      setError(errorMessage(caught));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-panel/60 p-4">
+      <div className="flex items-center gap-3">
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium leading-snug">{group.name}</span>
+          <span className="mt-0.5 block truncate text-sm text-graphite">{group.teacher}</span>
+        </span>
+        {!confirming && (
+          <Button variant="outline" size="sm" onClick={() => setConfirming(true)}>
+            Leave
+          </Button>
+        )}
+      </div>
+      {confirming && (
+        <div className="mt-3 border-t border-line pt-3">
+          <p className="text-sm leading-relaxed text-graphite">
+            Leave {group.name}? Courses you only have through this group leave your dashboard. To
+            come back later, ask your teacher for the invite link.
+          </p>
+          {error && (
+            <p role="alert" className="mt-2 text-sm font-medium text-red-pen">
+              {error}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="danger" size="sm" onClick={leave} disabled={busy}>
+              {busy ? "Leaving…" : "Leave group"}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setConfirming(false)} disabled={busy}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

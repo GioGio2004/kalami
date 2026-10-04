@@ -11,14 +11,14 @@ export default function SignUpPage() {
           Start your <Scribble>notebook</Scribble>.
         </>
       }
-      body="One account for every course your university runs on Kalami. It takes about a minute."
+      body="One account for every course you take on Kalami, at university, school or with a tutor. It takes about a minute."
       visual={
         <StepsCard
           title="Three short steps"
           done={0}
           steps={[
             { title: "Create your account", text: "Email or Google, nothing else." },
-            { title: "Tell us your university", text: "Faculty, group and year." },
+            { title: "Tell us where you study", text: "University details, or skip them." },
             { title: "Read the honesty notice", text: "What is measured, and what never is." },
           ]}
         />
@@ -26,7 +26,7 @@ export default function SignUpPage() {
     >
       <div className="flex flex-col items-center gap-4">
         <p className="max-w-sm text-center text-sm text-graphite">
-          Have a university email? Use it here, so your lecturer can recognise you.
+          Use the email your teacher or university knows, so their invites reach you.
         </p>
         <SignUp fallbackRedirectUrl="/onboarding" />
       </div>

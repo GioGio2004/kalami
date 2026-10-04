@@ -9,7 +9,7 @@ import { HonestyNoticeArticle, type HonestyNotice } from "@/components/HonestyNo
 import { Enter } from "@/components/motion/Reveal";
 import { ArrowButton, Button } from "@/components/ui/buttons";
 import { CheckCard, Field, FormError, Segmented, TextInput } from "@/components/ui/form";
-import { ArrowLeft, Building, Check, Lock } from "@/components/ui/icons";
+import { ArrowLeft, Building, Check, Lock, Notebook } from "@/components/ui/icons";
 import { api } from "@/convex-api/api";
 import { errorMessage } from "@/lib/errors";
 
@@ -22,12 +22,22 @@ type Draft = {
   firstName: string;
   lastName: string;
   locale: Locale;
+  /** Null until the student picks; schools and private lessons skip the university details. */
+  atUniversity: boolean | null;
   universityId: string;
   faculty: string;
   group: string;
   year: number;
   studentNumber: string;
 };
+
+/** The university a student already has. It can't be removed or changed here. */
+function lockedUniversityOf(student: Me["student"]) {
+  if (!student || student.universityId === undefined || student.universityName === undefined) {
+    return null;
+  }
+  return { id: student.universityId, name: student.universityName };
+}
 
 // Steps slide in from the side you are heading towards and out the other way.
 const slide: Variants = {
@@ -37,8 +47,8 @@ const slide: Variants = {
 };
 
 const STEPS = [
-  { title: "About you", text: "Your name, as your lecturer knows it." },
-  { title: "Your university", text: "Faculty, group and year." },
+  { title: "About you", text: "Your name, as your teacher knows it." },
+  { title: "Where you study", text: "University details, or skip them." },
   { title: "Honesty notice", text: "What is measured, and what never is." },
 ];
 
@@ -66,15 +76,17 @@ export function OnboardingWizard({
   initialStep?: number;
 }) {
   // Once set, a student's university is locked; only an admin can move them.
-  const lockedUniversity = me.student;
+  const lockedUniversity = lockedUniversityOf(me.student);
   const [step, setStep] = useState(initialStep);
   const [direction, setDirection] = useState(1);
   const [draft, setDraft] = useState<Draft>({
     firstName: me.firstName ?? "",
     lastName: me.lastName ?? "",
     locale: me.locale,
-    universityId:
-      lockedUniversity?.universityId ?? (universities.length === 1 ? universities[0]._id : ""),
+    // Re-accepting a notice keeps the earlier answer; with no university on Kalami
+    // yet, nobody is held up choosing one.
+    atUniversity: lockedUniversity ? true : universities.length === 0 || me.student !== null ? false : null,
+    universityId: lockedUniversity?.id ?? (universities.length === 1 ? universities[0]._id : ""),
     faculty: me.student?.faculty ?? "",
     group: me.student?.group ?? "",
     year: me.student?.year ?? 1,
@@ -100,9 +112,19 @@ export function OnboardingWizard({
 
   function onNext(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (step === 1 && !draft.universityId) {
-      setError("Choose your university.");
-      return;
+    if (step === 1 && !lockedUniversity) {
+      if (draft.atUniversity === null) {
+        setError("Choose where you study.");
+        return;
+      }
+      if (draft.atUniversity && !draft.universityId) {
+        setError(
+          universities.length === 0
+            ? "No university is on Kalami yet. Choose “Not at a university” to carry on."
+            : "Choose your university.",
+        );
+        return;
+      }
     }
     goTo(step + 1);
   }
@@ -119,13 +141,18 @@ export function OnboardingWizard({
       await onSubmit({
         firstName: draft.firstName,
         lastName: draft.lastName,
-        universityId: draft.universityId as Id<"universities">,
-        faculty: draft.faculty,
-        group: draft.group,
-        year: draft.year,
-        studentNumber: draft.studentNumber.trim() || undefined,
         locale: draft.locale,
         honestyVersion: notice.version,
+        // Without a university the server needs none of the university details.
+        ...(draft.atUniversity
+          ? {
+              universityId: draft.universityId as Id<"universities">,
+              faculty: draft.faculty,
+              group: draft.group,
+              year: draft.year,
+              studentNumber: draft.studentNumber.trim() || undefined,
+            }
+          : {}),
       });
       // users.me updates reactively and the page moves on by itself.
     } catch (e) {
@@ -204,7 +231,7 @@ export function OnboardingWizard({
             <form onSubmit={onNext} className="mt-8 space-y-6">
               <Field
                 label="Language · ენა"
-                hint="Used for your university's name and the honesty notice. Most screens are in English for now."
+                hint="Used for university names and the honesty notice. Most screens are in English for now."
               >
                 <div>
                   <Segmented
@@ -238,8 +265,8 @@ export function OnboardingWizard({
                 </Field>
               </div>
               <p className="text-sm text-graphite">
-                Write it the way it appears in your university records, in Georgian if that is how
-                your lecturer knows you.
+                Write it the way your school or university records it, in Georgian if that is how
+                your teacher knows you.
               </p>
               <StepActions error={error} />
             </form>
@@ -248,130 +275,145 @@ export function OnboardingWizard({
           {step === 1 && (
             <form onSubmit={onNext} className="mt-8 space-y-6">
               {/* min-w-0: fieldsets default to min-content width, which would undo the truncation. */}
-              <fieldset className="min-w-0 space-y-2">
-                <legend className="mb-2 text-sm font-medium">University</legend>
-                {lockedUniversity ? (
+              {lockedUniversity ? (
+                <fieldset className="min-w-0 space-y-2">
+                  <legend className="mb-2 text-sm font-medium">University</legend>
                   <div className="flex items-center gap-4 rounded-2xl border border-line bg-panel/60 p-4">
                     <span className="grid size-11 shrink-0 place-items-center rounded-full bg-card">
                       <Lock className="size-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block font-medium">
-                        {lockedUniversity.universityName[draft.locale]}
-                      </span>
+                      <span className="block font-medium">{lockedUniversity.name[draft.locale]}</span>
                       <span className="block text-xs text-graphite">
                         Set at sign-up. Ask your university&apos;s admin if this is wrong.
                       </span>
                     </span>
                   </div>
-                ) : universities.length === 0 ? (
-                  <p className="rounded-2xl bg-panel p-4 text-sm text-graphite">
-                    Your university hasn&apos;t joined Kalami yet. Ask your university&apos;s admin
-                    to set it up, then come back here.
-                  </p>
-                ) : (
-                  <div className="grid gap-2">
-                    {universities.map((university) => {
-                      const selected = draft.universityId === university._id;
-                      return (
-                        <label
-                          key={university._id}
-                          className={`flex min-w-0 cursor-pointer items-center gap-4 rounded-2xl border p-4 transition has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-highlighter/60 ${
-                            selected ? "border-ink bg-highlighter/25" : "border-line hover:border-ink/25"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="universityId"
-                            value={university._id}
-                            checked={selected}
-                            onChange={() => update("universityId", university._id)}
-                            className="sr-only"
-                          />
-                          <span
-                            className={`grid size-11 shrink-0 place-items-center rounded-full ${selected ? "bg-highlighter" : "bg-panel"}`}
-                          >
-                            <Building className="size-5" />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block font-medium">{university.name[draft.locale]}</span>
-                            <span className="block truncate text-xs text-graphite">
-                              {university.name[otherLocale]}
-                            </span>
-                          </span>
-                          <span
-                            aria-hidden
-                            className={`grid size-5 shrink-0 place-items-center rounded-full border-2 ${selected ? "border-ink" : "border-ink/25"}`}
-                          >
-                            {selected && <span className="size-2.5 rounded-full bg-ink" />}
-                          </span>
-                        </label>
-                      );
-                    })}
+                </fieldset>
+              ) : (
+                <fieldset className="min-w-0 space-y-2">
+                  {/* The step's heading already asks; the legend is for screen readers. */}
+                  <legend className="sr-only">Where do you study?</legend>
+                  <div className="grid gap-2 *:min-w-0 sm:grid-cols-2">
+                    <ChoiceCard
+                      name="place"
+                      checked={draft.atUniversity === true}
+                      onChange={() => update("atUniversity", true)}
+                      icon={<Building className="size-5" />}
+                      title="I study at a university"
+                      text="Faculty, group and year"
+                    />
+                    <ChoiceCard
+                      name="place"
+                      checked={draft.atUniversity === false}
+                      onChange={() => update("atUniversity", false)}
+                      icon={<Notebook className="size-5" />}
+                      title="Not at a university"
+                      text="School, private lessons, other"
+                    />
                   </div>
-                )}
-                {!lockedUniversity && universities.length > 0 && (
-                  <p className="flex items-start gap-2 pt-1 text-xs leading-relaxed text-graphite">
-                    <Lock className="mt-px size-3.5 shrink-0" />
-                    Choose carefully: once you finish setup, you can&apos;t change your university.
-                    Only your university&apos;s admin can move you.
-                  </p>
-                )}
-              </fieldset>
+                </fieldset>
+              )}
 
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Field
-                  label="Faculty"
-                  htmlFor="faculty"
-                  hint="Write it the way your university does. Lecturers use it to find you on their course list."
-                >
-                  <TextInput
-                    id="faculty"
-                    required
-                    maxLength={120}
-                    placeholder="e.g. Computer Science"
-                    value={draft.faculty}
-                    onChange={(e) => update("faculty", e.target.value)}
-                  />
-                </Field>
-                <Field
-                  label="Group"
-                  htmlFor="group"
-                  hint="Copy it exactly from your timetable, so your lecturer can match you to their group."
-                >
-                  <TextInput
-                    id="group"
-                    required
-                    maxLength={40}
-                    placeholder="e.g. CS-101"
-                    value={draft.group}
-                    onChange={(e) => update("group", e.target.value)}
-                  />
-                </Field>
-              </div>
-              <Field label="Year">
-                <div>
-                  <Segmented
-                    label="Year of study"
-                    value={draft.year}
-                    options={YEARS}
-                    onChange={(year) => update("year", year)}
-                  />
-                </div>
-              </Field>
-              <Field
-                label="Student ID"
-                htmlFor="studentNumber"
-                optional
-                hint="The number on your student card. It helps lecturers match you to their list, even if two students share a name."
-              >
-                <TextInput
-                  id="studentNumber"
-                  maxLength={40}
-                  value={draft.studentNumber}
-                  onChange={(e) => update("studentNumber", e.target.value)}
-                />
-              </Field>
+              {draft.atUniversity === false && (
+                <p className="rounded-2xl bg-panel p-4 text-sm leading-relaxed text-graphite">
+                  No faculty or group needed. Your teacher adds you to their class with an invite
+                  link or a course code.
+                </p>
+              )}
+
+              {!lockedUniversity && draft.atUniversity === true && (
+                <fieldset className="min-w-0 space-y-2">
+                  <legend className="mb-2 text-sm font-medium">University</legend>
+                  {universities.length === 0 ? (
+                    <p className="rounded-2xl bg-panel p-4 text-sm leading-relaxed text-graphite">
+                      Your university hasn&apos;t joined Kalami yet. Choose &ldquo;Not at a
+                      university&rdquo; to carry on: your teacher can still invite you to their
+                      class.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="grid gap-2">
+                        {universities.map((university) => (
+                          <ChoiceCard
+                            key={university._id}
+                            name="universityId"
+                            checked={draft.universityId === university._id}
+                            onChange={() => update("universityId", university._id)}
+                            icon={<Building className="size-5" />}
+                            title={university.name[draft.locale]}
+                            text={university.name[otherLocale]}
+                            truncate
+                          />
+                        ))}
+                      </div>
+                      <p className="flex items-start gap-2 pt-1 text-xs leading-relaxed text-graphite">
+                        <Lock className="mt-px size-3.5 shrink-0" />
+                        Choose carefully: once you finish setup, you can&apos;t change your
+                        university. Only your university&apos;s admin can move you.
+                      </p>
+                    </>
+                  )}
+                </fieldset>
+              )}
+
+              {draft.atUniversity === true && (lockedUniversity || universities.length > 0) && (
+                <>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field
+                      label="Faculty"
+                      htmlFor="faculty"
+                      hint="Write it the way your university does. Lecturers use it to find you on their course list."
+                    >
+                      <TextInput
+                        id="faculty"
+                        required
+                        maxLength={120}
+                        placeholder="e.g. Computer Science"
+                        value={draft.faculty}
+                        onChange={(e) => update("faculty", e.target.value)}
+                      />
+                    </Field>
+                    <Field
+                      label="Group"
+                      htmlFor="group"
+                      hint="Copy it exactly from your timetable, so your lecturer can match you to their group."
+                    >
+                      <TextInput
+                        id="group"
+                        required
+                        maxLength={40}
+                        placeholder="e.g. CS-101"
+                        value={draft.group}
+                        onChange={(e) => update("group", e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="Year">
+                    <div>
+                      <Segmented
+                        label="Year of study"
+                        value={draft.year}
+                        options={YEARS}
+                        onChange={(year) => update("year", year)}
+                      />
+                    </div>
+                  </Field>
+                  <Field
+                    label="Student ID"
+                    htmlFor="studentNumber"
+                    optional
+                    hint="The number on your student card. It helps lecturers match you to their list, even if two students share a name."
+                  >
+                    <TextInput
+                      id="studentNumber"
+                      maxLength={40}
+                      value={draft.studentNumber}
+                      onChange={(e) => update("studentNumber", e.target.value)}
+                    />
+                  </Field>
+                </>
+              )}
               <StepActions error={error} onBack={() => goTo(0)} />
             </form>
           )}
@@ -404,6 +446,51 @@ export function OnboardingWizard({
         </Enter>
       </main>
     </div>
+  );
+}
+
+/** A radio drawn as a card: icon chip, two lines, a dot on the right. */
+function ChoiceCard({
+  name,
+  checked,
+  onChange,
+  icon,
+  title,
+  text,
+  truncate = false,
+}: {
+  name: string;
+  checked: boolean;
+  onChange: () => void;
+  icon: ReactNode;
+  title: string;
+  text: string;
+  /** Cut the second line to one line (a university's name in the other language). */
+  truncate?: boolean;
+}) {
+  return (
+    <label
+      className={`flex min-w-0 cursor-pointer items-center gap-4 rounded-2xl border p-4 transition has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-highlighter/60 ${
+        checked ? "border-ink bg-highlighter/25" : "border-line hover:border-ink/25"
+      }`}
+    >
+      <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
+      <span
+        className={`grid size-11 shrink-0 place-items-center rounded-full ${checked ? "bg-highlighter" : "bg-panel"}`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-medium">{title}</span>
+        <span className={`block text-xs text-graphite ${truncate ? "truncate" : ""}`}>{text}</span>
+      </span>
+      <span
+        aria-hidden
+        className={`grid size-5 shrink-0 place-items-center rounded-full border-2 ${checked ? "border-ink" : "border-ink/25"}`}
+      >
+        {checked && <span className="size-2.5 rounded-full bg-ink" />}
+      </span>
+    </label>
   );
 }
 

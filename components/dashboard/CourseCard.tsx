@@ -103,6 +103,9 @@ function CourseBody({ course, useCourse }: { course: MyCourse; useCourse: UseCou
         className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
       >
         Course page
+        {/* Materials live on the course page; say so, or nobody finds them from here. */}
+        {detail !== undefined && detail.materials.length > 0 &&
+          ` · ${detail.materials.length} material${detail.materials.length === 1 ? "" : "s"}`}
         <ArrowRight className="size-4" />
       </Link>
     </div>

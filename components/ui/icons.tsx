@@ -262,6 +262,26 @@ export function Scale(props: IconProps) {
   );
 }
 
+/** A shared folder (course materials kept in Google Drive). */
+export function Folder(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2.2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" />
+      <path d="M3.5 10.5h17" />
+    </Icon>
+  );
+}
+
+/** A page somewhere else on the web. */
+export function Globe(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.2 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.2-3.5-8.5s1.1-6.1 3.5-8.5z" />
+    </Icon>
+  );
+}
+
 /** The four-point sparkle used as a bullet (filled, not stroked). */
 export function Sparkle({ className }: { className?: string }) {
   return (
