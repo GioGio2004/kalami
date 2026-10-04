@@ -56,6 +56,7 @@ export type PublicApiType = {
           title: string;
           totalPoints: number;
           updatedAt: number;
+          weekId?: Id<"weeks">;
         };
         canEdit: boolean;
         course: { _id: Id<"courses">; title: string };
@@ -338,6 +339,7 @@ export type PublicApiType = {
           title: string;
           totalPoints: number;
           updatedAt: number;
+          weekId?: Id<"weeks">;
         }>;
         canEdit: boolean;
         counts: {
@@ -404,6 +406,12 @@ export type PublicApiType = {
       "mutation",
       "public",
       { courseId: Id<"courses">; enabled: boolean },
+      null
+    >;
+    remove: FunctionReference<
+      "mutation",
+      "public",
+      { courseId: Id<"courses"> },
       null
     >;
   };
@@ -983,6 +991,7 @@ export type PublicApiType = {
           title: string;
           totalPoints: number;
           updatedAt: number;
+          weekId?: Id<"weeks">;
         }>;
         canEdit: boolean;
         counts: {
@@ -1021,6 +1030,20 @@ export type PublicApiType = {
       },
       Id<"courses">
     >;
+    updateCourseAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        courseId: Id<"courses">;
+        description?: string;
+        locale?: "ka" | "en";
+        semester?: string;
+        title?: string;
+        token: string;
+      },
+      null
+    >;
     getAssessment: FunctionReference<
       "query",
       "public",
@@ -1049,6 +1072,7 @@ export type PublicApiType = {
           title: string;
           totalPoints: number;
           updatedAt: number;
+          weekId?: Id<"weeks">;
         };
         canEdit: boolean;
         course: { _id: Id<"courses">; title: string };
@@ -1242,6 +1266,12 @@ export type PublicApiType = {
         title?: string;
         token: string;
       },
+      null
+    >;
+    deleteAssessmentAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      { assessmentId: Id<"assessments">; client?: string; token: string },
       null
     >;
     addQuestionsAsAgent: FunctionReference<
@@ -1696,6 +1726,7 @@ export type PublicApiType = {
           title: string;
           totalPoints: number;
           updatedAt: number;
+          weekId?: Id<"weeks">;
         }>;
         unplaced: Array<{
           _creationTime: number;
@@ -1720,6 +1751,7 @@ export type PublicApiType = {
           title: string;
           totalPoints: number;
           updatedAt: number;
+          weekId?: Id<"weeks">;
         }>;
         weeks: Array<{
           _id: Id<"weeks">;
@@ -1746,6 +1778,7 @@ export type PublicApiType = {
             title: string;
             totalPoints: number;
             updatedAt: number;
+            weekId?: Id<"weeks">;
           }>;
           description?: string;
           drive: null | {
@@ -1829,6 +1862,29 @@ export type PublicApiType = {
       "mutation",
       "public",
       { client?: string; linkId: string; token: string; weekId: Id<"weeks"> },
+      null
+    >;
+    updateWeekLinkAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        link: { title: string; url: string };
+        linkId: string;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      null
+    >;
+    reorderWeekLinksAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        linkIds: Array<string>;
+        token: string;
+        weekId: Id<"weeks">;
+      },
       null
     >;
     placeAssessmentAsAgent: FunctionReference<
@@ -2153,6 +2209,17 @@ export type PublicApiType = {
       },
       null
     >;
+    reorderLessonsAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        lessonIds: Array<Id<"lessons">>;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      null
+    >;
     deleteLessonAsAgent: FunctionReference<
       "mutation",
       "public",
@@ -2213,6 +2280,7 @@ export type PublicApiType = {
       "public",
       {
         client?: string;
+        requestId?: string;
         text: string;
         token: string;
         universityId?: Id<"universities"> | null;
@@ -3794,6 +3862,7 @@ export type PublicApiType = {
           title: string;
           totalPoints: number;
           updatedAt: number;
+          weekId?: Id<"weeks">;
         }>;
         unplaced: Array<{
           _creationTime: number;
@@ -3818,6 +3887,7 @@ export type PublicApiType = {
           title: string;
           totalPoints: number;
           updatedAt: number;
+          weekId?: Id<"weeks">;
         }>;
         weeks: Array<{
           _id: Id<"weeks">;
@@ -3844,6 +3914,7 @@ export type PublicApiType = {
             title: string;
             totalPoints: number;
             updatedAt: number;
+            weekId?: Id<"weeks">;
           }>;
           description?: string;
           drive: null | {
