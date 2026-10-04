@@ -168,7 +168,7 @@ export function buildDraft(input: DraftInput): Draft {
   const { lang, context } = input;
   const ka = lang === "ka";
   const course = context.course?.title;
-  const week = context.material?.title;
+  const week = context.week?.title;
   const work = context.assessment?.title;
   const a = (id: string) => input.answers[id]?.trim() ?? "";
   const custom = input.customTopic.trim();
@@ -193,7 +193,7 @@ export function buildDraft(input: DraftInput): Draft {
       lead = ka
         ? `ვერ ვხსნი მასალებს${week ? `: „${week}“` : ""}${course ? ` (${course})` : ""}.`
         : `I can't open the ${week ? `“${week}” ` : ""}materials${course ? ` for ${course}` : ""}.`;
-      if (context.material) lines.push(ka ? `ბმული: ${context.material.url}` : `Link: ${context.material.url}`);
+      if (context.week?.url) lines.push(ka ? `ბმული: ${context.week.url}` : `Link: ${context.week.url}`);
       if (a("what")) lines.push(ka ? `რას ვხედავ: ${dot(a("what"))}` : `What I see: ${dot(a("what"))}`);
       ask = ka ? "შეგიძლიათ, ბმული გადაამოწმოთ?" : "Could you check the link?";
       subject = [course, week, ka ? "მასალები არ იხსნება" : "can't open the materials"].filter(Boolean).join(" · ");

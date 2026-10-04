@@ -84,7 +84,8 @@ function NavBadge({ count }: { count: number }) {
           animate={{ scale: 1 }}
           exit={{ scale: 0 }}
           transition={{ type: "spring", stiffness: 420, damping: 18 }}
-          className="ml-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-red-pen px-1 text-[11px] font-semibold text-paper tabular-nums"
+          // On phones the badge sits on the label's corner, inside the link's padding, so it adds no width to the tight strip.
+          className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-pen px-1 text-[10px] font-semibold text-paper tabular-nums sm:static sm:ml-1.5 sm:h-5 sm:min-w-5 sm:text-[11px]"
         >
           <span aria-hidden>{count > 99 ? "99+" : count}</span>
           <span className="sr-only">, {count} unread</span>

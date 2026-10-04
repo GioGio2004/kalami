@@ -128,21 +128,40 @@ export function ThreadView({
       </Link>,
     );
   }
-  if (context.material) {
+  if (context.week) {
+    // The week's Drive folder when it has one; otherwise its course page, where the week lives.
     contextLinks.push(
-      <a
-        key="week"
-        href={context.material.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`inline-flex items-center gap-1.5 underline-offset-4 hover:text-ink hover:underline ${focusRing}`}
-      >
-        <Folder className="size-4 shrink-0" />
-        <span className="sr-only">{T.week[lang]}: </span>
-        {context.material.title}
-        <ArrowUpRight className="size-3.5 shrink-0" />
-        <span className="sr-only"> {T.opensInNewTab[lang]}</span>
-      </a>,
+      context.week.url ? (
+        <a
+          key="week"
+          href={context.week.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center gap-1.5 underline-offset-4 hover:text-ink hover:underline ${focusRing}`}
+        >
+          <Folder className="size-4 shrink-0" />
+          <span className="sr-only">{T.week[lang]}: </span>
+          {context.week.title}
+          <ArrowUpRight className="size-3.5 shrink-0" />
+          <span className="sr-only"> {T.opensInNewTab[lang]}</span>
+        </a>
+      ) : context.course ? (
+        <Link
+          key="week"
+          href={`/courses/${context.course._id}`}
+          className={`inline-flex items-center gap-1.5 underline-offset-4 hover:text-ink hover:underline ${focusRing}`}
+        >
+          <Folder className="size-4 shrink-0" />
+          <span className="sr-only">{T.week[lang]}: </span>
+          {context.week.title}
+        </Link>
+      ) : (
+        <span key="week" className="inline-flex items-center gap-1.5">
+          <Folder className="size-4 shrink-0" />
+          <span className="sr-only">{T.week[lang]}: </span>
+          {context.week.title}
+        </span>
+      ),
     );
   }
   if (context.assessment) {

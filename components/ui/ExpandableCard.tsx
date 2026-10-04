@@ -35,6 +35,7 @@ export function ExpandableCard({
   open,
   onToggle,
   tone = "card",
+  heading: Heading,
   className = "",
   children,
 }: {
@@ -46,35 +47,40 @@ export function ExpandableCard({
   open: boolean;
   onToggle: () => void;
   tone?: Tone;
+  /** Wraps the toggle in a heading, so the card's title shows up in the page outline. */
+  heading?: "h2" | "h3" | "h4";
   className?: string;
   children: ReactNode;
 }) {
   const bodyId = useId();
   const styles = TONES[tone];
+  const toggle = (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-controls={bodyId}
+      className="flex w-full items-center gap-3 p-4 text-left transition focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-current sm:gap-4 sm:p-5"
+    >
+      {icon && <span className={`grid size-11 shrink-0 place-items-center rounded-full ${styles.chip}`}>{icon}</span>}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[17px] font-medium leading-snug tracking-tight sm:text-lg">{title}</span>
+        {summary && <span className={`mt-0.5 block truncate text-sm ${styles.summary}`}>{summary}</span>}
+      </span>
+      {aside}
+      <motion.span
+        animate={{ rotate: open ? 180 : 0 }}
+        transition={{ duration: 0.3, ease: EASE }}
+        className={`grid size-8 shrink-0 place-items-center rounded-full ${styles.chevron}`}
+        aria-hidden
+      >
+        <ChevronDown className="size-4" />
+      </motion.span>
+    </button>
+  );
   return (
     <section className={`overflow-hidden rounded-[1.6rem] sm:rounded-[2rem] ${styles.card} ${className}`}>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-controls={bodyId}
-        className="flex w-full items-center gap-3 p-4 text-left transition focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-current sm:gap-4 sm:p-5"
-      >
-        {icon && <span className={`grid size-11 shrink-0 place-items-center rounded-full ${styles.chip}`}>{icon}</span>}
-        <span className="min-w-0 flex-1">
-          <span className="block text-[17px] font-medium leading-snug tracking-tight sm:text-lg">{title}</span>
-          {summary && <span className={`mt-0.5 block truncate text-sm ${styles.summary}`}>{summary}</span>}
-        </span>
-        {aside}
-        <motion.span
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.3, ease: EASE }}
-          className={`grid size-8 shrink-0 place-items-center rounded-full ${styles.chevron}`}
-          aria-hidden
-        >
-          <ChevronDown className="size-4" />
-        </motion.span>
-      </button>
+      {Heading ? <Heading>{toggle}</Heading> : toggle}
       <AnimatePresence initial={false}>
         {open && (
           <motion.div

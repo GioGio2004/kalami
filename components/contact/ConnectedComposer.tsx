@@ -23,10 +23,10 @@ export type ComposerHostProps = {
 export function ConnectedComposer({ open, onClose, lang, target }: ComposerHostProps) {
   const current = useCurrentUser();
   const ready = current.status === "ready" && !current.me.needsOnboarding;
-  const { courseId, materialId, assessmentId, initialTopic } = target;
+  const { courseId, weekId, assessmentId, initialTopic } = target;
   const options = useQueryState({
     query: api.messages.contactOptionsFor,
-    args: ready ? { courseId, materialId, assessmentId } : "skip",
+    args: ready ? { courseId, weekId, assessmentId } : "skip",
   });
   const mine = useQueryState({ query: api.messages.mine, args: ready ? {} : "skip" });
   const start = useMutation(api.messages.start);

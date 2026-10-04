@@ -34,7 +34,7 @@ export type RecipientChoice = { recipient: "admin" } | { recipient: "lecturer"; 
 /** Where the card sits: what Kalami attaches (the server keeps only what the student can see). */
 export type ContactTarget = {
   courseId?: NonNullable<StartArgs["courseId"]>;
-  materialId?: NonNullable<StartArgs["materialId"]>;
+  weekId?: NonNullable<StartArgs["weekId"]>;
   assessmentId?: NonNullable<StartArgs["assessmentId"]>;
   initialTopic?: Topic;
 };
@@ -336,7 +336,7 @@ function ComposerDraft({
         ...(choice.recipient === "lecturer" ? { lecturerId: choice.lecturerId } : {}),
         // What the server resolved, so context it dropped isn't sent back.
         ...(context.course ? { courseId: context.course._id } : {}),
-        ...(context.material ? { materialId: context.material._id } : {}),
+        ...(context.week ? { weekId: context.week._id } : {}),
         ...(context.assessment ? { assessmentId: context.assessment._id } : {}),
         topic,
         ...(topic === "other" ? { customTopic: customTopic.trim() } : {}),
@@ -600,18 +600,22 @@ function ComposerDraft({
                 <dl className="mt-3 grid gap-2">
                   <ContextRow label={T.name[lang]}>{options.student.name}</ContextRow>
                   {context.course && <ContextRow label={T.course[lang]}>{context.course.title}</ContextRow>}
-                  {context.material && (
+                  {context.week && (
                     <ContextRow label={T.week[lang]}>
-                      <a
-                        href={context.material.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-                      >
-                        {context.material.title}
-                        <ArrowUpRight className="size-3.5 shrink-0" />
-                        <span className="sr-only"> {T.opensInNewTab[lang]}</span>
-                      </a>
+                      {context.week.url ? (
+                        <a
+                          href={context.week.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                        >
+                          {context.week.title}
+                          <ArrowUpRight className="size-3.5 shrink-0" />
+                          <span className="sr-only"> {T.opensInNewTab[lang]}</span>
+                        </a>
+                      ) : (
+                        context.week.title
+                      )}
                     </ContextRow>
                   )}
                   {context.assessment && (

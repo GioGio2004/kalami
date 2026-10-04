@@ -10,6 +10,11 @@ export function assessmentPath(kind: "task" | "quiz" | "midterm" | "final", asse
   return kind === "task" ? `/tasks/${assessmentId}` : `/quizzes/${assessmentId}`;
 }
 
+/** A lesson in the reader. */
+export function lessonPath(courseId: string, lessonId: string): string {
+  return `/courses/${courseId}/lessons/${lessonId}`;
+}
+
 /** This app's own Clerk pages, used even when the NEXT_PUBLIC_CLERK_* URL vars are missing. */
 export const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in";
 export const SIGN_UP_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || "/sign-up";

@@ -78,7 +78,9 @@ function CourseBody({ course, useCourse }: { course: MyCourse; useCourse: UseCou
         </div>
       ) : detail.assessments.length === 0 ? (
         <p className="text-sm leading-relaxed text-graphite">
-          Nothing here yet. Tasks and quizzes appear when your lecturer publishes them.
+          {detail.weeks.length > 0
+            ? "No tasks or quizzes yet. Lessons and materials are on the course page."
+            : "Nothing here yet. Tasks and quizzes appear when your lecturer publishes them."}
         </p>
       ) : (
         GROUPS.map((group) => {
@@ -103,9 +105,9 @@ function CourseBody({ course, useCourse }: { course: MyCourse; useCourse: UseCou
         className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
       >
         Course page
-        {/* Materials live on the course page; say so, or nobody finds them from here. */}
-        {detail !== undefined && detail.materials.length > 0 &&
-          ` · ${detail.materials.length} material${detail.materials.length === 1 ? "" : "s"}`}
+        {/* Lessons and materials live on the course page, week by week; say so, or nobody finds them from here. */}
+        {detail !== undefined && detail.weeks.length > 0 &&
+          ` · ${detail.weeks.length} week${detail.weeks.length === 1 ? "" : "s"}`}
         <ArrowRight className="size-4" />
       </Link>
     </div>

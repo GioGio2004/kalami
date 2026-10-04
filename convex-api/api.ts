@@ -24,6 +24,7 @@ export type PublicApiType = {
           timeLimitMin?: number;
         };
         title: string;
+        weekId?: Id<"weeks">;
       },
       Id<"assessments">
     >;
@@ -535,11 +536,12 @@ export type PublicApiType = {
           state: "upcoming" | "open" | "closed";
           title: string;
           totalPoints: number;
+          weekId?: Id<"weeks">;
         }>;
         description?: string;
         lecturer: string;
         materials: Array<{
-          _id: Id<"materials">;
+          _id: string;
           description?: string;
           host: string;
           source: "drive" | "link";
@@ -548,6 +550,19 @@ export type PublicApiType = {
         }>;
         semester?: string;
         title: string;
+        weeks: Array<{
+          _id: Id<"weeks">;
+          description?: string;
+          driveUrl?: string;
+          lessons: Array<{ _id: Id<"lessons">; title: string }>;
+          links: Array<{
+            host: string;
+            id: string;
+            title: string;
+            url: string;
+          }>;
+          title: string;
+        }>;
       }
     >;
     task: FunctionReference<
@@ -1202,6 +1217,7 @@ export type PublicApiType = {
         };
         title: string;
         token: string;
+        weekId?: Id<"weeks">;
       },
       Id<"assessments">
     >;
@@ -1642,6 +1658,604 @@ export type PublicApiType = {
         variants: number;
         warnings: Array<string>;
       }
+    >;
+    getCourseOutline: FunctionReference<
+      "query",
+      "public",
+      { client?: string; courseId: Id<"courses">; token: string },
+      {
+        canEdit: boolean;
+        courseId: Id<"courses">;
+        drive: null | {
+          canTakeOver: boolean;
+          folderUrl?: string;
+          mine: boolean;
+          ownerName: string;
+        };
+        driveAvailable: boolean;
+        exams: Array<{
+          _creationTime: number;
+          _id: Id<"assessments">;
+          courseId: Id<"courses">;
+          createdVia: "web" | "mcp";
+          instructions?: string;
+          kind: "task" | "quiz" | "midterm" | "final";
+          publishedAt?: number;
+          questionCount: number;
+          settings: {
+            attemptsAllowed: number;
+            closesAt?: number;
+            integrityLevel: "off" | "standard" | "strict";
+            opensAt?: number;
+            resultsVisibility: "hidden" | "score" | "full_after_close";
+            shuffleOptions: boolean;
+            shuffleQuestions: boolean;
+            timeLimitMin?: number;
+          };
+          status: "draft" | "published" | "archived";
+          title: string;
+          totalPoints: number;
+          updatedAt: number;
+        }>;
+        unplaced: Array<{
+          _creationTime: number;
+          _id: Id<"assessments">;
+          courseId: Id<"courses">;
+          createdVia: "web" | "mcp";
+          instructions?: string;
+          kind: "task" | "quiz" | "midterm" | "final";
+          publishedAt?: number;
+          questionCount: number;
+          settings: {
+            attemptsAllowed: number;
+            closesAt?: number;
+            integrityLevel: "off" | "standard" | "strict";
+            opensAt?: number;
+            resultsVisibility: "hidden" | "score" | "full_after_close";
+            shuffleOptions: boolean;
+            shuffleQuestions: boolean;
+            timeLimitMin?: number;
+          };
+          status: "draft" | "published" | "archived";
+          title: string;
+          totalPoints: number;
+          updatedAt: number;
+        }>;
+        weeks: Array<{
+          _id: Id<"weeks">;
+          assessments: Array<{
+            _creationTime: number;
+            _id: Id<"assessments">;
+            courseId: Id<"courses">;
+            createdVia: "web" | "mcp";
+            instructions?: string;
+            kind: "task" | "quiz" | "midterm" | "final";
+            publishedAt?: number;
+            questionCount: number;
+            settings: {
+              attemptsAllowed: number;
+              closesAt?: number;
+              integrityLevel: "off" | "standard" | "strict";
+              opensAt?: number;
+              resultsVisibility: "hidden" | "score" | "full_after_close";
+              shuffleOptions: boolean;
+              shuffleQuestions: boolean;
+              timeLimitMin?: number;
+            };
+            status: "draft" | "published" | "archived";
+            title: string;
+            totalPoints: number;
+            updatedAt: number;
+          }>;
+          description?: string;
+          drive: null | {
+            error?: string;
+            shared: boolean;
+            stale: boolean;
+            syncing?: "folder" | "share" | "unshare";
+            url?: string;
+          };
+          lessons: Array<{
+            _id: Id<"lessons">;
+            blockCount: number;
+            createdVia: "web" | "mcp";
+            status: "draft" | "published";
+            title: string;
+            updatedAt: number;
+          }>;
+          links: Array<{ id: string; title: string; url: string }>;
+          order: number;
+          publishedAt?: number;
+          status: "draft" | "published";
+          title: string;
+        }>;
+      }
+    >;
+    createWeekAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        courseId: Id<"courses">;
+        description?: string;
+        links?: Array<{ title: string; url: string }>;
+        requestId?: string;
+        title?: string;
+        token: string;
+      },
+      Id<"weeks">
+    >;
+    updateWeekAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        description?: string;
+        title?: string;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      null
+    >;
+    reorderWeeksAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        courseId: Id<"courses">;
+        token: string;
+        weekIds: Array<Id<"weeks">>;
+      },
+      null
+    >;
+    deleteWeekAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      { client?: string; token: string; weekId: Id<"weeks"> },
+      null
+    >;
+    addWeekLinksAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        links: Array<{ title: string; url: string }>;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      Array<string>
+    >;
+    removeWeekLinkAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      { client?: string; linkId: string; token: string; weekId: Id<"weeks"> },
+      null
+    >;
+    placeAssessmentAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        assessmentId: Id<"assessments">;
+        client?: string;
+        token: string;
+        weekId: Id<"weeks"> | null;
+      },
+      null
+    >;
+    getLessonAsAgent: FunctionReference<
+      "query",
+      "public",
+      { client?: string; lessonId: Id<"lessons">; token: string },
+      {
+        _id: Id<"lessons">;
+        blocks: Array<
+          | { id: string; md: string; type: "text" }
+          | {
+              id: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id: string; type: "video"; url: string }
+          | {
+              id: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id: string;
+              type: "check";
+            }
+        >;
+        canEdit: boolean;
+        courseId: Id<"courses">;
+        courseTitle: string;
+        createdVia: "web" | "mcp";
+        status: "draft" | "published";
+        title: string;
+        updatedAt: number;
+        weekId: Id<"weeks">;
+        weekStatus: "draft" | "published";
+        weekTitle: string;
+      }
+    >;
+    createLessonAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        blocks?: Array<
+          | { id?: string; md: string; type: "text" }
+          | {
+              id?: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id?: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id?: string; type: "video"; url: string }
+          | {
+              id?: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id?: string;
+              type: "check";
+            }
+        >;
+        client?: string;
+        requestId?: string;
+        title: string;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      Id<"lessons">
+    >;
+    updateLessonAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        lessonId: Id<"lessons">;
+        title?: string;
+        token: string;
+      },
+      null
+    >;
+    setLessonBlocksAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        blocks: Array<
+          | { id?: string; md: string; type: "text" }
+          | {
+              id?: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id?: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id?: string; type: "video"; url: string }
+          | {
+              id?: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id?: string;
+              type: "check";
+            }
+        >;
+        client?: string;
+        lessonId: Id<"lessons">;
+        token: string;
+      },
+      Array<string>
+    >;
+    addLessonBlocksAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        blocks: Array<
+          | { id?: string; md: string; type: "text" }
+          | {
+              id?: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id?: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id?: string; type: "video"; url: string }
+          | {
+              id?: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id?: string;
+              type: "check";
+            }
+        >;
+        client?: string;
+        lessonId: Id<"lessons">;
+        position?: number;
+        requestId?: string;
+        token: string;
+      },
+      Array<string>
+    >;
+    updateLessonBlockAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        block:
+          | { id?: string; md: string; type: "text" }
+          | {
+              id?: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id?: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id?: string; type: "video"; url: string }
+          | {
+              id?: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id?: string;
+              type: "check";
+            };
+        blockId: string;
+        client?: string;
+        lessonId: Id<"lessons">;
+        token: string;
+      },
+      null
+    >;
+    deleteLessonBlockAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        blockId: string;
+        client?: string;
+        lessonId: Id<"lessons">;
+        token: string;
+      },
+      null
+    >;
+    moveLessonAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        direction?: "up" | "down";
+        lessonId: Id<"lessons">;
+        token: string;
+        weekId?: Id<"weeks">;
+      },
+      null
+    >;
+    deleteLessonAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      { client?: string; lessonId: Id<"lessons">; token: string },
+      null
+    >;
+    exportCourseForAgent: FunctionReference<
+      "query",
+      "public",
+      { client?: string; courseId: Id<"courses">; token: string },
+      { content: string; fileName: string }
+    >;
+    checkKalamiForAgent: FunctionReference<
+      "action",
+      "public",
+      { client?: string; text: string; token: string },
+      | {
+          ok: true;
+          summary: {
+            assessments: {
+              final: number;
+              midterm: number;
+              quiz: number;
+              task: number;
+            };
+            exported?: { at: string; by: string; from: string };
+            language: "ka" | "en";
+            lessons: number;
+            links: number;
+            questions: number;
+            title: string;
+            weeks: number;
+          };
+          verified: null | { at: string; by: string };
+        }
+      | {
+          errors: Array<string>;
+          ok: false;
+          summary?: {
+            assessments: {
+              final: number;
+              midterm: number;
+              quiz: number;
+              task: number;
+            };
+            exported?: { at: string; by: string; from: string };
+            language: "ka" | "en";
+            lessons: number;
+            links: number;
+            questions: number;
+            title: string;
+            weeks: number;
+          };
+        }
+    >;
+    importKalamiForAgent: FunctionReference<
+      "action",
+      "public",
+      {
+        client?: string;
+        text: string;
+        token: string;
+        universityId?: Id<"universities"> | null;
+      },
+      | {
+          courseId: Id<"courses">;
+          ok: true;
+          summary: {
+            assessments: {
+              final: number;
+              midterm: number;
+              quiz: number;
+              task: number;
+            };
+            exported?: { at: string; by: string; from: string };
+            language: "ka" | "en";
+            lessons: number;
+            links: number;
+            questions: number;
+            title: string;
+            weeks: number;
+          };
+          verified: null | { at: string; by: string };
+        }
+      | {
+          errors: Array<string>;
+          ok: false;
+          summary?: {
+            assessments: {
+              final: number;
+              midterm: number;
+              quiz: number;
+              task: number;
+            };
+            exported?: { at: string; by: string; from: string };
+            language: "ka" | "en";
+            lessons: number;
+            links: number;
+            questions: number;
+            title: string;
+            weeks: number;
+          };
+        }
     >;
   };
   questions: {
@@ -2604,102 +3218,6 @@ export type PublicApiType = {
       { available: boolean; connected: boolean; problem?: string }
     >;
   };
-  materials: {
-    forCourse: FunctionReference<
-      "query",
-      "public",
-      { courseId: Id<"courses">; now: number },
-      {
-        canEdit: boolean;
-        drive: null | {
-          canTakeOver: boolean;
-          error?: string;
-          folderUrl?: string;
-          mine: boolean;
-          ownerName: string;
-        };
-        driveAvailable: boolean;
-        weeks: Array<{
-          _id: Id<"materials">;
-          description?: string;
-          driveError?: string;
-          order: number;
-          publishedAt?: number;
-          shared: boolean;
-          source: "drive" | "link";
-          stale: boolean;
-          status: "draft" | "published";
-          syncing?: "folder" | "share" | "unshare";
-          title: string;
-          url?: string;
-        }>;
-      }
-    >;
-    addLink: FunctionReference<
-      "mutation",
-      "public",
-      {
-        courseId: Id<"courses">;
-        description?: string;
-        title: string;
-        url: string;
-      },
-      Id<"materials">
-    >;
-    addDrive: FunctionReference<
-      "mutation",
-      "public",
-      { courseId: Id<"courses">; description?: string; title: string },
-      Id<"materials">
-    >;
-    update: FunctionReference<
-      "mutation",
-      "public",
-      {
-        description?: string;
-        materialId: Id<"materials">;
-        title?: string;
-        url?: string;
-      },
-      null
-    >;
-    move: FunctionReference<
-      "mutation",
-      "public",
-      { direction: "up" | "down"; materialId: Id<"materials"> },
-      null
-    >;
-    publish: FunctionReference<
-      "mutation",
-      "public",
-      { materialId: Id<"materials"> },
-      null
-    >;
-    unpublish: FunctionReference<
-      "mutation",
-      "public",
-      { materialId: Id<"materials"> },
-      null
-    >;
-    remove: FunctionReference<
-      "mutation",
-      "public",
-      { materialId: Id<"materials"> },
-      null
-    >;
-    retry: FunctionReference<
-      "mutation",
-      "public",
-      { materialId: Id<"materials"> },
-      null
-    >;
-    moveToMyDrive: FunctionReference<
-      "mutation",
-      "public",
-      { courseId: Id<"courses"> },
-      null
-    >;
-  };
   messages: {
     contactOptionsFor: FunctionReference<
       "query",
@@ -2707,7 +3225,7 @@ export type PublicApiType = {
       {
         assessmentId?: Id<"assessments">;
         courseId?: Id<"courses">;
-        materialId?: Id<"materials">;
+        weekId?: Id<"weeks">;
       },
       {
         adminAvailable: boolean;
@@ -2718,7 +3236,7 @@ export type PublicApiType = {
             title: string;
           };
           course?: { _id: Id<"courses">; locale: "ka" | "en"; title: string };
-          material?: { _id: Id<"materials">; title: string; url: string };
+          week?: { _id: Id<"weeks">; title: string; url?: string };
         };
         lecturers: Array<{
           name: string;
@@ -2738,7 +3256,6 @@ export type PublicApiType = {
         courseId?: Id<"courses">;
         customTopic?: string;
         lecturerId?: Id<"users">;
-        materialId?: Id<"materials">;
         recipient: "lecturer" | "admin";
         subject: string;
         topic:
@@ -2750,6 +3267,7 @@ export type PublicApiType = {
           | "absence"
           | "app_problem"
           | "other";
+        weekId?: Id<"weeks">;
       },
       Id<"conversations">
     >;
@@ -2794,7 +3312,7 @@ export type PublicApiType = {
             title: string;
           };
           course?: { _id: Id<"courses">; locale: "ka" | "en"; title: string };
-          material?: { _id: Id<"materials">; title: string; url: string };
+          week?: { _id: Id<"weeks">; title: string; url?: string };
         };
         customTopic?: string;
         messages: Array<{
@@ -2877,6 +3395,670 @@ export type PublicApiType = {
           | "other";
         unread: boolean;
       }>
+    >;
+  };
+  lessons: {
+    get: FunctionReference<
+      "query",
+      "public",
+      { lessonId: Id<"lessons"> },
+      {
+        _id: Id<"lessons">;
+        blocks: Array<
+          | { id: string; md: string; type: "text" }
+          | {
+              id: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id: string; type: "video"; url: string }
+          | {
+              id: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id: string;
+              type: "check";
+            }
+        >;
+        canEdit: boolean;
+        courseId: Id<"courses">;
+        courseTitle: string;
+        createdVia: "web" | "mcp";
+        status: "draft" | "published";
+        title: string;
+        updatedAt: number;
+        weekId: Id<"weeks">;
+        weekStatus: "draft" | "published";
+        weekTitle: string;
+      }
+    >;
+    create: FunctionReference<
+      "mutation",
+      "public",
+      {
+        blocks?: Array<
+          | { id?: string; md: string; type: "text" }
+          | {
+              id?: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id?: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id?: string; type: "video"; url: string }
+          | {
+              id?: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id?: string;
+              type: "check";
+            }
+        >;
+        title: string;
+        weekId: Id<"weeks">;
+      },
+      Id<"lessons">
+    >;
+    update: FunctionReference<
+      "mutation",
+      "public",
+      { lessonId: Id<"lessons">; title?: string },
+      null
+    >;
+    saveBlocks: FunctionReference<
+      "mutation",
+      "public",
+      {
+        blocks: Array<
+          | { id?: string; md: string; type: "text" }
+          | {
+              id?: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id?: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id?: string; type: "video"; url: string }
+          | {
+              id?: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id?: string;
+              type: "check";
+            }
+        >;
+        lessonId: Id<"lessons">;
+      },
+      Array<string>
+    >;
+    addBlocksTo: FunctionReference<
+      "mutation",
+      "public",
+      {
+        blocks: Array<
+          | { id?: string; md: string; type: "text" }
+          | {
+              id?: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id?: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id?: string; type: "video"; url: string }
+          | {
+              id?: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id?: string;
+              type: "check";
+            }
+        >;
+        lessonId: Id<"lessons">;
+        position?: number;
+      },
+      Array<string>
+    >;
+    updateBlockIn: FunctionReference<
+      "mutation",
+      "public",
+      {
+        block:
+          | { id?: string; md: string; type: "text" }
+          | {
+              id?: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id?: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id?: string; type: "video"; url: string }
+          | {
+              id?: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id?: string;
+              type: "check";
+            };
+        blockId: string;
+        lessonId: Id<"lessons">;
+      },
+      null
+    >;
+    deleteBlockFrom: FunctionReference<
+      "mutation",
+      "public",
+      { blockId: string; lessonId: Id<"lessons"> },
+      null
+    >;
+    move: FunctionReference<
+      "mutation",
+      "public",
+      {
+        direction?: "up" | "down";
+        lessonId: Id<"lessons">;
+        weekId?: Id<"weeks">;
+      },
+      null
+    >;
+    setStatus: FunctionReference<
+      "mutation",
+      "public",
+      { lessonId: Id<"lessons">; status: "draft" | "published" },
+      null
+    >;
+    remove: FunctionReference<
+      "mutation",
+      "public",
+      { lessonId: Id<"lessons"> },
+      null
+    >;
+    read: FunctionReference<
+      "query",
+      "public",
+      { lessonId: Id<"lessons"> },
+      {
+        _id: Id<"lessons">;
+        blocks: Array<
+          | { id: string; md: string; type: "text" }
+          | {
+              id: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id: string; type: "video"; url: string }
+          | {
+              id: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id: string;
+              type: "check";
+            }
+        >;
+        course: { _id: Id<"courses">; title: string };
+        next: null | { _id: Id<"lessons">; title: string };
+        previous: null | { _id: Id<"lessons">; title: string };
+        title: string;
+        week: { _id: Id<"weeks">; title: string };
+      }
+    >;
+  };
+  weeks: {
+    outline: FunctionReference<
+      "query",
+      "public",
+      { courseId: Id<"courses">; now: number },
+      {
+        canEdit: boolean;
+        courseId: Id<"courses">;
+        drive: null | {
+          canTakeOver: boolean;
+          folderUrl?: string;
+          mine: boolean;
+          ownerName: string;
+        };
+        driveAvailable: boolean;
+        exams: Array<{
+          _creationTime: number;
+          _id: Id<"assessments">;
+          courseId: Id<"courses">;
+          createdVia: "web" | "mcp";
+          instructions?: string;
+          kind: "task" | "quiz" | "midterm" | "final";
+          publishedAt?: number;
+          questionCount: number;
+          settings: {
+            attemptsAllowed: number;
+            closesAt?: number;
+            integrityLevel: "off" | "standard" | "strict";
+            opensAt?: number;
+            resultsVisibility: "hidden" | "score" | "full_after_close";
+            shuffleOptions: boolean;
+            shuffleQuestions: boolean;
+            timeLimitMin?: number;
+          };
+          status: "draft" | "published" | "archived";
+          title: string;
+          totalPoints: number;
+          updatedAt: number;
+        }>;
+        unplaced: Array<{
+          _creationTime: number;
+          _id: Id<"assessments">;
+          courseId: Id<"courses">;
+          createdVia: "web" | "mcp";
+          instructions?: string;
+          kind: "task" | "quiz" | "midterm" | "final";
+          publishedAt?: number;
+          questionCount: number;
+          settings: {
+            attemptsAllowed: number;
+            closesAt?: number;
+            integrityLevel: "off" | "standard" | "strict";
+            opensAt?: number;
+            resultsVisibility: "hidden" | "score" | "full_after_close";
+            shuffleOptions: boolean;
+            shuffleQuestions: boolean;
+            timeLimitMin?: number;
+          };
+          status: "draft" | "published" | "archived";
+          title: string;
+          totalPoints: number;
+          updatedAt: number;
+        }>;
+        weeks: Array<{
+          _id: Id<"weeks">;
+          assessments: Array<{
+            _creationTime: number;
+            _id: Id<"assessments">;
+            courseId: Id<"courses">;
+            createdVia: "web" | "mcp";
+            instructions?: string;
+            kind: "task" | "quiz" | "midterm" | "final";
+            publishedAt?: number;
+            questionCount: number;
+            settings: {
+              attemptsAllowed: number;
+              closesAt?: number;
+              integrityLevel: "off" | "standard" | "strict";
+              opensAt?: number;
+              resultsVisibility: "hidden" | "score" | "full_after_close";
+              shuffleOptions: boolean;
+              shuffleQuestions: boolean;
+              timeLimitMin?: number;
+            };
+            status: "draft" | "published" | "archived";
+            title: string;
+            totalPoints: number;
+            updatedAt: number;
+          }>;
+          description?: string;
+          drive: null | {
+            error?: string;
+            shared: boolean;
+            stale: boolean;
+            syncing?: "folder" | "share" | "unshare";
+            url?: string;
+          };
+          lessons: Array<{
+            _id: Id<"lessons">;
+            blockCount: number;
+            createdVia: "web" | "mcp";
+            status: "draft" | "published";
+            title: string;
+            updatedAt: number;
+          }>;
+          links: Array<{ id: string; title: string; url: string }>;
+          order: number;
+          publishedAt?: number;
+          status: "draft" | "published";
+          title: string;
+        }>;
+      }
+    >;
+    create: FunctionReference<
+      "mutation",
+      "public",
+      {
+        courseId: Id<"courses">;
+        description?: string;
+        driveFolder?: boolean;
+        links?: Array<{ title: string; url: string }>;
+        title?: string;
+      },
+      Id<"weeks">
+    >;
+    update: FunctionReference<
+      "mutation",
+      "public",
+      { description?: string; title?: string; weekId: Id<"weeks"> },
+      null
+    >;
+    move: FunctionReference<
+      "mutation",
+      "public",
+      { direction: "up" | "down"; weekId: Id<"weeks"> },
+      null
+    >;
+    reorder: FunctionReference<
+      "mutation",
+      "public",
+      { courseId: Id<"courses">; weekIds: Array<Id<"weeks">> },
+      null
+    >;
+    publish: FunctionReference<
+      "mutation",
+      "public",
+      { weekId: Id<"weeks"> },
+      null
+    >;
+    unpublish: FunctionReference<
+      "mutation",
+      "public",
+      { weekId: Id<"weeks"> },
+      null
+    >;
+    remove: FunctionReference<
+      "mutation",
+      "public",
+      { weekId: Id<"weeks"> },
+      null
+    >;
+    addLinksTo: FunctionReference<
+      "mutation",
+      "public",
+      { links: Array<{ title: string; url: string }>; weekId: Id<"weeks"> },
+      Array<string>
+    >;
+    updateLinkIn: FunctionReference<
+      "mutation",
+      "public",
+      { linkId: string; title: string; url: string; weekId: Id<"weeks"> },
+      null
+    >;
+    removeLinkFrom: FunctionReference<
+      "mutation",
+      "public",
+      { linkId: string; weekId: Id<"weeks"> },
+      null
+    >;
+    moveLinkIn: FunctionReference<
+      "mutation",
+      "public",
+      { direction: "up" | "down"; linkId: string; weekId: Id<"weeks"> },
+      null
+    >;
+    addFolder: FunctionReference<
+      "mutation",
+      "public",
+      { weekId: Id<"weeks"> },
+      null
+    >;
+    retry: FunctionReference<
+      "mutation",
+      "public",
+      { weekId: Id<"weeks"> },
+      null
+    >;
+    moveToMyDrive: FunctionReference<
+      "mutation",
+      "public",
+      { courseId: Id<"courses"> },
+      null
+    >;
+    place: FunctionReference<
+      "mutation",
+      "public",
+      { assessmentId: Id<"assessments">; weekId: Id<"weeks"> | null },
+      null
+    >;
+  };
+  kalami: {
+    exportCourse: FunctionReference<
+      "query",
+      "public",
+      { courseId: Id<"courses"> },
+      { content: string; fileName: string }
+    >;
+    inspect: FunctionReference<
+      "action",
+      "public",
+      { text: string },
+      | {
+          ok: true;
+          summary: {
+            assessments: {
+              final: number;
+              midterm: number;
+              quiz: number;
+              task: number;
+            };
+            exported?: { at: string; by: string; from: string };
+            language: "ka" | "en";
+            lessons: number;
+            links: number;
+            questions: number;
+            title: string;
+            weeks: number;
+          };
+          verified: null | { at: string; by: string };
+        }
+      | {
+          errors: Array<string>;
+          ok: false;
+          summary?: {
+            assessments: {
+              final: number;
+              midterm: number;
+              quiz: number;
+              task: number;
+            };
+            exported?: { at: string; by: string; from: string };
+            language: "ka" | "en";
+            lessons: number;
+            links: number;
+            questions: number;
+            title: string;
+            weeks: number;
+          };
+        }
+    >;
+    importCourse: FunctionReference<
+      "action",
+      "public",
+      { text: string; universityId?: Id<"universities"> | null },
+      | {
+          courseId: Id<"courses">;
+          ok: true;
+          summary: {
+            assessments: {
+              final: number;
+              midterm: number;
+              quiz: number;
+              task: number;
+            };
+            exported?: { at: string; by: string; from: string };
+            language: "ka" | "en";
+            lessons: number;
+            links: number;
+            questions: number;
+            title: string;
+            weeks: number;
+          };
+          verified: null | { at: string; by: string };
+        }
+      | {
+          errors: Array<string>;
+          ok: false;
+          summary?: {
+            assessments: {
+              final: number;
+              midterm: number;
+              quiz: number;
+              task: number;
+            };
+            exported?: { at: string; by: string; from: string };
+            language: "ka" | "en";
+            lessons: number;
+            links: number;
+            questions: number;
+            title: string;
+            weeks: number;
+          };
+        }
     >;
   };
 };

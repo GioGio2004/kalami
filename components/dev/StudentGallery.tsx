@@ -10,6 +10,7 @@ import { CurrentUserContext, type CurrentUser, type Me } from "@/components/Curr
 import type { UseCourse } from "@/components/dashboard/CourseCard";
 import { DashboardView, type MyGroup, type MyInvite } from "@/components/dashboard/DashboardView";
 import { JoinView, type JoinInvite } from "@/components/join/JoinView";
+import { LessonNotFound, LessonView } from "@/components/lessons-reader/LessonView";
 import type { Conversation, Thread } from "@/components/messages/labels";
 import { MessagesView } from "@/components/messages/MessagesView";
 import { ThreadView } from "@/components/messages/ThreadView";
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/buttons";
 import { PillHeader } from "@/components/ui/PillHeader";
 import { LoadingScreen } from "@/components/ui/StatusScreen";
 import { buildDraft, type ContactOptions } from "@/lib/contact";
+import { sampleLastLesson, sampleLesson } from "./sampleLessons";
 
 // Development-only screen gallery with sample data: lets signed-in screens be
 // reviewed without an account. The route 404s in production.
@@ -112,6 +114,10 @@ const upNext: Parameters<typeof DashboardView>[0]["upNext"] = [
   { _id: id<"assessments">("a_quiz"), kind: "quiz", title: "Week 1 Quiz: HTML Basics", courseId, courseTitle: "HTML & CSS Fundamentals", closesAt: NOW + 30 * HOUR, started: false, playable: true },
   { _id: id<"assessments">("a_task"), kind: "task", title: "Week 1 Lab: Your First HTML Document", courseId, courseTitle: "HTML & CSS Fundamentals", closesAt: NOW + 72 * HOUR, started: true, playable: true },
 ];
+const weekId1 = id<"weeks">("w_1");
+const weekId2 = id<"weeks">("w_2");
+const weekId3 = id<"weeks">("w_3");
+const lessonId = (value: string) => id<"lessons">(value);
 const course: ComponentProps<typeof CourseView>["course"] = {
   _id: courseId,
   title: "HTML & CSS Fundamentals",
@@ -119,17 +125,56 @@ const course: ComponentProps<typeof CourseView>["course"] = {
   semester: "Fall 2026",
   lecturer: "Gio Khvichia",
   archived: false,
+  weeks: [
+    {
+      _id: weekId1,
+      title: "Week 1 · HTML structure",
+      description: "How a web page is put together, and your first page from scratch.",
+      lessons: [
+        { _id: lessonId("l_what_html"), title: "What HTML is for" },
+        { _id: lessonId("l_first_page"), title: "Your first page" },
+      ],
+      driveUrl: "https://drive.google.com/drive/folders/sample-week-1",
+      links: [
+        { id: "k1", title: "MDN: Getting started with the web", url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started", host: "developer.mozilla.org" },
+      ],
+    },
+    {
+      _id: weekId2,
+      title: "Week 2 · Styling with CSS",
+      lessons: [
+        { _id: lessonId("l_selectors"), title: "Selectors and properties" },
+        { _id: lessonId("l_colours"), title: "Colours and fonts" },
+      ],
+      driveUrl: "https://drive.google.com/drive/folders/sample-week-2",
+      links: [],
+    },
+    {
+      _id: weekId3,
+      title: "Week 3 · The box model",
+      description: "Every element is a box. This week you'll size and space them on purpose.",
+      lessons: [
+        { _id: lessonId("l_box_model"), title: "The CSS box model" },
+        { _id: lessonId("l_margins"), title: "Margins that collapse" },
+      ],
+      driveUrl: "https://drive.google.com/drive/folders/sample-week-3",
+      links: [
+        { id: "k2", title: "MDN: The box model", url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Box_model", host: "developer.mozilla.org" },
+        { id: "k3", title: "web.dev Learn CSS: Box model", url: "https://web.dev/learn/css/box-model", host: "web.dev" },
+      ],
+    },
+  ],
   assessments: [
-    { _id: id<"assessments">("a_task"), kind: "task", title: "Week 1 Lab: Your First HTML Document", state: "open", closesAt: NOW + 72 * HOUR, totalPoints: 10, questionCount: 1, playable: true, result: { status: "in_progress" } },
-    { _id: id<"assessments">("a_quiz"), kind: "quiz", title: "Week 1 Quiz: HTML Basics", state: "open", closesAt: NOW + 30 * HOUR, totalPoints: 11, questionCount: 11, playable: true, result: null },
+    { _id: id<"assessments">("a_old"), kind: "quiz", title: "Warm-up quiz", state: "closed", totalPoints: 5, questionCount: 5, playable: true, result: { status: "submitted", score: 4 }, weekId: weekId1 },
+    { _id: id<"assessments">("a_task"), kind: "task", title: "Week 1 Lab: Your First HTML Document", state: "open", closesAt: NOW + 72 * HOUR, totalPoints: 10, questionCount: 1, playable: true, result: { status: "in_progress" }, weekId: weekId1 },
+    { _id: id<"assessments">("a_quiz"), kind: "quiz", title: "Week 1 Quiz: HTML Basics", state: "open", closesAt: NOW + 30 * HOUR, totalPoints: 11, questionCount: 11, playable: true, result: null, weekId: weekId1 },
+    { _id: id<"assessments">("a_w3_quiz"), kind: "quiz", title: "Week 3 Quiz: The box model", state: "upcoming", opensAt: NOW + 50 * HOUR, totalPoints: 8, questionCount: 8, playable: true, result: null, weekId: weekId3 },
     { _id: id<"assessments">("a_mid"), kind: "midterm", title: "Midterm", state: "upcoming", opensAt: NOW + 240 * HOUR, totalPoints: 30, questionCount: 20, playable: true, result: null },
-    { _id: id<"assessments">("a_old"), kind: "quiz", title: "Warm-up quiz", state: "closed", totalPoints: 5, questionCount: 5, playable: true, result: { status: "submitted", score: 4 } },
+    { _id: id<"assessments">("a_final"), kind: "final", title: "Final exam", state: "upcoming", opensAt: NOW + 1200 * HOUR, totalPoints: 40, questionCount: 30, playable: true, result: null },
+    { _id: id<"assessments">("a_bonus"), kind: "task", title: "Bonus: Build your own homepage", state: "open", closesAt: NOW + 400 * HOUR, totalPoints: 5, questionCount: 1, playable: true, result: null },
   ],
-  materials: [
-    { _id: id<"materials">("m_week1"), title: "Week 1: HTML structure", description: "Slides, the starter files and this week's reading.", source: "drive", url: "https://drive.google.com/drive/folders/sample-week-1", host: "drive.google.com" },
-    { _id: id<"materials">("m_week2"), title: "Week 2: Styling with CSS", source: "drive", url: "https://drive.google.com/drive/folders/sample-week-2", host: "drive.google.com" },
-    { _id: id<"materials">("m_mdn"), title: "MDN: Getting started with the web", description: "Read the HTML and CSS basics before Thursday's lab.", source: "link", url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started", host: "developer.mozilla.org" },
-  ],
+  // Legacy flat list; the course page reads weeks now.
+  materials: [],
 };
 const task: ComponentProps<typeof TaskOnPhone>["task"] = {
   course: { _id: courseId, title: "HTML & CSS Fundamentals" },
@@ -157,6 +202,7 @@ const emptyCourse: ComponentProps<typeof CourseView>["course"] = {
   title: myCourses[1].title,
   description: undefined,
   semester: undefined,
+  weeks: [],
   assessments: [],
   materials: [],
 };
@@ -295,16 +341,17 @@ function studentPage(children: ReactNode, { bellOpen = false, empty = false } = 
 
 const gio = { userId: id<"users">("sample_gio"), name: "Gio Khvichia", via: ["HTML & CSS Fundamentals"] };
 const nino = { userId: id<"users">("sample_nino"), name: "Nino Beridze", via: ["Web Lab, Thursdays"] };
-const week1 = course.materials[0];
+const week1 = course.weeks[0];
 const sampleCourse = { _id: courseId, title: course.title, locale: "en" as const };
 const sampleStudent = { name: "Ana Beridze", email: student.email, locale: "en" as const };
+const weekContext = (week: (typeof course.weeks)[number]) => ({ _id: week._id, title: week.title, url: week.driveUrl });
 
-/** Opened from "Can't open it?" on Week 1: the course's lecturer, and the week attached. */
+/** Opened from "Can't open something?" on Week 1: the course's lecturer, and the week attached. */
 const weekOptions: ContactOptions = {
   student: sampleStudent,
   lecturers: [gio],
   adminAvailable: true,
-  context: { course: sampleCourse, material: { _id: week1._id, title: week1.title, url: week1.url } },
+  context: { course: sampleCourse, week: weekContext(week1) },
 };
 /** Opened from the dashboard: every lecturer across the student's courses and groups. */
 const generalOptions: ContactOptions = {
@@ -315,15 +362,15 @@ const generalOptions: ContactOptions = {
 };
 
 /** What the server would send for a card's ids. */
-function sampleOptionsFor({ courseId: forCourse, materialId, assessmentId }: ComposerHostProps["target"]): ContactOptions {
+function sampleOptionsFor({ courseId: forCourse, weekId, assessmentId }: ComposerHostProps["target"]): ContactOptions {
   if (forCourse === undefined) return generalOptions;
-  const material = course.materials.find((item) => item._id === materialId);
+  const week = course.weeks.find((item) => item._id === weekId);
   const assessment = course.assessments.find((item) => item._id === assessmentId);
   return {
     ...weekOptions,
     context: {
       course: sampleCourse,
-      ...(material ? { material: { _id: material._id, title: material.title, url: material.url } } : {}),
+      ...(week ? { week: weekContext(week) } : {}),
       ...(assessment ? { assessment: { _id: assessment._id, title: assessment.title, kind: assessment.kind } } : {}),
     },
   };
@@ -492,8 +539,11 @@ const views: Record<string, string> = {
   "dashboard-empty": "Dashboard · no courses yet",
   "dashboard-invite": "Dashboard · new student without a university, one invite",
   notifications: "Dashboard · notifications open",
-  course: "Course · with materials",
+  course: "Course · three weeks with lessons and materials, exams, other work",
   "course-empty": "Course · nothing published yet",
+  lesson: "Lesson · every block type, with previous and next",
+  "lesson-last": "Lesson · the latest one (no next lesson)",
+  "lesson-not-found": "Lesson · not available",
   "join-signed-out": "Join link · signed out",
   "join-ready": "Join link · ready to join (pressing Join shows a sample error)",
   "join-onboarding": "Join link · signed in, setup not finished",
@@ -588,6 +638,12 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
       return studentPage(<CourseView course={course} />);
     case "course-empty":
       return studentPage(<CourseView course={emptyCourse} />);
+    case "lesson":
+      return studentPage(<LessonView lesson={sampleLesson} />);
+    case "lesson-last":
+      return studentPage(<LessonView lesson={sampleLastLesson} />);
+    case "lesson-not-found":
+      return studentPage(<LessonNotFound courseHref="/dev/ui?view=course" />);
     case "task-phone":
       return studentPage(<TaskOnPhone task={task} />);
     case "contact-card":
@@ -661,9 +717,9 @@ function ContactCardSamples() {
         <ContactCard
           variant="compact"
           lang="en"
-          label={{ en: "Can't open it?", ka: "არ იხსნება?" }}
+          label={{ en: "Can't open something?", ka: "რამე არ იხსნება?" }}
           courseId={courseId}
-          materialId={week1._id}
+          weekId={week1._id}
           initialTopic="materials_access"
         />
         <ContactCard
@@ -678,9 +734,9 @@ function ContactCardSamples() {
         <ContactCard
           variant="compact"
           lang="ka"
-          label={{ en: "Can't open it?", ka: "არ იხსნება?" }}
+          label={{ en: "Can't open something?", ka: "რამე არ იხსნება?" }}
           courseId={courseId}
-          materialId={week1._id}
+          weekId={week1._id}
           initialTopic="materials_access"
         />
       </div>

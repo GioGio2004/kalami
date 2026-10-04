@@ -272,6 +272,16 @@ export function Folder(props: IconProps) {
   );
 }
 
+/** An open book: a lesson to read in Kalami. */
+export function BookOpen(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 6.8C10.2 5.4 7.7 4.7 4.5 4.7v12.8c3.2 0 5.7.7 7.5 2 1.8-1.3 4.3-2 7.5-2V4.7c-3.2 0-5.7.7-7.5 2.1z" />
+      <path d="M12 6.8v12.7" />
+    </Icon>
+  );
+}
+
 /** A page somewhere else on the web. */
 export function Globe(props: IconProps) {
   return (
