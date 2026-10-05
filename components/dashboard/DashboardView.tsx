@@ -3,27 +3,18 @@
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { ContactCard } from "@/components/contact/ContactCard";
 import type { Me } from "@/components/CurrentUserProvider";
-import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
-import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/buttons";
 import { ExpandableCard } from "@/components/ui/ExpandableCard";
-import { ArrowRight, Camera, Check, Clock, Code, Mail, Mic, Monitor, Shield, Sparkle, Users } from "@/components/ui/icons";
+import { ArrowRight, Check, Clock, Mail, Monitor, Shield, Sparkle, Users } from "@/components/ui/icons";
 import type { api } from "@/convex-api/api";
 import { errorMessage } from "@/lib/errors";
 import { formatShort } from "@/lib/time";
 import { useIsMobile } from "@/lib/useDevice";
 import { assessmentPath } from "@/lib/urls";
 import { CourseCard, type MyCourse, type UseCourse } from "./CourseCard";
-
-function greetingFor(hour: number) {
-  if (hour < 5) return "Working late";
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
 
 const NEXT_STEPS = [
   { title: "Join your class", text: "With the invite link or code your teacher gives you." },
@@ -36,12 +27,7 @@ export type JoinResult = FunctionReturnType<typeof api.learn.join>;
 export type MyInvite = FunctionReturnType<typeof api.groups.myInvites>[number];
 export type MyGroup = FunctionReturnType<typeof api.groups.mine>[number];
 
-/**
- * The student's home: one column of cards that open on tap. Open group invites
- * sit on top; then what's due, each course, the join code, the student's groups,
- * the honesty notice and the contact card. `courses`, `upNext`, `invites` and `groups` are
- * undefined while loading.
- */
+/** Courses are directly accessible; task details load on demand. Undefined data stays in a loading state. */
 export function DashboardView({
   me,
   courses,
@@ -67,7 +53,7 @@ export function DashboardView({
   /** The "install Kalami" card (components/pwa/InstallCard), when there is something to offer. */
   install?: ReactNode;
 }) {
-  const [greeting] = useState(() => greetingFor(new Date().getHours()));
+  const [search, setSearch] = useState("");
   // Only cards the student toggled; the rest follow the defaults below.
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const isOpen = (id: string, fallback: boolean) => toggled[id] ?? fallback;
@@ -84,205 +70,68 @@ export function DashboardView({
       ].filter((fact): fact is string => Boolean(fact))
     : [];
   const noCourses = courses !== undefined && courses.length === 0;
-  const onlyCourse = courses !== undefined && courses.length === 1;
+  const shownCourses = courses?.filter((course) => `${course.title} ${course.lecturer ?? ""}`.toLowerCase().includes(search.trim().toLowerCase()));
 
   return (
-    <Enter kind="scale" className="rounded-[2.25rem] bg-panel px-3 pb-3 pt-8 sm:rounded-[2.75rem] sm:px-10 sm:pb-8 sm:pt-14 lg:px-12">
-      {invites !== undefined && invites.length > 0 && (
-        // Pulled up into the panel's top padding, so the greeting keeps its place.
-        <Enter kind="drop" className="-mt-5 mb-6 sm:-mt-6 sm:mb-8">
-          <ul aria-label="Group invites" className="grid gap-2">
-            {invites.map((invite) => (
-              <li key={invite.token}>
-                <InviteStrip invite={invite} onAccept={onAcceptInvite} />
-              </li>
-            ))}
-          </ul>
-        </Enter>
-      )}
-      <div className="px-2 sm:px-1">
-        <Enter as="p" kind="left" delay={0.2} className="-rotate-2 font-hand text-[1.8rem] leading-none text-graphite">
-          {greeting},
-        </Enter>
-        <AnimatedHeading
-          as="h1"
-          delay={0.3}
-          className="mt-3 text-5xl font-medium leading-[0.95] tracking-[-0.045em] sm:text-7xl"
-        >
-          {me.firstName ?? "there"}
-        </AnimatedHeading>
-        {facts.length > 0 && (
-          <RevealGroup as="ul" stagger={0.1} delay={0.6} className="mt-6 flex flex-wrap gap-2">
-            {facts.map((fact) => (
-              <RevealItem as="li" kind="pop" key={fact} className="rounded-full bg-card px-4 py-2 text-sm">
-                {fact}
-              </RevealItem>
-            ))}
-          </RevealGroup>
-        )}
-      </div>
-
-      {install && (
-        <Enter kind="up" delay={0.5} className="mt-6">
-          {install}
-        </Enter>
-      )}
-
-      <RevealGroup stagger={0.1} delay={0.4} className="mt-8 grid gap-3 *:min-w-0 lg:grid-cols-12 lg:items-start">
-        <div className="grid gap-3 *:min-w-0 lg:col-span-7">
-          <RevealItem kind="scale">
-            <UpNextCard items={upNext} open={isOpen("next", true)} onToggle={toggle("next", true)} />
-          </RevealItem>
-
-          <RevealItem as="section" kind="scale">
-            <h2 className="px-3 pt-2 text-xs font-semibold uppercase tracking-[0.12em] text-graphite">
-              My courses{courses !== undefined && ` · ${courses.length}`}
-            </h2>
-            {courses === undefined ? (
-              <div className="mt-2 h-20 animate-pulse rounded-[1.6rem] bg-card/70 sm:rounded-[2rem]" aria-busy="true" />
-            ) : noCourses ? (
-              <div className="mt-2 rounded-[1.6rem] border-2 border-dashed border-line p-5 sm:rounded-[2rem] sm:p-6">
-                <p className="font-medium">No courses yet</p>
-                <p className="mt-1 text-sm text-graphite">Here&apos;s what happens next:</p>
-                <ol className="mt-5 grid gap-4">
-                  {NEXT_STEPS.map((item, index) => (
-                    <li key={item.title} className="flex gap-3">
-                      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-card text-sm font-semibold text-graphite">
-                        {index + 1}
-                      </span>
-                      <span>
-                        <span className="block text-[15px] font-medium leading-snug">{item.title}</span>
-                        <span className="mt-0.5 block text-sm leading-relaxed text-graphite">{item.text}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ) : (
-              <ul className="mt-2 grid gap-3 *:min-w-0">
-                {courses.map((course) => (
-                  <li key={course._id}>
-                    <CourseCard
-                      course={course}
-                      nextDue={upNext?.find((item) => item.courseId === course._id)}
-                      open={isOpen(`course:${course._id}`, onlyCourse)}
-                      onToggle={toggle(`course:${course._id}`, onlyCourse)}
-                      useCourse={useCourse}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </RevealItem>
+    <div className="mx-auto max-w-[1240px] py-4 sm:py-7">
+      <header className="mb-9 border-b border-line pb-7">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-graphite">Your learning space</p>
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <div className="min-w-0">
+            <h1 className="text-3xl font-semibold leading-tight tracking-[-0.045em] wrap-anywhere sm:text-[2.65rem]">Welcome back, {me.firstName ?? "there"}.</h1>
+            <p className="mt-2 text-[15px] leading-relaxed text-graphite">A clear place to focus. Pick up where your curiosity takes you.</p>
+          </div>
+          <div className="flex gap-6 text-sm">
+            <div><span className="block text-2xl font-semibold tabular-nums">{courses?.length ?? "—"}</span><span className="text-graphite">Courses</span></div>
+            <div className="border-l border-line pl-6"><span className="block text-2xl font-semibold tabular-nums">{upNext?.length ?? "—"}</span><span className="text-graphite">Open tasks</span></div>
+          </div>
         </div>
-
-        <div className="grid gap-3 *:min-w-0 lg:col-span-5">
-          <RevealItem kind="scale">
-            <ExpandableCard
-              tone="highlighter"
-              icon={<Code className="size-5" />}
-              title="Got a join code?"
-              summary="6 characters from your lecturer"
-              open={isOpen("join", noCourses)}
-              onToggle={toggle("join", noCourses)}
-            >
-              <JoinForm onJoin={onJoin} />
-              <div
-                className="notch-sides mt-4 flex items-center gap-4 rounded-[1.4rem] bg-ink py-3 pl-5 pr-4 text-paper [--notch-y:50%]"
-                aria-hidden
-              >
-                <div>
-                  <p className="text-xs text-paper/55">A code looks like</p>
-                  <p className="font-mono text-xl font-semibold tracking-[0.14em]">K7MP4Q</p>
-                </div>
-              </div>
-            </ExpandableCard>
-          </RevealItem>
-
-          <RevealItem kind="scale">
-            <Link
-              href="/assistant"
-              className="group flex items-start gap-4 rounded-[1.6rem] bg-charcoal p-5 text-paper transition hover:bg-charcoal-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:rounded-[2rem] sm:p-6"
-            >
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-charcoal-soft text-highlighter">
-                <Sparkle className="size-5" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-lg font-medium leading-snug tracking-tight">Study with your AI assistant</span>
-                <span className="mt-1 block text-sm leading-relaxed text-paper/65">
-                  Connect Claude or ChatGPT to your courses: it reads your lessons and goes through your finished work with
-                  you. Read-only, your account.
-                </span>
-              </span>
-              <ArrowRight className="mt-1 size-5 shrink-0 text-paper/60 transition group-hover:translate-x-0.5 group-hover:text-paper" />
-            </Link>
-          </RevealItem>
-
-          {groups !== undefined && groups.length > 0 && (
-            <RevealItem kind="scale">
-              <GroupsCard
-                groups={groups}
-                onLeave={onLeaveGroup}
-                open={isOpen("groups", false)}
-                onToggle={toggle("groups", false)}
-              />
-            </RevealItem>
+        {facts.length > 0 && <ul aria-label="Student details" className="mt-5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-graphite">{facts.map((fact) => <li key={fact}>{fact}</li>)}</ul>}
+      </header>
+      {invites !== undefined && invites.length > 0 && <ul aria-label="Group invites" className="mb-6 grid gap-3">{invites.map((invite) => <li key={invite.token}><InviteStrip invite={invite} onAccept={onAcceptInvite} /></li>)}</ul>}
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-10">
+        <div className="min-w-0 lg:hidden"><UpNextCard items={upNext} /></div>
+        <section aria-labelledby="courses-heading" className="min-w-0">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+            <div><h2 id="courses-heading" className="text-xl font-semibold tracking-tight">My courses</h2><p className="mt-1 text-sm text-graphite">Lessons, materials, and your next steps.</p></div>
+            <label className="flex w-full items-center rounded-xl border border-line bg-card px-3 focus-within:ring-2 focus-within:ring-ink/20 sm:w-56">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4 shrink-0 text-graphite"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
+              <span className="sr-only">Search courses</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a course" className="h-11 w-full min-w-0 bg-transparent pl-2 text-sm outline-none" />
+            </label>
+          </div>
+          {courses === undefined ? <div aria-busy="true" aria-label="Loading courses" className="space-y-4">{[0, 1].map((key) => <div key={key} className="h-48 animate-pulse rounded-2xl border border-line bg-panel/50" />)}</div> : noCourses ? (
+            <div className="rounded-2xl border border-dashed border-line bg-card p-7 sm:p-9">
+              <h3 className="text-lg font-semibold">Your next chapter starts here</h3><p className="mt-2 text-sm text-graphite">Join a class with a code or accept an invitation from your lecturer.</p>
+              <a href="#join-code" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-ink px-4 text-sm font-medium text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">Enter a join code</a><ol className="mt-7 space-y-5">{NEXT_STEPS.map((item, index) => <li key={item.title} className="flex gap-3"><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-panel text-xs font-semibold">{index + 1}</span><div><p className="text-sm font-medium">{item.title}</p><p className="mt-1 text-sm text-graphite">{item.text}</p></div></li>)}</ol>
+            </div>
+          ) : shownCourses?.length === 0 ? <div role="status" className="rounded-2xl border border-line bg-card p-8"><p className="font-medium">No matching courses</p><p className="mt-2 text-sm text-graphite">Try a course title or lecturer&apos;s name.</p><button onClick={() => setSearch("")} className="mt-4 min-h-11 text-sm font-medium underline underline-offset-4">Clear search</button></div> : (
+            <ul className="space-y-4">{shownCourses?.map((course) => <li key={course._id}><CourseCard course={course} nextDue={upNext?.find((item) => item.courseId === course._id)} open={isOpen(`course:${course._id}`, false)} onToggle={toggle(`course:${course._id}`, false)} useCourse={useCourse} /></li>)}</ul>
           )}
-
-          <RevealItem kind="scale">
-            <ExpandableCard
-              tone="charcoal"
-              icon={<Shield className="size-5" />}
-              title="Honesty notice"
-              summary="Accepted · no recordings, ever"
-              aside={
-                <span className="hidden items-center gap-1.5 rounded-full bg-highlighter px-3 py-1 text-xs font-semibold text-ink sm:flex">
-                  <Check className="size-3.5" />
-                  Accepted
-                </span>
-              }
-              open={isOpen("honesty", false)}
-              onToggle={toggle("honesty", false)}
-            >
-              <div className="border-t border-paper/15 pt-4">
-                <p className="text-[15px] leading-relaxed text-paper/70">
-                  Kalami keeps time on lessons and integrity counters during tasks and exams. It never records you.
-                </p>
-                <ul className="mt-4 flex flex-wrap gap-2 text-sm">
-                  {[
-                    { icon: Camera, label: "No camera" },
-                    { icon: Mic, label: "No mic" },
-                    { icon: Monitor, label: "No screen" },
-                  ].map(({ icon: Icon, label }) => (
-                    <li key={label} className="flex items-center gap-2 rounded-full bg-charcoal-soft px-3 py-1.5">
-                      <Icon className="size-4 text-paper/70" />
-                      {label}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/honesty"
-                  className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-paper underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
-                >
-                  Read it again
-                  <ArrowRight className="size-4" />
-                </Link>
-              </div>
-            </ExpandableCard>
-          </RevealItem>
-
-          {/* Last in the side column, so on phones it comes after the student's own work. */}
-          <RevealItem kind="scale">
-            <ContactCard lang={me.locale} />
-          </RevealItem>
-        </div>
-      </RevealGroup>
-    </Enter>
+          <section className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-panel/35 p-5" aria-label="Learning support">
+            <div className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-card"><Sparkle className="size-4" /></span><div><h3 className="text-sm font-semibold">A little help with the next step</h3><p className="mt-1 max-w-md text-sm leading-relaxed text-graphite">Revisit a lesson or explore your finished work with your AI assistant.</p></div></div>
+            <Link href="/assistant" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium transition hover:bg-card focus-visible:outline-2">Study assistant <ArrowRight className="size-4" /></Link>
+          </section>
+          {install && <div className="mt-5">{install}</div>}
+        </section>
+        <aside aria-label="Tasks and student resources" className="min-w-0 space-y-5">
+          <div className="hidden lg:block"><UpNextCard items={upNext} /></div>
+          <section className="rounded-2xl border border-line bg-card p-5">
+            <h2 className="text-sm font-semibold">Join a class</h2><p className="mb-4 mt-1 text-sm leading-relaxed text-graphite">Enter the code from your lecturer.</p><JoinForm onJoin={onJoin} />
+          </section>
+          {groups !== undefined && groups.length > 0 && <GroupsCard groups={groups} onLeave={onLeaveGroup} open={isOpen("groups", false)} onToggle={toggle("groups", false)} />}
+          <section className="px-1 pt-1">
+            <h2 className="text-sm font-semibold">Here when you need us</h2><p className="mb-3 mt-2 text-sm leading-relaxed text-graphite">Ask your lecturer a question or get help from the Kalami team.</p><ContactCard variant="compact" lang={me.locale} className="min-h-11 items-center" />
+            <Link href="/honesty" className="mt-4 flex min-h-11 items-center gap-2 border-t border-line pt-4 text-xs text-graphite transition hover:text-ink"><Shield className="size-4" />Your privacy & assessment rules<ArrowRight className="ml-auto size-3.5" /></Link>
+          </section>
+        </aside>
+      </div>
+    </div>
   );
 }
 
 /** Open work across every course, nearest deadline first. */
-function UpNextCard({ items, open, onToggle }: { items: UpNextItem[] | undefined; open: boolean; onToggle: () => void }) {
+function UpNextCard({ items }: { items: UpNextItem[] | undefined }) {
+  const headingId = useId();
   const mobile = useIsMobile();
   const nearest = items?.[0];
   const summary =
@@ -294,24 +143,12 @@ function UpNextCard({ items, open, onToggle }: { items: UpNextItem[] | undefined
           ? `Nearest due ${formatShort(nearest.closesAt)}`
           : "No deadline yet";
   return (
-    <ExpandableCard
-      icon={<Clock className="size-5" />}
-      title="Up next"
-      summary={summary}
-      aside={
-        items !== undefined &&
-        items.length > 0 && (
-          <span className="hidden shrink-0 rounded-full bg-ink px-2.5 py-1 text-xs font-semibold text-paper tabular-nums sm:inline">
-            {items.length}
-          </span>
-        )
-      }
-      open={open}
-      onToggle={onToggle}
-    >
+    <section className="rounded-2xl border border-line bg-card p-5" aria-labelledby={headingId}>
+      <div className="mb-4 flex items-center gap-2"><Clock className="size-4 text-graphite" /><h2 id={headingId} className="text-sm font-semibold">Up next</h2>{items && items.length > 0 && <span className="ml-auto rounded-md bg-highlighter/50 px-2 py-0.5 text-xs font-semibold">{items.length}</span>}</div>
+      <p className="mb-4 text-sm text-graphite">{summary}</p>
       <div className="border-t border-line pt-4">
         {items === undefined || items.length === 0 ? (
-          <p className="text-sm leading-relaxed text-graphite">Open tasks and deadlines line up here, nearest first.</p>
+          <p className="text-sm leading-relaxed text-graphite">Your open tasks appear here, with the nearest deadline first.</p>
         ) : (
           <ul className="space-y-2">
             {items.map((item) => (
@@ -343,7 +180,7 @@ function UpNextCard({ items, open, onToggle }: { items: UpNextItem[] | undefined
           </ul>
         )}
       </div>
-    </ExpandableCard>
+    </section>
   );
 }
 
@@ -365,7 +202,7 @@ function InviteStrip({ invite, onAccept }: { invite: MyInvite; onAccept: (token:
   }
 
   return (
-    <div className="rounded-[1.6rem] bg-highlighter p-4 sm:rounded-[2rem] sm:p-5">
+    <div className="rounded-2xl border border-highlighter-deep/40 bg-highlighter/15 p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-3 sm:gap-4">
         <span className="grid size-11 shrink-0 place-items-center rounded-full bg-ink text-highlighter">
           <Mail className="size-5" />
@@ -411,6 +248,7 @@ function GroupsCard({
   return (
     <ExpandableCard
       icon={<Users className="size-5" />}
+      className="rounded-2xl! border border-line"
       title="My groups"
       summary={groups.map((group) => group.name).join(" · ")}
       aside={
@@ -517,7 +355,7 @@ function JoinForm({ onJoin }: { onJoin: (code: string) => Promise<JoinResult> })
   }
 
   return (
-    <form onSubmit={submit} className="border-t border-ink/10 pt-4">
+    <form onSubmit={submit} className="space-y-2">
       <div className="flex gap-2">
         <label htmlFor="join-code" className="sr-only">
           Join code
@@ -531,13 +369,13 @@ function JoinForm({ onJoin }: { onJoin: (code: string) => Promise<JoinResult> })
           spellCheck={false}
           maxLength={12}
           required
-          className="h-12 min-w-0 flex-1 rounded-full border border-ink/15 bg-card px-5 font-mono text-lg font-semibold tracking-[0.14em] outline-none placeholder:text-ink/25 focus:border-ink focus:ring-4 focus:ring-ink/10"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-ink/15 bg-card px-5 font-mono text-lg font-semibold tracking-[0.14em] outline-none placeholder:text-ink/25 focus:border-ink focus:ring-4 focus:ring-ink/10"
         />
         <Button type="submit" size="lg" disabled={busy || code.trim().length < 4}>
           {busy ? "Joining…" : "Join"}
         </Button>
       </div>
-      {error && <p className="mt-2 text-sm font-medium text-red-pen">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-sm font-medium text-red-pen">{error}</p>}
     </form>
   );
 }

@@ -18,7 +18,7 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
         }
       />
       {/* The bottom padding keeps clear of the home indicator in the installed app. */}
-      <main className="mx-auto w-full max-w-[88rem] flex-1 px-3 pb-[max(2.5rem,calc(1.25rem+env(safe-area-inset-bottom)))] pt-5 sm:px-6">
+      <main id="student-content" tabIndex={-1} className="mx-auto w-full max-w-[88rem] flex-1 px-3 pb-[max(2.5rem,calc(1.25rem+env(safe-area-inset-bottom)))] pt-5 sm:px-6">
         {children}
       </main>
     </StudentGate>
