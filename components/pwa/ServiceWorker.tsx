@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { SERVICE_WORKER_URL } from "@/lib/pwa";
 
 /**
  * Registers public/sw.js once the page is up. In development it registers the
@@ -10,8 +11,7 @@ import { useEffect } from "react";
 export function ServiceWorker() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-    const url = process.env.NODE_ENV === "production" ? "/sw.js" : "/sw.js?mode=dev";
-    navigator.serviceWorker.register(url, { scope: "/" }).catch(() => {
+    navigator.serviceWorker.register(SERVICE_WORKER_URL, { scope: "/" }).catch(() => {
       // Without a worker the app still works in the browser; only offline and push are off.
     });
   }, []);

@@ -4875,5 +4875,387 @@ export type PublicApiType = {
       number
     >;
   };
+  study: {
+    whoami: FunctionReference<
+      "query",
+      "public",
+      { client?: string; token: string },
+      null | {
+        courses: number;
+        email: string;
+        locale: "ka" | "en";
+        name: string;
+        university?: { en: string; ka: string };
+        userId: Id<"users">;
+      }
+    >;
+    listCourses: FunctionReference<
+      "query",
+      "public",
+      { client?: string; token: string },
+      Array<{
+        _id: Id<"courses">;
+        archived: boolean;
+        description?: string;
+        lecturer: string;
+        openCount: number;
+        semester?: string;
+        title: string;
+      }>
+    >;
+    getCourse: FunctionReference<
+      "query",
+      "public",
+      { client?: string; courseId: Id<"courses">; token: string },
+      {
+        _id: Id<"courses">;
+        archived: boolean;
+        assessments: Array<{
+          _id: Id<"assessments">;
+          closesAt?: number;
+          kind: "task" | "quiz" | "midterm" | "final";
+          opensAt?: number;
+          playable: boolean;
+          questionCount: number;
+          result: null | {
+            score?: number;
+            status: "in_progress" | "submitted";
+            submittedAt?: number;
+          };
+          state: "upcoming" | "open" | "closed";
+          title: string;
+          totalPoints: number;
+          weekId?: Id<"weeks">;
+        }>;
+        description?: string;
+        lecturer: string;
+        materials: Array<{
+          _id: string;
+          description?: string;
+          host: string;
+          source: "drive" | "link";
+          title: string;
+          url: string;
+        }>;
+        semester?: string;
+        title: string;
+        weeks: Array<{
+          _id: Id<"weeks">;
+          description?: string;
+          driveUrl?: string;
+          lessons: Array<{ _id: Id<"lessons">; title: string }>;
+          links: Array<{
+            host: string;
+            id: string;
+            title: string;
+            url: string;
+          }>;
+          title: string;
+        }>;
+      }
+    >;
+    getLesson: FunctionReference<
+      "query",
+      "public",
+      { client?: string; lessonId: Id<"lessons">; token: string },
+      {
+        _id: Id<"lessons">;
+        blocks: Array<
+          | { id: string; md: string; type: "text" }
+          | {
+              id: string;
+              md: string;
+              title?: string;
+              tone: "tip" | "definition" | "warning" | "note";
+              type: "callout";
+            }
+          | {
+              caption?: string;
+              code: string;
+              id: string;
+              language: string;
+              preview?: boolean;
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id: string;
+              type: "image";
+              url: string;
+            }
+          | { caption?: string; id: string; type: "video"; url: string }
+          | {
+              id: string;
+              steps: Array<{ md: string; title?: string }>;
+              title?: string;
+              type: "steps";
+            }
+          | {
+              check: {
+                accepted?: Array<string>;
+                explanation?: string;
+                kind: "single" | "multiple" | "short";
+                options?: Array<{ correct: boolean; text: string }>;
+                prompt: string;
+              };
+              id: string;
+              type: "check";
+            }
+        >;
+        course: { _id: Id<"courses">; title: string };
+        next: null | { _id: Id<"lessons">; title: string };
+        previous: null | { _id: Id<"lessons">; title: string };
+        title: string;
+        week: { _id: Id<"weeks">; title: string };
+      }
+    >;
+    getWork: FunctionReference<
+      "query",
+      "public",
+      { assessmentId: Id<"assessments">; client?: string; token: string },
+      | {
+          assessment: {
+            _id: Id<"assessments">;
+            closesAt?: number;
+            course: { _id: Id<"courses">; title: string };
+            kind: "task" | "quiz" | "midterm" | "final";
+            state: "open" | "closed";
+            title: string;
+          };
+          available: false;
+          reason: string;
+        }
+      | {
+          available: true;
+          kind: "task";
+          task: {
+            assessment: {
+              _id: Id<"assessments">;
+              closesAt?: number;
+              instructions?: string;
+              integrityLevel: "off" | "standard" | "strict";
+              resultsVisibility: "hidden" | "score" | "full_after_close";
+              state: "open" | "closed";
+              title: string;
+              totalPoints: number;
+            };
+            attempt: null | {
+              autoSubmitted: boolean;
+              feedback?: string;
+              maxScore: number;
+              score?: number;
+              startedAt: number;
+              status: "in_progress" | "submitted";
+              submittedAt?: number;
+            };
+            comments: Array<{
+              _id: Id<"codeComments">;
+              author: string;
+              file: string;
+              line: number;
+              questionId: Id<"questions">;
+              text: string;
+            }>;
+            course: { _id: Id<"courses">; title: string };
+            hiddenChecks: Array<{
+              id: string;
+              label: string;
+              questionId: Id<"questions">;
+            }>;
+            questions: Array<{
+              _id: Id<"questions">;
+              code: {
+                assets: Array<{ alt?: string; name: string; url: string }>;
+                files: Array<{ content: string; name: string }>;
+                steps: Array<{
+                  checks: Array<
+                    | {
+                        id: string;
+                        label: string;
+                        selector: string;
+                        type: "exists";
+                      }
+                    | {
+                        id: string;
+                        label: string;
+                        selector: string;
+                        type: "not_exists";
+                      }
+                    | {
+                        id: string;
+                        label: string;
+                        max?: number;
+                        min?: number;
+                        selector: string;
+                        type: "count";
+                      }
+                    | {
+                        caseSensitive?: boolean;
+                        contains?: string;
+                        equals?: string;
+                        every?: boolean;
+                        id: string;
+                        label: string;
+                        selector: string;
+                        type: "text";
+                      }
+                    | {
+                        attribute: string;
+                        contains?: string;
+                        equals?: string;
+                        every?: boolean;
+                        id: string;
+                        label: string;
+                        selector: string;
+                        type: "attr";
+                      }
+                    | {
+                        equals?: string;
+                        every?: boolean;
+                        id: string;
+                        label: string;
+                        oneOf?: Array<string>;
+                        property: string;
+                        selector: string;
+                        type: "css";
+                        viewport?: number;
+                      }
+                    | {
+                        href: string;
+                        id: string;
+                        label: string;
+                        type: "linked";
+                      }
+                  >;
+                  hint?: string;
+                  instructions: string;
+                  title: string;
+                }>;
+              };
+              points: number;
+              prompt: string;
+            }>;
+            responses: Array<{
+              autoScore?: number;
+              checkResults?: Array<{ id: string; passed: boolean }>;
+              files: Array<{ content: string; name: string }>;
+              progress?: { passed: Array<string>; step: number };
+              questionId: Id<"questions">;
+              savedAt: number;
+            }>;
+            unsupported: number;
+          };
+        }
+      | {
+          assessment: {
+            _id: Id<"assessments">;
+            closesAt?: number;
+            course: { _id: Id<"courses">; title: string };
+            instructions?: string;
+            kind: "task" | "quiz" | "midterm" | "final";
+            questionCount: number;
+            resultsVisibility: "hidden" | "score" | "full_after_close";
+            state: "open" | "closed";
+            title: string;
+            totalPoints: number;
+          };
+          attempt: {
+            attemptsUsed: number;
+            autoSubmitted: boolean;
+            feedback?: string;
+            maxScore: number;
+            number: number;
+            pendingGrading: boolean;
+            score?: number;
+            startedAt: number;
+            submittedAt?: number;
+          };
+          available: true;
+          comments: Array<{
+            _id: Id<"codeComments">;
+            author: string;
+            file: string;
+            line: number;
+            questionId: Id<"questions">;
+            text: string;
+          }>;
+          kind: "quiz" | "midterm" | "final";
+          note?: string;
+          questions: Array<{
+            _id: Id<"questions">;
+            acceptedAnswers?: Array<string>;
+            correctOptionIds?: Array<string>;
+            explanation?: string;
+            myAnswer?:
+              | { optionId: string; type: "single" }
+              | { optionIds: Array<string>; type: "multiple" }
+              | { text: string; type: "short" }
+              | { text: string; type: "essay" }
+              | {
+                  files: Array<{ content: string; name: string }>;
+                  type: "code";
+                };
+            options?: Array<{ id: string; text: string }>;
+            points: number;
+            pointsEarned?: number;
+            prompt: string;
+            type: "single" | "multiple" | "short" | "essay" | "code";
+          }>;
+        }
+    >;
+    progress: FunctionReference<
+      "query",
+      "public",
+      { client?: string; token: string },
+      Array<{
+        course: {
+          _id: Id<"courses">;
+          archived: boolean;
+          lecturer: string;
+          title: string;
+        };
+        work: Array<{
+          _id: Id<"assessments">;
+          closesAt?: number;
+          finished: boolean;
+          kind: "task" | "quiz" | "midterm" | "final";
+          score?: number;
+          state: "upcoming" | "open" | "closed";
+          status: "not_started" | "in_progress" | "submitted";
+          title: string;
+          totalPoints: number;
+          weekTitle?: string;
+        }>;
+      }>
+    >;
+    upNext: FunctionReference<
+      "query",
+      "public",
+      { client?: string; token: string },
+      Array<{
+        _id: Id<"assessments">;
+        closesAt?: number;
+        courseId: Id<"courses">;
+        courseTitle: string;
+        kind: "task" | "quiz" | "midterm" | "final";
+        playable: boolean;
+        started: boolean;
+        title: string;
+      }>
+    >;
+    findInLessons: FunctionReference<
+      "query",
+      "public",
+      { client?: string; query: string; token: string },
+      Array<{
+        course: { _id: Id<"courses">; title: string };
+        lessonId: Id<"lessons">;
+        snippet: string;
+        title: string;
+        weekTitle: string;
+      }>
+    >;
+  };
 };
 export type InternalApiType = {};

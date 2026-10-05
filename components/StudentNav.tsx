@@ -21,7 +21,8 @@ export function StudentNav({ actions, unread }: { actions: ReactNode; unread?: n
       links={[
         { href: "/dashboard", label: "Dashboard" },
         { href: "/messages", label: "Messages", badge: unread ?? live },
-        // On phones the dashboard links to it; the header keeps room for Messages.
+        // On phones the dashboard links to these; the header keeps room for Messages.
+        { href: "/assistant", label: "AI assistant", wideOnly: true },
         { href: "/honesty", label: "Honesty", wideOnly: true },
       ]}
       actions={actions}

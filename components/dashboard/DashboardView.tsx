@@ -10,7 +10,7 @@ import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
 import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/buttons";
 import { ExpandableCard } from "@/components/ui/ExpandableCard";
-import { ArrowRight, Camera, Check, Clock, Code, Mail, Mic, Monitor, Shield, Users } from "@/components/ui/icons";
+import { ArrowRight, Camera, Check, Clock, Code, Mail, Mic, Monitor, Shield, Sparkle, Users } from "@/components/ui/icons";
 import type { api } from "@/convex-api/api";
 import { errorMessage } from "@/lib/errors";
 import { formatShort } from "@/lib/time";
@@ -197,6 +197,25 @@ export function DashboardView({
                 </div>
               </div>
             </ExpandableCard>
+          </RevealItem>
+
+          <RevealItem kind="scale">
+            <Link
+              href="/assistant"
+              className="group flex items-start gap-4 rounded-[1.6rem] bg-charcoal p-5 text-paper transition hover:bg-charcoal-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:rounded-[2rem] sm:p-6"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-charcoal-soft text-highlighter">
+                <Sparkle className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-lg font-medium leading-snug tracking-tight">Study with your AI assistant</span>
+                <span className="mt-1 block text-sm leading-relaxed text-paper/65">
+                  Connect Claude or ChatGPT to your courses: it reads your lessons and goes through your finished work with
+                  you. Read-only, your account.
+                </span>
+              </span>
+              <ArrowRight className="mt-1 size-5 shrink-0 text-paper/60 transition group-hover:translate-x-0.5 group-hover:text-paper" />
+            </Link>
           </RevealItem>
 
           {groups !== undefined && groups.length > 0 && (

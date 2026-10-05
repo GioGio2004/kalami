@@ -4,18 +4,29 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { api } from "@/convex-api/api";
 import { errorMessage } from "@/lib/errors";
-import { isIos, isStandalone, pushSupported, urlBase64ToUint8Array } from "@/lib/pwa";
+import { ensureServiceWorker, isIos, isSecure, isStandalone, pushSupported, urlBase64ToUint8Array } from "@/lib/pwa";
 
 /**
  * Where push stands on this device:
  * - loading: still finding out
+ * - insecure: a plain http address (not localhost); browsers hide push there
  * - unavailable: the server has no push keys yet
  * - unsupported: this browser can't do push
  * - needs-install: an iPhone in Safari; push only works from the Home Screen app
+ * - no-worker: the browser wouldn't start Kalami's background worker
  * - blocked: the person said no in the browser; only the browser's settings can undo that
  * - off / on: for this device
  */
-export type PushState = "loading" | "unavailable" | "unsupported" | "needs-install" | "blocked" | "off" | "on";
+export type PushState =
+  | "loading"
+  | "insecure"
+  | "unavailable"
+  | "unsupported"
+  | "needs-install"
+  | "no-worker"
+  | "blocked"
+  | "off"
+  | "on";
 
 const noChange = () => () => undefined;
 
@@ -26,14 +37,16 @@ function sameKey(current: ArrayBuffer | null, wanted: Uint8Array): boolean {
 }
 
 export function usePush() {
+  const secure = useSyncExternalStore(noChange, isSecure, () => true);
   const supported = useSyncExternalStore(noChange, pushSupported, () => false);
   const key = useQuery(api.push.vapidPublicKey, {});
   const devices = useQuery(api.push.mine, {});
   const subscribeDevice = useMutation(api.push.subscribe);
   const unsubscribeDevice = useMutation(api.push.unsubscribe);
   const requestTest = useMutation(api.push.requestTest);
-  // This device's subscription endpoint: undefined until read, null when there is none.
-  const [endpoint, setEndpoint] = useState<string | null | undefined>(undefined);
+  // Whether the worker is up; this device's subscription endpoint (null when there is none).
+  const [worker, setWorker] = useState<"pending" | "ready" | "failed">("pending");
+  const [endpoint, setEndpoint] = useState<string | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,15 +55,16 @@ export function usePush() {
   useEffect(() => {
     if (!supported) return;
     let cancelled = false;
-    navigator.serviceWorker.ready
+    ensureServiceWorker()
       .then((registration) => registration.pushManager.getSubscription())
       .then((subscription) => {
         if (cancelled) return;
         setPermission(Notification.permission);
         setEndpoint(subscription?.endpoint ?? null);
+        setWorker("ready");
       })
       .catch(() => {
-        if (!cancelled) setEndpoint(null);
+        if (!cancelled) setWorker("failed");
       });
     return () => {
       cancelled = true;
@@ -58,9 +72,11 @@ export function usePush() {
   }, [supported]);
 
   let state: PushState;
-  if (!supported) state = isIos() && !isStandalone() ? "needs-install" : "unsupported";
+  if (!secure) state = "insecure";
+  else if (!supported) state = isIos() && !isStandalone() ? "needs-install" : "unsupported";
   else if (key === null) state = "unavailable";
-  else if (key === undefined || devices === undefined || endpoint === undefined) state = "loading";
+  else if (worker === "failed") state = "no-worker";
+  else if (key === undefined || devices === undefined || worker === "pending") state = "loading";
   else if (permission === "denied") state = "blocked";
   else if (endpoint !== null && devices.some((device) => device.endpoint === endpoint)) state = "on";
   else state = "off";
@@ -71,10 +87,11 @@ export function usePush() {
     setError(null);
     setTested(null);
     try {
+      // The permission prompt first, while the tap still counts as a gesture.
       const result = await Notification.requestPermission();
       setPermission(result);
       if (result !== "granted") return;
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await ensureServiceWorker();
       const wanted = urlBase64ToUint8Array(key);
       let subscription = await registration.pushManager.getSubscription();
       // A subscription made with an older key can't be used by this server: start afresh.
@@ -93,6 +110,7 @@ export function usePush() {
         userAgent: navigator.userAgent,
       });
       setEndpoint(subscription.endpoint);
+      setWorker("ready");
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -105,7 +123,7 @@ export function usePush() {
     setError(null);
     setTested(null);
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await ensureServiceWorker();
       const subscription = await registration.pushManager.getSubscription();
       if (subscription !== null) {
         await unsubscribeDevice({ endpoint: subscription.endpoint });

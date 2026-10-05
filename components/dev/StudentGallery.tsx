@@ -3,6 +3,7 @@
 import { ConvexError } from "convex/values";
 import Link from "next/link";
 import { useState, type ComponentProps, type ReactNode } from "react";
+import { AssistantView } from "@/components/assistant/AssistantView";
 import { Composer, type StartArgs } from "@/components/contact/Composer";
 import { ContactCard, ContactComposerProvider, type ComposerHostProps } from "@/components/contact/ContactCard";
 import { CourseView } from "@/components/courses/CourseView";
@@ -560,6 +561,7 @@ const views: Record<string, string> = {
   "notifications-push-off": "Dashboard · notifications open, push off",
   "notifications-push-iphone": "Dashboard · notifications open on an iPhone in Safari (install first)",
   "notifications-push-blocked": "Dashboard · notifications open, push blocked in the browser",
+  "notifications-push-insecure": "Dashboard · notifications open over plain http (phone on the LAN)",
   "pwa-install": "Dashboard · install card (Android / desktop Chrome)",
   "pwa-install-ios": "Dashboard · install card (iPhone: Add to Home Screen guide)",
   course: "Course · three weeks with lessons and materials, exams, other work",
@@ -567,6 +569,7 @@ const views: Record<string, string> = {
   lesson: "Lesson · every block type, with previous and next",
   "lesson-last": "Lesson · the latest one (no next lesson)",
   "lesson-not-found": "Lesson · not available",
+  assistant: "AI assistant · connect your own assistant to Kalami",
   "join-signed-out": "Join link · signed out",
   "join-ready": "Join link · ready to join (pressing Join shows a sample error)",
   "join-onboarding": "Join link · signed in, setup not finished",
@@ -663,6 +666,8 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
       return studentPage(<DashboardView {...dashboardProps} invites={[]} />, { bellOpen: true, push: "needs-install" });
     case "notifications-push-blocked":
       return studentPage(<DashboardView {...dashboardProps} invites={[]} />, { bellOpen: true, push: "blocked" });
+    case "notifications-push-insecure":
+      return studentPage(<DashboardView {...dashboardProps} invites={[]} />, { bellOpen: true, push: "insecure" });
     case "pwa-install":
       return studentPage(
         <DashboardView {...dashboardProps} invites={[]} install={<InstallCardView platform="chrome" onInstall={() => undefined} onDismiss={() => undefined} />} />,
@@ -681,6 +686,8 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
       return studentPage(<LessonView lesson={sampleLastLesson} />);
     case "lesson-not-found":
       return studentPage(<LessonNotFound courseHref="/dev/ui?view=course" />);
+    case "assistant":
+      return studentPage(<AssistantView origin="https://app.kalami.space" />);
     case "task-phone":
       return studentPage(<TaskOnPhone task={task} />);
     case "contact-card":

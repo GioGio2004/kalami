@@ -4,9 +4,15 @@ import { usePush, type PushState } from "./usePush";
 
 const DESCRIPTION: Record<PushState, string> = {
   loading: "Checking this device…",
-  unavailable: "Not available on this server yet.",
-  unsupported: "This browser can't show notifications. Chrome on Android or Safari on an iPhone can.",
-  "needs-install": "On an iPhone, add Kalami to your Home Screen first (the card on the dashboard shows how), then turn this on from there.",
+  insecure:
+    "Notifications only work over a secure address (https). Open Kalami at its https address, not a plain http one, then turn this on.",
+  unavailable: "Push isn't set up on this server yet (it has no notification keys).",
+  unsupported:
+    "This browser can't show notifications. Use Chrome on Android; on an iPhone, add Kalami to the Home Screen and open it from there.",
+  "needs-install":
+    "On an iPhone, add Kalami to your Home Screen first (the card on the dashboard shows how), then turn this on from there.",
+  "no-worker":
+    "Kalami's background worker couldn't start in this browser. Reload the page and try again; private browsing often blocks it.",
   blocked: "Blocked for Kalami in your browser's settings. Allow notifications there, then come back.",
   off: "A notification on this device when work is published or a deadline is near.",
   on: "On for this device.",

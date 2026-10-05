@@ -38,6 +38,38 @@ export function pushSupported(): boolean {
   return typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 }
 
+/** Browsers hide service workers and push on plain http (localhost excepted): the usual trap when testing on a phone over the LAN. */
+export function isSecure(): boolean {
+  return typeof window !== "undefined" && window.isSecureContext;
+}
+
+/** In development the worker runs in its no-caching mode; push works the same. */
+export const SERVICE_WORKER_URL = process.env.NODE_ENV === "production" ? "/sw.js" : "/sw.js?mode=dev";
+
+/**
+ * The app's worker, registered if it isn't yet, and active. Registering twice
+ * is fine (the browser returns the existing registration). Fails, instead of
+ * hanging, when the browser never activates it (private browsing, a blocked
+ * script), so the caller can say what to do.
+ */
+export async function ensureServiceWorker(timeoutMs = 8000): Promise<ServiceWorkerRegistration> {
+  if (!("serviceWorker" in navigator)) throw new Error("This browser has no service workers.");
+  await navigator.serviceWorker.register(SERVICE_WORKER_URL, { scope: "/" });
+  return await new Promise<ServiceWorkerRegistration>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Kalami's background worker didn't start.")), timeoutMs);
+    navigator.serviceWorker.ready.then(
+      (registration) => {
+        clearTimeout(timer);
+        resolve(registration);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 // --- The install prompt -----------------------------------------------------------------
 //
 // Chrome fires `beforeinstallprompt` once, early, when the page qualifies. It is

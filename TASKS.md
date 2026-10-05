@@ -29,6 +29,8 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-008 | Standalone admin panel at `/admin`: own sidebar, student and lecturer stats, status controls for everything | Ready for review | Claude (Claude Code) |
 | TASK-009 | High-end lesson presentation: roomy slides, real code windows, full-screen presenter, polished student lesson page | Ready for review | Claude (Claude Code) |
 | TASK-010 | Student app as a PWA: installable, offline-aware, Web Push notifications end to end, install prompts | Ready for review | Claude (Claude Code) |
+| TASK-011 | Read-only MCP connector for students: study their courses, lessons, materials and finished work with their own AI | Ready for review | Claude (Claude Code) |
+| TASK-012 | Staff `/agents` page: the Copy button covers the connector address on phones | Ready | Unassigned |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -601,6 +603,101 @@ The user wants the whole student app to work as a Progressive Web App ("the dash
 - The in-app browser refuses every service-worker registration (even a missing script gives "An unknown error occurred when fetching the script"), and its permission prompt can't be granted, so installing, registering the worker and turning push on were not exercised in a browser here; the worker was verified in the harness and the sending side against a real push service. **Please test on your phone:** open the dev or deployed app over HTTPS, install it (Android: the card's Install; iPhone: Share → Add to Home Screen, then open from the home screen), turn on "Notify this device" under the bell, tap "Send a test notification". From a computer, `npx convex run pushDelivery:sendTestByEmail '{"email":"<yours>"}'` reports what happened.
 - Production has no VAPID keys until you set them (OPERATIONS.md); until then the switch says "Not available on this server yet" and nothing else changes.
 - Offline covers the app shell and the offline page, not lesson content or quizzes (Convex needs a connection; the banner says so). Staff get no push.
+
+### User review
+
+2026-10-05: the user reported "push notifications on mobile don't work". Findings and fixes (Claude):
+
+- **Cause on production:** both repos had been committed and deployed (the staff Vercel build deploys the Convex backend; prod `strong-lyrebird-617` had every `push.*`/`pushDelivery.*` function and the `pushSubscriptions` table), but prod had **no VAPID settings**, so `push.vapidPublicKey` returned null and the switch under the bell could only say "Not available on this server yet". Fixed: a production key pair was generated locally with `web-push`, stored on prod as `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` (`mailto:kalamispace@gmail.com`) and the local copy deleted; prod now answers the public key. Verified end to end on prod: a fake device imported for the user's own account, `npx convex run pushDelivery:sendTestByEmail '{"email":"giokhvichia69@gmail.com"}' --prod` → `Sent to 0 device(s); 1 gone (removed), 0 failed.`, device list empty afterwards. `https://app.kalami.space` serves the manifest, `/sw.js`, `/offline` and the icons (all 200). No real device had ever subscribed on dev or prod before this.
+- **Cause on a phone against the dev server over the LAN (`http://192.168…`):** browsers hide service workers and push on plain http, and the switch blamed the browser ("This browser can't show notifications"). Fixed in `components/pwa/usePush.ts` + `PushSetting.tsx` (uncommitted in `kalami`): new `insecure` state ("Notifications only work over a secure address (https)…"), new `no-worker` state when the worker never activates (with a reload hint instead of "Checking this device…" forever), `lib/pwa.ts` `ensureServiceWorker()` registers the worker itself and waits for it with a timeout (used on load and when turning push on, so a failed early registration no longer hangs the switch); the "unavailable" wording now says the server has no notification keys. Gallery view `notifications-push-insecure`. Checks: `kalami` `npx tsc --noEmit` ✅, `npm run lint` ✅; the gallery shows the new state with the switch disabled.
+- To get the clearer messages on phones, commit and push the `kalami` changes (`lib/pwa.ts`, `components/pwa/*`, `components/dev/StudentGallery.tsx`); production push itself already works with the code that is live.
+
+Suggested test on the phone, on `https://app.kalami.space`: Android Chrome: open the app, bell → "Notify this device" → allow → "Send a test notification". iPhone: Share → Add to Home Screen, open Kalami from the home screen, then the same. Status pending the user's test.
+
+## TASK-011 — Read-only MCP connector for students: study their courses, lessons, materials and finished work with their own AI
+
+- **Status:** Ready for review (requested 2026-10-06, built 2026-10-06)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-06
+
+### Problem / reproduction
+
+The user wants students to connect their own AI assistant to Kalami, read-only, so they can analyse their homework **after they finish it**, together with the lessons and materials: "dynamic study is our priority". Today the MCP connector (`staff.kalami.space/api/mcp`) is for lecturers only; a student who signs in there is refused (`actorFromToken` returns null for non-staff).
+
+### Agreed behavior and scope
+
+- **A second connector for students** at the student app's origin, `https://app.kalami.space/api/mcp`, with the same "Sign in with Kalami" OAuth flow (Clerk) and the same signed service credential to Convex; Convex accepts only onboarded student accounts there (staff get nothing, as students get nothing on the staff connector).
+- **Read-only tools**: `whoami`, `list_courses`, `get_course` (weeks with lessons, materials: Drive folders and links, the week's tasks and quizzes with state and the student's result), `get_lesson` (all blocks), `get_my_work` (a finished task, quiz or exam: the questions as the student saw them, their own answers, what was right and the explanations **only where the lecturer's results setting already shows them in the app**, score, the lecturer's feedback and red-pen comments; for code tasks the student's files and the checks), `my_progress` (every course's work with status and score), `whats_next` (open work and deadlines) and `find_in_lessons` (where a topic was covered). No tool changes anything.
+- **"After they finish it"**: `get_my_work` answers only for work the student can no longer take again: submitted and (closed, or no attempts left, or a code task). Questions and answers show once the work is closed or full results are visible, correct answers and explanations only with full results, the score only when the results setting shows it: the same rules as the student app, so the connector never reveals more than the screen does, and never helps during an attempt.
+- **In the student app**: an "AI assistant" page (`/assistant`) with per-client connect steps (claude.ai, ChatGPT, Claude Code, Cursor, VS Code, Gemini CLI, Codex) and what the assistant can and can't see, a card on the dashboard pointing to it, a header link on wide screens.
+- Settings: the student app needs `MCP_SERVICE_SECRET` (the same value as Convex and the staff app) on Vercel; `lib/mcp/oauth.ts` becomes a shared file synced from the staff repo.
+- Out of scope: writing anything for students (notes, answers), chat history, agents acting for students in quizzes, reading other students' work.
+
+### Acceptance criteria
+
+- [x] `app.kalami.space/api/mcp` answers 401 with `resource_metadata` pointing at the student app's `/.well-known/oauth-protected-resource`, which names Clerk as the authorization server (checked on the dev server; prod after deploy).
+- [x] A signed-in student's assistant can list courses, read lessons and materials, see progress, and analyse finished work; a staff account gets "not signed in as a student"; a lecturer's connector is unchanged (backend tests; `convex/mcp.ts` untouched).
+- [x] Unfinished work (not started, in progress, retakes left, not opened) returns no questions or answers; answer keys appear only when the app would show them (backend tests).
+- [x] Backend tests cover the token actor, the finished-work rules, the visibility rules and the search; lint/type checks pass in both repos; shared files identical.
+- [ ] User tested with their own assistant and accepted the result.
+
+### Implementation and verification notes
+
+**Backend (kalami-stuff, Convex):**
+
+- `convex/lib/access.ts`: `studentFromToken` / `requireTokenStudent` resolve the signed service credential to an onboarded student (not deleted, not staff-only, a student membership with onboarding done); staff and strangers get `UNAUTHENTICATED` "Not signed in to Kalami as a student. Reconnect Kalami in your assistant." `actorFromToken` (staff) is unchanged, so the lecturer connector still refuses students.
+- `convex/model/study.ts` (new): `studyWhoami`, `finishedWith` (finished = submitted and closed, or a code task, or no attempts left; otherwise a plain reason and nothing else), `getFinishedWork` (task → `getStudentTask`; quiz/exam → the questions as the student saw them with `myAnswer`, shown once the work is closed or full results are visible; `pointsEarned`, `correctOptionIds`, `acceptedAnswers`, `explanation` only with full results; the score only when the results setting shows it; a `note` says what is withheld), `getProgress`, `searchLessons` (published lessons of joined courses, 300 lessons / 20 hits cap, a snippet each). Everything goes through the student app's own helpers (`getStudentCourse`, `getStudentLesson`, `getStudentTask`, `windowState`, `visibleResults`, `finalScore`), so the connector never shows more than the screen.
+- `convex/study.ts` (new): queries only (`whoami`, `listCourses`, `getCourse`, `getLesson`, `getWork`, `progress`, `upNext`, `findInLessons`), each taking `{ token, client? }`. `convex/model/quiz.ts` exports `studentQuestion` and `attemptOrder` for reuse.
+- `convex/study.test.ts` (new, 7 tests): credential acceptance (student yes; lecturer, super admin, unknown user, forged signature, malformed credential, unfinished onboarding no; the staff connector still refuses the student), courses/lessons/search limited to joined courses and published lessons, the full quiz lifecycle (not started → in progress → submitted while open with full-after-close → closed with keys → score-only without keys → hidden without a score; another student gets `NOT_FOUND`, staff `UNAUTHENTICATED`), retakes left = off limits until closed, progress and up-next. Fixture note: publishing a week publishes its draft lessons, so the hidden lesson is set back to draft afterwards.
+- `STUDIO.md` section 4.1 documents the student connector; `OPERATIONS.md` lists `MCP_SERVICE_SECRET` for the student Vercel project; `scripts/sync-student.mjs` syncs `lib/mcp/oauth.ts` (its comments are now generic for both apps).
+- Deployed to the **dev** Convex deployment only (`npx convex dev --once`); `npm run api:student` regenerated `kalami/convex-api/api.ts`. Nothing was deployed to prod.
+
+**Student app (kalami):**
+
+- `lib/mcp/oauth.ts` (synced copy), `lib/mcp/server.ts` (server `kalami-study` 1.0.0; tools `whoami`, `list_courses`, `get_course`, `get_lesson`, `find_in_lessons`, `my_progress`, `whats_next`, `get_my_work`; study-companion instructions: read-only, never help with open work, answer in the student's language), `app/api/mcp/route.ts`, `app/.well-known/oauth-protected-resource` (+ `/api/mcp` variant) and `oauth-authorization-server` routes; `proxy.ts` leaves `/api/mcp` and `/.well-known` public (bearer auth, not Clerk sessions).
+- `/assistant` page (`app/(student)/assistant/page.tsx`, `components/assistant/AssistantView.tsx` + `ConnectSnippets.tsx`, `components/ui/CopyButton.tsx`, `lib/useOrigin.ts`): per-client steps (Claude app, ChatGPT, Claude Code, Cursor, VS Code, Gemini CLI, Codex, other), the can/can't list, example prompts. `StudentNav` link "AI assistant" (wide screens), a dashboard card linking to it, dev gallery view `assistant`.
+- `.env.local` got `MCP_SERVICE_SECRET` (dev value; not committed). Packages added: `mcp-handler`, `@modelcontextprotocol/server`, `zod`.
+
+**Checks run (2026-10-06):**
+
+- kalami-stuff: `npx tsc --noEmit` clean, `npm run lint` clean, `npx vitest run` 25 files / 248 tests passed (7 new).
+- kalami: `npx tsc --noEmit` clean, `npm run lint` clean.
+- Dev server (`localhost:3100`): `POST /api/mcp` without a token → 401 with `WWW-Authenticate: Bearer … resource_metadata="…/.well-known/oauth-protected-resource"`; with a garbage bearer → 401 `invalid_token`; `/.well-known/oauth-protected-resource` (and the `/api/mcp` variant) names the Clerk dev instance and `/assistant` as documentation; `/.well-known/oauth-authorization-server` mirrors Clerk; `/assistant` redirects to sign-in when signed out.
+- Gallery `/dev/ui?view=assistant` at 1440 px and 375 px: renders, no horizontal overflow; on phones the Copy button now sits under the address instead of covering it.
+
+**Limitations / follow-ups:**
+
+- Not yet exercised end to end with a real assistant: that needs the prod deploy (claude.ai cannot reach localhost) plus `MCP_SERVICE_SECRET` on the student Vercel project (the prod value, same as Convex prod and the staff project). Until that variable is set, every student sign-in on the prod connector fails with 401.
+- Clerk's OAuth application settings (CIMD/DCR) are shared, so no Clerk change was needed; the consent screen says "Kalami" for both connectors.
+- The staff `/agents` page has the same phone-width Copy button overlap: TASK-012.
+
+### User review
+
+Pending.
+
+## TASK-012 — Staff `/agents` page: the Copy button covers the connector address on phones
+
+- **Status:** Ready
+- **Owner:** Unassigned
+- **Reported:** 2026-10-06
+
+### Problem / reproduction
+
+Found while building TASK-011. On the staff app's `/agents` page at phone width, the connector address `<pre>` scrolls sideways and the absolutely positioned Copy button (`components/agents/ConnectSnippets.tsx`, `absolute right-3 top-3`) covers the end of the text.
+
+### Agreed behavior and scope
+
+Same fix as the student page: below `sm` stack the button under the address (wrapper `flex flex-col items-end gap-2 sm:block`, button `sm:absolute sm:right-3 sm:top-3`, `pre` padding `sm:pr-28`). Nothing else changes.
+
+### Acceptance criteria
+
+- [ ] At 375 px the full address stays readable and the button sits under it; at 640 px and up the layout is unchanged.
+- [ ] `npx tsc --noEmit` and `npm run lint` pass in kalami-stuff.
+- [ ] User tested and accepted the result.
+
+### Implementation and verification notes
+
+Pending.
 
 ### User review
 
