@@ -444,7 +444,17 @@ export type PublicApiType = {
         role: "lecturer" | "uni_admin";
         universityId?: Id<"universities">;
       },
-      { inviteId: Id<"invites">; token: string }
+      {
+        email: "sent" | "recent" | "off";
+        inviteId: Id<"invites">;
+        token: string;
+      }
+    >;
+    resendEmail: FunctionReference<
+      "mutation",
+      "public",
+      { inviteId: Id<"invites"> },
+      "sent" | "recent" | "off"
     >;
     listForUniversity: FunctionReference<
       "query",
@@ -455,6 +465,7 @@ export type PublicApiType = {
         _id: Id<"invites">;
         acceptedAt?: number;
         email: string;
+        emailedAt?: number;
         expiresAt: number;
         revokedAt?: number;
         role: "lecturer" | "uni_admin";
@@ -470,6 +481,7 @@ export type PublicApiType = {
         _id: Id<"invites">;
         acceptedAt?: number;
         email: string;
+        emailedAt?: number;
         expiresAt: number;
         revokedAt?: number;
         role: "lecturer" | "uni_admin";

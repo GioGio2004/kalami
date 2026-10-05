@@ -24,6 +24,7 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-003 | Video embed console warning (`allow` vs `allowfullscreen`) | Ready for review | Claude (Claude Code) |
 | TASK-004 | Super admin: invite lecturers with a university picker and one invite list | Ready for review | Claude (Claude Code) |
 | TASK-005 | Admin page cards widen the page on phones until they slide in | Needs clarification | Unassigned |
+| TASK-006 | Staff invites emailed through Resend; professional email design | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -332,6 +333,52 @@ Clip horizontal overflow on the admin page's sections (or switch those reveals t
 ### Implementation and verification notes
 
 Not started.
+
+### User review
+
+Pending.
+
+## TASK-006 — Staff invites emailed through Resend; professional email design
+
+- **Status:** Ready for review (requested by the user 2026-10-05)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-05
+
+### Problem / reproduction
+
+On the staff Admin page, inviting a lecturer or university admin only creates a link: the page says "Send it yourself for now; invite emails come later", so the user ends up sending invitations some other way (the user described it as "via Clerk"; the code makes no Clerk invitation calls). The user wants Kalami to email the invitations itself through Resend, with the link in them, and wants Kalami's emails to look professional: they look "a little sloppy" now (one plain frame for everything; the group invite interleaves Georgian and English line by line; no fallback link).
+
+Investigation: emails go through the `@convex-dev/resend` component (`kalami-stuff/convex/email.ts`, templates in `convex/lib/email/templates.ts`): group invites, assessment notifications, message notices. Staff invites (`convex/invites.ts`) send nothing. The dev deployment has no `RESEND_API_KEY`, `EMAIL_FROM`, `STAFF_APP_URL` or `STUDENT_APP_URL`, so nothing is emailed in dev today.
+
+### Agreed behavior and scope
+
+- Creating a staff invite (super admin's invite center or a university admin's board) emails the invitee a personal invitation through Resend with the invite link, the university and role, who invited them and when it expires. Re-inviting an open invite sends it again (not more than once per 10 minutes). Pending invites get a "Resend email" action. The admin page says whether it was emailed; when email isn't configured or the address bounced, it says so and the link can still be copied.
+- One professional design for every Kalami email (staff invite, group invite, assessment notifications, message notices): brand header, headline, short text, key details as label/value rows, one clear button, the link written out as a fallback, tidy footer. Emails to people whose language isn't known (invites) are in Georgian, then English, as two clean sections instead of interleaved lines.
+- Out of scope: Clerk's own sign-in/verification-code emails (configured in Clerk), changing who receives which notifications.
+
+### Acceptance criteria
+
+- [x] A new staff invite is emailed through Resend with a working personal link to the staff app's invite page; a resend works and is throttled; suppressed (bounced/complained) addresses aren't emailed. *(Verified in backend tests with the Resend component; no real send yet.)*
+- [x] The admin page shows whether each invite was emailed and offers Resend; without email configured it says so and the link still works.
+- [x] All Kalami emails share the new design, in HTML and plain text, with escaped content and correct language(s); they render well on desktop and phone widths.
+- [x] Existing email behaviour (notifications, messages, group invites, unsubscribe, idempotency, bounce handling) still works.
+- [ ] User tested and accepted the result (including a real send once `RESEND_API_KEY` is set).
+
+### Implementation and verification notes
+
+2026-10-05, Claude (Claude Code):
+
+- **Sending** (`kalami-stuff/convex/email.ts`): new `sendStaffInviteEmail` (skips when `RESEND_API_KEY` is missing, in Resend test mode for non-test addresses, or for suppressed addresses; logs to `emailLog` so bounces are traced; reply-to is the inviting admin; idempotency key per invite and minute) and `staffInviteUrl` (`STAFF_APP_URL/invite/<token>`).
+- **Invites** (`convex/invites.ts`, `convex/schema.ts`): `invites` gains `emailId`/`emailedAt`. `invites.create` emails the invitation and returns `email: "sent" | "recent" | "off"`; creating again for an open invite resends it unless it went out in the last 10 minutes. New `invites.resendEmail` (same rights as creating; refuses accepted/withdrawn invites; renews an expired invite's 14 days first; rate-limited with the `invite` limit). `listForUniversity` and `listAll` return `emailedAt`.
+- **Design** (`convex/lib/email/templates.ts`, rewritten): one `renderEmail` layout for all emails (Kalami header, white card with a lime top line, eyebrow label, headline, paragraphs, label/value details panel, quoted message block, button, written-out fallback link, footer), inline-styled tables for email clients plus a small-screen media query, long words wrap, Georgian labels aren't uppercased (no Mtavruli). New `renderStaffInviteEmail` (role, university or "independent teacher", invited by, valid until in Tbilisi time, the address to sign in with). Group invites are now a Georgian section then an English section instead of interleaved lines. Notifications, staff message notices and student reply notices moved to the layout with the same copy (deadline as a detail row). Unsubscribe page restyled to match.
+- **Admin UI**: `components/admin/InvitesBoard.tsx` (shared `CreatedInvite`, `InviteRowActions`, `emailedLine`; button "Send invitation"; result "Invitation emailed to …" / "Already emailed a few minutes ago…" / "Not emailed: email isn't set up… Send the link yourself" with the link to copy; rows "emailed <date>" / "not emailed" and Resend · Copy · Withdraw), `InviteCenter.tsx`, `SuperAdminInvites.tsx`, `UniversityInvites.tsx`. The old "Send it yourself for now; invite emails come later" note is gone.
+- **Previews**: `components/dev/EmailPreviews.tsx` + gallery view `/dev/ui?view=emails` renders every email from the real templates at 680 and 375 px with subject and plain text.
+- **Docs**: `OPERATIONS.md` Email section (what's emailed, settings, dev values).
+- **Tests** (`convex/email.test.ts`): staff invitation content (both languages, escaping, independent teacher), create→sent and logged, re-invite/resend within 10 min → recent, later resend of an expired invite renews and sends, accepted invite can't be resent, no API key → off, suppressed address → off, a university admin can't resend admin invites or another university's; notification test updated for the deadline row and fallback link.
+
+Checks run (2026-10-05): `kalami-stuff` `npx tsc --noEmit` ✅, `npm run lint` ✅, `npx vitest run` ✅ 19 files / 206 tests; deployed to dev `glad-mockingbird-933` (`npx convex dev --once`) ✅; `npm run api:student` and `kalami` `npx tsc --noEmit` ✅. Browser: `/dev/ui?view=emails`, all 8 emails at 680 and 375 px with no horizontal overflow (after adding wrapping and small-screen padding); `/dev/ui?view=admin`: "Send invitation" → "Invitation emailed to new.lecturer@tsu.ge · Tbilisi State University." with Copy link, rows show emailed/not emailed, Resend reports its outcome in the row.
+
+Limitations: no real email was sent: the dev deployment has no `RESEND_API_KEY` (only the user should set it), and `STAFF_APP_URL`/`STUDENT_APP_URL` aren't set on dev, so dev emails would link to the production hosts until they are (commands in OPERATIONS.md). Rendering was checked in Chrome only, not in Gmail/Outlook/Apple Mail. Georgian copy should get a native read. Clerk's own sign-in and verification-code emails are configured in Clerk, not here.
 
 ### User review
 
