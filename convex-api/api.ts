@@ -4259,5 +4259,585 @@ export type PublicApiType = {
       null
     >;
   };
+  platform: {
+    overview: FunctionReference<
+      "query",
+      "public",
+      { now: number; university?: Id<"universities"> | "none" },
+      {
+        assessments: {
+          approximate: boolean;
+          archived: number;
+          byKind: {
+            final: number;
+            midterm: number;
+            quiz: number;
+            task: number;
+          };
+          draft: number;
+          published: number;
+        };
+        courses: {
+          archived: number;
+          draft: number;
+          published: number;
+          total: number;
+        };
+        groups: { active: number; archived: number };
+        isSuperAdmin: boolean;
+        live: {
+          attemptsInProgress: number;
+          closingSoon: Array<{
+            assessmentId: Id<"assessments">;
+            closesAt: number;
+            courseId: Id<"courses">;
+            courseTitle: string;
+            inProgress: number;
+            kind: "task" | "quiz" | "midterm" | "final";
+            title: string;
+          }>;
+        };
+        openTeamConversations?: number;
+        pendingInvites: number;
+        people: {
+          capped: boolean;
+          lecturers: number;
+          students: number;
+          superAdmins?: number;
+          uniAdmins: number;
+        };
+        recent: Array<{
+          _id: Id<"auditLog">;
+          action: string;
+          actorEmail?: string;
+          actorName: string;
+          at: number;
+          client?: string;
+          courseId?: Id<"courses">;
+          courseTitle?: string;
+          summary: string;
+          targetId: string;
+          targetTable: string;
+          via: "web" | "mcp";
+        }>;
+        universities: Array<{
+          _id: Id<"universities">;
+          name: { en: string; ka: string };
+          status: "active" | "archived";
+        }>;
+      }
+    >;
+    universities: FunctionReference<
+      "query",
+      "public",
+      { now: number },
+      Array<{
+        _creationTime: number;
+        _id: Id<"universities">;
+        admins: number;
+        courses: number;
+        groups: number;
+        lecturers: number;
+        name: { en: string; ka: string };
+        pendingInvites: number;
+        publishedCourses: number;
+        slug: string;
+        status: "active" | "archived";
+        students: number;
+      }>
+    >;
+    updateUniversity: FunctionReference<
+      "mutation",
+      "public",
+      {
+        nameEn?: string;
+        nameKa?: string;
+        slug?: string;
+        status?: "active" | "archived";
+        universityId: Id<"universities">;
+      },
+      null
+    >;
+    students: FunctionReference<
+      "query",
+      "public",
+      {
+        paginationOpts: {
+          cursor: string | null;
+          endCursor?: string | null;
+          id?: number;
+          maximumBytesRead?: number;
+          maximumRowsRead?: number;
+          numItems: number;
+        };
+        university?: Id<"universities"> | "none";
+      },
+      {
+        continueCursor: string;
+        isDone: boolean;
+        page: Array<{
+          avatarUrl?: string;
+          courses: number;
+          email: string;
+          emailOff?: "opted_out" | "bounced" | "complained";
+          faculty?: string;
+          group?: string;
+          groups: number;
+          joinedAt: number;
+          locale: "ka" | "en";
+          membershipId: Id<"memberships">;
+          name: string;
+          onboarded: boolean;
+          studentNumber?: string;
+          universityId?: Id<"universities">;
+          universityName?: { en: string; ka: string };
+          userId: Id<"users">;
+          year?: number;
+        }>;
+        pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+        splitCursor?: string | null;
+      }
+    >;
+    findStudents: FunctionReference<
+      "query",
+      "public",
+      { query: string; university?: Id<"universities"> | "none" },
+      Array<{
+        avatarUrl?: string;
+        courses: number;
+        email: string;
+        emailOff?: "opted_out" | "bounced" | "complained";
+        faculty?: string;
+        group?: string;
+        groups: number;
+        joinedAt: number;
+        locale: "ka" | "en";
+        membershipId: Id<"memberships">;
+        name: string;
+        onboarded: boolean;
+        studentNumber?: string;
+        universityId?: Id<"universities">;
+        universityName?: { en: string; ka: string };
+        userId: Id<"users">;
+        year?: number;
+      }>
+    >;
+    student: FunctionReference<
+      "query",
+      "public",
+      { userId: Id<"users"> },
+      {
+        attempts: Array<{
+          _id: Id<"attempts">;
+          assessmentId: Id<"assessments">;
+          assessmentTitle: string;
+          autoSubmitted: boolean;
+          courseId: Id<"courses">;
+          courseTitle: string;
+          graded: boolean;
+          integrity: "green" | "yellow" | "red";
+          kind: "task" | "quiz" | "midterm" | "final";
+          maxScore: number;
+          needsGrading: boolean;
+          number: number;
+          percent?: number;
+          score?: number;
+          startedAt: number;
+          status: "in_progress" | "submitted";
+          submittedAt?: number;
+        }>;
+        enrollments: Array<{
+          _id: Id<"enrollments">;
+          courseId: Id<"courses">;
+          courseStatus: "draft" | "published" | "archived";
+          courseTitle: string;
+          enrolledAt: number;
+          groupNames: Array<string>;
+          status: "active" | "removed";
+          viaCode: boolean;
+        }>;
+        groups: Array<{
+          _id: Id<"groups">;
+          archived: boolean;
+          joinedAt: number;
+          name: string;
+          universityName?: { en: string; ka: string };
+          via: "link" | "email";
+        }>;
+        profile: {
+          avatarUrl?: string;
+          courses: number;
+          email: string;
+          emailOff?: "opted_out" | "bounced" | "complained";
+          faculty?: string;
+          group?: string;
+          groups: number;
+          joinedAt: number;
+          locale: "ka" | "en";
+          membershipId: Id<"memberships">;
+          name: string;
+          onboarded: boolean;
+          studentNumber?: string;
+          universityId?: Id<"universities">;
+          universityName?: { en: string; ka: string };
+          userId: Id<"users">;
+          year?: number;
+        };
+        stats: {
+          attempts: number;
+          averagePercent?: number;
+          bestPercent?: number;
+          flagged: number;
+          inProgress: number;
+          needsGrading: number;
+          submitted: number;
+        };
+      }
+    >;
+    setEnrollmentStatus: FunctionReference<
+      "mutation",
+      "public",
+      { enrollmentId: Id<"enrollments">; status: "active" | "removed" },
+      null
+    >;
+    updateStudentProfile: FunctionReference<
+      "mutation",
+      "public",
+      {
+        faculty?: string;
+        group?: string;
+        studentNumber?: string;
+        universityId: Id<"universities"> | null;
+        userId: Id<"users">;
+        year?: number;
+      },
+      null
+    >;
+    staff: FunctionReference<
+      "query",
+      "public",
+      {
+        role?: "lecturer" | "uni_admin" | "super_admin";
+        university?: Id<"universities"> | "none";
+      },
+      Array<{
+        assistantCourses: number;
+        avatarUrl?: string;
+        email: string;
+        emailOff?: "opted_out" | "bounced" | "complained";
+        groups: number;
+        joinedAt: number;
+        lastActiveAt?: number;
+        locale: "ka" | "en";
+        name: string;
+        ownedCourses: number;
+        roles: Array<{
+          membershipId: Id<"memberships">;
+          role: "student" | "lecturer" | "uni_admin" | "super_admin";
+          universityId?: Id<"universities">;
+          universityName?: { en: string; ka: string };
+        }>;
+        userId: Id<"users">;
+      }>
+    >;
+    findStaff: FunctionReference<
+      "query",
+      "public",
+      { query: string; university?: Id<"universities"> | "none" },
+      Array<{
+        assistantCourses: number;
+        avatarUrl?: string;
+        email: string;
+        emailOff?: "opted_out" | "bounced" | "complained";
+        groups: number;
+        joinedAt: number;
+        lastActiveAt?: number;
+        locale: "ka" | "en";
+        name: string;
+        ownedCourses: number;
+        roles: Array<{
+          membershipId: Id<"memberships">;
+          role: "student" | "lecturer" | "uni_admin" | "super_admin";
+          universityId?: Id<"universities">;
+          universityName?: { en: string; ka: string };
+        }>;
+        userId: Id<"users">;
+      }>
+    >;
+    staffMember: FunctionReference<
+      "query",
+      "public",
+      { userId: Id<"users"> },
+      {
+        activity: Array<{
+          _id: Id<"auditLog">;
+          action: string;
+          actorEmail?: string;
+          actorName: string;
+          at: number;
+          client?: string;
+          courseId?: Id<"courses">;
+          courseTitle?: string;
+          summary: string;
+          targetId: string;
+          targetTable: string;
+          via: "web" | "mcp";
+        }>;
+        courses: Array<{
+          _id: Id<"courses">;
+          assessments: { archived: number; draft: number; published: number };
+          role: "owner" | "assistant";
+          status: "draft" | "published" | "archived";
+          students: number;
+          title: string;
+          universityName?: { en: string; ka: string };
+          updatedAt: number;
+        }>;
+        groups: Array<{
+          _id: Id<"groups">;
+          archived: boolean;
+          joinedAt: number;
+          members: number;
+          name: string;
+          universityName?: { en: string; ka: string };
+        }>;
+        profile: {
+          assistantCourses: number;
+          avatarUrl?: string;
+          email: string;
+          emailOff?: "opted_out" | "bounced" | "complained";
+          groups: number;
+          joinedAt: number;
+          lastActiveAt?: number;
+          locale: "ka" | "en";
+          name: string;
+          ownedCourses: number;
+          roles: Array<{
+            membershipId: Id<"memberships">;
+            role: "student" | "lecturer" | "uni_admin" | "super_admin";
+            universityId?: Id<"universities">;
+            universityName?: { en: string; ka: string };
+          }>;
+          userId: Id<"users">;
+        };
+      }
+    >;
+    addStaffRole: FunctionReference<
+      "mutation",
+      "public",
+      {
+        role: "lecturer" | "uni_admin";
+        universityId?: Id<"universities">;
+        userId: Id<"users">;
+      },
+      null
+    >;
+    courses: FunctionReference<
+      "query",
+      "public",
+      {
+        paginationOpts: {
+          cursor: string | null;
+          endCursor?: string | null;
+          id?: number;
+          maximumBytesRead?: number;
+          maximumRowsRead?: number;
+          numItems: number;
+        };
+        status?: "draft" | "published" | "archived";
+        university?: Id<"universities"> | "none";
+      },
+      {
+        continueCursor: string;
+        isDone: boolean;
+        page: Array<{
+          _creationTime: number;
+          _id: Id<"courses">;
+          assessments: { archived: number; draft: number; published: number };
+          createdVia: "web" | "mcp";
+          description?: string;
+          joinCode: string;
+          joinEnabled: boolean;
+          locale: "ka" | "en";
+          ownerEmail?: string;
+          ownerId: Id<"users">;
+          ownerName: string;
+          semester?: string;
+          status: "draft" | "published" | "archived";
+          students: number;
+          title: string;
+          universityId?: Id<"universities">;
+          universityName?: { en: string; ka: string };
+          updatedAt: number;
+        }>;
+        pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+        splitCursor?: string | null;
+      }
+    >;
+    findCourses: FunctionReference<
+      "query",
+      "public",
+      { query: string; university?: Id<"universities"> | "none" },
+      Array<{
+        _creationTime: number;
+        _id: Id<"courses">;
+        assessments: { archived: number; draft: number; published: number };
+        createdVia: "web" | "mcp";
+        description?: string;
+        joinCode: string;
+        joinEnabled: boolean;
+        locale: "ka" | "en";
+        ownerEmail?: string;
+        ownerId: Id<"users">;
+        ownerName: string;
+        semester?: string;
+        status: "draft" | "published" | "archived";
+        students: number;
+        title: string;
+        universityId?: Id<"universities">;
+        universityName?: { en: string; ka: string };
+        updatedAt: number;
+      }>
+    >;
+    course: FunctionReference<
+      "query",
+      "public",
+      { courseId: Id<"courses"> },
+      {
+        assessments: Array<{
+          _id: Id<"assessments">;
+          closesAt?: number;
+          inProgress: number;
+          kind: "task" | "quiz" | "midterm" | "final";
+          opensAt?: number;
+          publishedAt?: number;
+          questionCount: number;
+          status: "draft" | "published" | "archived";
+          submitted: number;
+          title: string;
+          totalPoints: number;
+          updatedAt: number;
+        }>;
+        course: {
+          _creationTime: number;
+          _id: Id<"courses">;
+          assessments: { archived: number; draft: number; published: number };
+          createdVia: "web" | "mcp";
+          description?: string;
+          joinCode: string;
+          joinEnabled: boolean;
+          locale: "ka" | "en";
+          ownerEmail?: string;
+          ownerId: Id<"users">;
+          ownerName: string;
+          semester?: string;
+          status: "draft" | "published" | "archived";
+          students: number;
+          title: string;
+          universityId?: Id<"universities">;
+          universityName?: { en: string; ka: string };
+          updatedAt: number;
+        };
+        enrollments: { active: number; removed: number };
+        groups: Array<{ _id: Id<"groups">; members: number; name: string }>;
+        staff: Array<{
+          email?: string;
+          name: string;
+          role: "owner" | "assistant";
+          userId: Id<"users">;
+        }>;
+      }
+    >;
+    transferCourse: FunctionReference<
+      "mutation",
+      "public",
+      { courseId: Id<"courses">; newOwnerEmail: string },
+      null
+    >;
+    groups: FunctionReference<
+      "query",
+      "public",
+      { university?: Id<"universities"> | "none" },
+      Array<{
+        _creationTime: number;
+        _id: Id<"groups">;
+        archived: boolean;
+        courses: number;
+        description?: string;
+        inviteEnabled: boolean;
+        lecturers: number;
+        members: number;
+        name: string;
+        ownerName: string;
+        pendingInvites: number;
+        universityId?: Id<"universities">;
+        universityName?: { en: string; ka: string };
+        updatedAt: number;
+      }>
+    >;
+    activity: FunctionReference<
+      "query",
+      "public",
+      {
+        paginationOpts: {
+          cursor: string | null;
+          endCursor?: string | null;
+          id?: number;
+          maximumBytesRead?: number;
+          maximumRowsRead?: number;
+          numItems: number;
+        };
+        targetTable?: string;
+      },
+      {
+        continueCursor: string;
+        isDone: boolean;
+        page: Array<{
+          _id: Id<"auditLog">;
+          action: string;
+          actorEmail?: string;
+          actorName: string;
+          at: number;
+          client?: string;
+          courseId?: Id<"courses">;
+          courseTitle?: string;
+          summary: string;
+          targetId: string;
+          targetTable: string;
+          via: "web" | "mcp";
+        }>;
+        pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+        splitCursor?: string | null;
+      }
+    >;
+    system: FunctionReference<
+      "query",
+      "public",
+      { now: number },
+      {
+        attemptsInProgress: number;
+        deploy: { busy: boolean; reason: string };
+        email: {
+          configured: boolean;
+          suppressions: Array<{
+            _id: Id<"emailSuppressions">;
+            at: number;
+            email: string;
+            name?: string;
+            status: "bounced" | "complained";
+            userId?: Id<"users">;
+          }>;
+        };
+        migration: { materialsLeft: number };
+        scheduledJobs: Array<{ does: string; every: string; name: string }>;
+      }
+    >;
+    clearEmailSuppression: FunctionReference<
+      "mutation",
+      "public",
+      { email: string },
+      null
+    >;
+  };
 };
 export type InternalApiType = {};

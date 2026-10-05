@@ -26,6 +26,7 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-005 | Admin page cards widen the page on phones until they slide in | Needs clarification | Unassigned |
 | TASK-006 | Staff invites emailed through Resend; professional email design | Ready for review | Claude (Claude Code) |
 | TASK-007 | Super admin: find people by email and change their staff role | Ready for review | Claude (Claude Code) |
+| TASK-008 | Standalone admin panel at `/admin`: own sidebar, student and lecturer stats, status controls for everything | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -427,6 +428,63 @@ The user (super admin) wants to search people by email on the staff Admin page a
 Checks run (2026-10-05): `kalami-stuff` `npx tsc --noEmit` ✅, `npm run lint` ✅, `npx vitest run` ✅ 20 files / 213 tests; deployed to dev with `npx convex dev --once` ✅; `npm run api:student` + `kalami` `npx tsc --noEmit` ✅. Browser, staff gallery `?view=admin`: People section lists sample people; Change shows the university select with "No university: independent teacher" for a lecturer and drops it (keeping the chosen university) when switching to University admin; Remove… shows the confirmation; no horizontal overflow from the section at 1440 and 375 px.
 
 Limitations: verified with backend tests and gallery sample data, not with a signed-in super admin in the browser. Search matches the start of an email only (not names or the middle of an address). A person's existing courses stay with their original university when they move.
+
+### User review
+
+Pending.
+
+## TASK-008 — Standalone admin panel at `/admin`: own sidebar, student and lecturer stats, status controls for everything
+
+- **Status:** Ready for review (requested 2026-10-05; scope below is Claude's reading of the request, open points listed; implemented the same day)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-05
+
+### Problem / reproduction
+
+The user (super admin) asked for "the ultimate tool" for the admin panel: one place that manages everything, can touch any status and change it, shows all the stats of students and lecturers, and lives on its own route separated from the rest of the staff app, with its own sidebar dividing the features.
+
+Today the admin page is one long page inside the staff layout (`kalami-stuff/app/(staff)/admin/page.tsx`, under the staff pill header): a create-university card, the invite center, the people search and, per university, invites and groups. There are no stats, no status controls beyond invites and roles, and no overview of courses, groups or activity.
+
+### Agreed behavior and scope
+
+- **Own route group** `app/(admin)/admin/*` in the staff app, outside the `(staff)` layout: no staff pill header. A left **sidebar** on wide screens (sections grouped under Overview / People / Teaching / Platform), a top bar with scrollable section chips on phones, a user button and a "Back to the studio" link.
+- **Who gets in:** the super admin (everything, platform-wide, with a university filter: every university / one / no university) and university admins (their own university only: Overview, Students, Lecturers, Invites, Courses, Groups). Everyone else sees "Nothing to administer here". Every backend function re-checks the role and the university scope.
+- **Sections:**
+  - *Overview*: counts (students, lecturers, university admins, universities, courses by status, assessments by status, groups, pending invites, open team conversations), what's live right now (attempts in progress, work closing within 2 hours), the latest activity.
+  - *Students*: list (newest first, Load more), filter by university, search by email; each with university, faculty, group, year, courses. A detail panel with their courses (enrollment status toggle active/removed), groups, every attempt with score and integrity, and their stats (attempts, submitted, average, best, waiting for grading). Admin can edit the student's profile (university, faculty, group, year, student number).
+  - *Lecturers*: lecturers and university admins with roles, courses owned, groups taught, last activity; a detail panel with their courses (status, students), groups, recent activity; role actions (change, remove, **add a role**, e.g. a second university or making a role-less account a lecturer).
+  - *People*: the TASK-007 search (any account by email, roles, change/remove).
+  - *Invites*: the TASK-004 invite center (super admin) or the university's board (university admin).
+  - *Universities*: list with stats (students, lecturers, admins, courses, groups, pending invites), create, **archive/restore**, rename and change the slug.
+  - *Courses*: all courses (filter by university and status, search), owner, students, assessments by status; status draft/published/archived, joining on/off, new join code, **transfer to another owner**, delete (confirmation); a detail panel listing assessments with their own status controls and attempt counts.
+  - *Groups*: every group (filter by university), members, lecturers, courses; archive/restore and link open/closed; open the group page.
+  - *Activity*: the whole audit log, newest first, filter by action; who, via web or an agent, what.
+  - *System*: deploy guard (is an exam running?), email configured or not, email suppressions (bounced/complained) with "allow again", people whose address bounced (reset), the materials→weeks migration leftover count, scheduled jobs.
+- **Statuses the panel changes:** university status, course status + joining, assessment status, enrollment status, group archived/link, invite withdrawn, staff roles, student profile/university, email suppression. Each change is written to the audit log.
+- **Kept out, on purpose (say so if wanted):** changing an attempt's status (reopening submitted work breaks grading; grading stays on the course page), reading conversations (private between student and lecturer; the team inbox stays at `/inbox`), making someone a super admin (stays `npx convex run admin:grantSuperAdmin`, as decided in TASK-007), deleting accounts (Clerk owns accounts; deletion arrives by webhook).
+
+### Acceptance criteria
+
+- [x] `/admin` renders outside the staff header with its own sidebar; every section above is reachable; phones get the top bar with chips and no horizontal overflow.
+- [x] The super admin sees platform-wide data and can filter by university; a university admin sees only their university; lecturers and students are refused by the backend and see the "nothing to administer" screen.
+- [x] Student and lecturer lists show the stats above and the detail panels work; every status control above changes the record and shows up in Activity.
+- [x] Existing admin flows keep working: invites (TASK-004), people roles (TASK-007), groups made by admins (TASK-001), create university.
+- [ ] User tested and accepted the result.
+
+### Implementation and verification notes
+
+2026-10-05, Claude (Claude Code). Everything in `kalami-stuff` unless noted.
+
+- **Backend** `convex/platform.ts` (public, 20 functions) + `convex/model/platform.ts` (the logic). Every function starts with `requireAdminScope` (super admin: everything; university admin: their universities; everyone else FORBIDDEN) and a `university` filter (`Id | "none" | undefined`) that the server checks against the scope (`coverage`); a university admin asking for another university gets FORBIDDEN, a record outside their reach NOT_FOUND. Queries: `overview` (people/courses/assessments/groups/invites counts, attempts in progress, work closing within 2 h, 10 latest audit lines), `universities` (with counts), `students` (paginated, newest first) + `findStudents` (email prefix) + `student` (enrollments, groups, attempts with score/percent/integrity colour, stats), `staff` (all staff once each, role filter) + `findStaff` + `staffMember` (courses, groups, recent changes), `courses` (paginated, status filter) + `findCourses` (title or join code) + `course` (staff, assessments with attempt counts, groups, enrollment counts), `groups`, `activity` (paginated, filter by table; super admin only), `system` (deploy guard, email configured, suppressions with the matching account, materials migration leftovers, jobs; super admin only). Mutations: `updateUniversity` (names, slug, archive/restore; super admin), `setEnrollmentStatus`, `updateStudentProfile` (university/faculty/group/year/ID; only the super admin takes a student out of every university), `addStaffRole` (super admin anywhere; university admins only lecturers at home; students refused), `transferCourse` (new owner by email, must be staff; old owner stays as assistant), `clearEmailSuppression` (super admin). All write the audit log. Status changes for courses, joining, assessments, groups and invites reuse the existing mutations, which already allow admins. Counts are capped (5000 per role, 1000 courses/groups) and say so.
+- **Schema** (`convex/schema.ts`): new indexes `memberships.by_role_and_universityId`, `courses.by_status`, `courses.by_universityId_and_status`, `auditLog.by_targetTable`. `convex/ops.ts` now shares `deployGuardStatus` with the System page.
+- **Route** `app/(admin)/layout.tsx` (StaffGate → `AdminArea`) + `template.tsx` + pages `admin/{page,students,lecturers,people,invites,universities,courses,groups,activity,system}/page.tsx` (thin, wired). The old `app/(staff)/admin/page.tsx`, `AdminView.tsx`, `GroupsBoard.tsx`, `UniversityGroups.tsx` are gone; `components/admin/types.ts` holds the shared types, `CreateUniversityCard.tsx` the extracted form. Groups pages now link to `/admin/groups`.
+- **UI** `components/admin/panel/`: `AdminShell` (desktop sidebar with Overview / People / Teaching / Platform groups and the university picker "Showing"; on phones a sticky bar with the picker and scrollable section chips; super-admin-only items hidden for university admins), `AdminArea` (gate + `listAdministered` + scope), `AdminScope` (the filter, remembered per tab in sessionStorage; `useMinute` for queries that take `now`), `ui.tsx` (PanelHeader, StatTile, StatusBar, Card, Avatar, SearchBox, ListFooter…), and one view per section: `OverviewView`, `StudentsView` + `StudentDetail` (dialog: stats tiles, profile edit, courses with Remove/Let back in, groups, attempts), `StaffView` + `StaffDetail` (dialog: roles with Change/Remove/Add a role, courses, groups, recent changes), `CoursesView` + `CourseDetail` (dialog: status, joining, new code, staff + transfer, assessments with their own status pills, groups, delete with confirmation, "Open in the studio"), `UniversitiesView` (create, edit names/slug, archive/restore, counts), `GroupsView` (new group with university select, filter, archived toggle, close/open link, archive/restore, Open), `ActivityView`, `SystemView`. Invites and Find a person reuse TASK-004/007 components inside the shell. New icons Search/Grid/Pulse; `lib/useDebounced.ts`.
+- **Dev gallery** `components/dev/AdminGallery.tsx`: `?view=panel-overview`, `panel-overview-uni`, `panel-students`, `panel-student`, `panel-lecturers`, `panel-lecturer`, `panel-courses`, `panel-course`, `panel-universities`, `panel-groups`, `panel-activity`, `panel-system`, plus `admin` (invites), `admin-people`, `admin-uni` now inside the shell.
+- **Tests** `convex/platform.test.ts` (14): lecturers/students refused everywhere and a university admin refused the super admin's pages; a university admin sees their own university only (and FORBIDDEN elsewhere); overview counts incl. a live attempt; universities with counts, rename/slug/archive/restore, archived refuses invites, slug conflicts, audit actions; students list order and counts, email search, detail with a submitted quiz (100 %), deleted hidden, non-students NOT_FOUND; remove/let back in changes what the student sees; profile edit by a university admin, super-admin-only moves out, validation; staff listed once each with roles/counts, role filter, no super admins for a university admin, email search, detail; addStaffRole rules; courses list/filter/search/detail; transfer (old owner becomes assistant and loses editing, students keep the course, other university NOT_FOUND); groups across universities; activity paging and table filter; system page and lifting a suppression.
+
+Checks run (2026-10-05): `kalami-stuff` `npx tsc --noEmit` ✅ (after `npx next typegen`, since the running dev server still listed the deleted page), `npm run lint` ✅, `npx vitest run` ✅ 21 files / 227 tests; deployed to dev `glad-mockingbird-933` with `npx convex dev --once` ✅; `npm run api:student`, then `kalami` `npx tsc --noEmit` ✅ and `npm run lint` ✅. Browser (the user's dev server on 3101, gallery): every `panel-*` view and `admin`/`admin-uni` at 1440 px: sidebar with grouped sections and the picker, stat tiles and status bars, the three dialogs; the university-admin overview hides Find a person / Activity / System and shows one university. At 375 px: top bar with picker and avatar, scrollable chips, student rows wrap, course dialog fits; `document.documentElement.scrollWidth` = 375 (no horizontal overflow). Real routes `/admin`, `/admin/students`, `/admin/courses`, `/admin/system` compile and redirect to sign-in when signed out (307).
+
+Limitations: verified with backend tests and gallery sample data, not with a signed-in super admin in the browser (same as TASK-004/007). Email search matches the start of an address only; course search covers the newest 1000 courses in scope. Staff and groups lists aren't paginated (they read up to 1000 rows per role/university). Activity and System are super-admin only. Page headings animate in with `AnimatedHeading`; in the browser pane they can look blurred in screenshots (known rAF throttling), not in a real tab. Kept out on purpose, as listed above: attempt status, reading conversations, super admin promotion, deleting accounts.
 
 ### User review
 
