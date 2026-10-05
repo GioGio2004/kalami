@@ -4225,5 +4225,39 @@ export type PublicApiType = {
         }
     >;
   };
+  people: {
+    search: FunctionReference<
+      "query",
+      "public",
+      { query: string },
+      Array<{
+        _id: Id<"users">;
+        email: string;
+        memberships: Array<{
+          _id: Id<"memberships">;
+          role: "student" | "lecturer" | "uni_admin" | "super_admin";
+          universityId?: Id<"universities">;
+          universityName?: { en: string; ka: string };
+        }>;
+        name: string;
+      }>
+    >;
+    changeStaffRole: FunctionReference<
+      "mutation",
+      "public",
+      {
+        membershipId: Id<"memberships">;
+        role: "lecturer" | "uni_admin";
+        universityId?: Id<"universities">;
+      },
+      null
+    >;
+    removeStaffRole: FunctionReference<
+      "mutation",
+      "public",
+      { membershipId: Id<"memberships"> },
+      null
+    >;
+  };
 };
 export type InternalApiType = {};

@@ -25,6 +25,7 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-004 | Super admin: invite lecturers with a university picker and one invite list | Ready for review | Claude (Claude Code) |
 | TASK-005 | Admin page cards widen the page on phones until they slide in | Needs clarification | Unassigned |
 | TASK-006 | Staff invites emailed through Resend; professional email design | Ready for review | Claude (Claude Code) |
+| TASK-007 | Super admin: find people by email and change their staff role | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -379,6 +380,53 @@ Investigation: emails go through the `@convex-dev/resend` component (`kalami-stu
 Checks run (2026-10-05): `kalami-stuff` `npx tsc --noEmit` ✅, `npm run lint` ✅, `npx vitest run` ✅ 19 files / 206 tests; deployed to dev `glad-mockingbird-933` (`npx convex dev --once`) ✅; `npm run api:student` and `kalami` `npx tsc --noEmit` ✅. Browser: `/dev/ui?view=emails`, all 8 emails at 680 and 375 px with no horizontal overflow (after adding wrapping and small-screen padding); `/dev/ui?view=admin`: "Send invitation" → "Invitation emailed to new.lecturer@tsu.ge · Tbilisi State University." with Copy link, rows show emailed/not emailed, Resend reports its outcome in the row.
 
 Limitations: no real email was sent: the dev deployment has no `RESEND_API_KEY` (only the user should set it), and `STAFF_APP_URL`/`STUDENT_APP_URL` aren't set on dev, so dev emails would link to the production hosts until they are (commands in OPERATIONS.md). Rendering was checked in Chrome only, not in Gmail/Outlook/Apple Mail. Georgian copy should get a native read. Clerk's own sign-in and verification-code emails are configured in Clerk, not here.
+
+### User review
+
+Pending.
+
+## TASK-007 — Super admin: find people by email and change their staff role
+
+- **Status:** Ready for review (requested and agreed 2026-10-05)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-05
+
+### Problem / reproduction
+
+The user (super admin) wants to search people by email on the staff Admin page and switch their role. Today roles only come from accepted invites (`convex/invites.ts`) or the `admin:grantSuperAdmin` CLI; there is no way to see or change someone's role in the app. Roles live only in Kalami's `memberships` table (role + university), not in Clerk.
+
+### Agreed behavior and scope (user's answers, 2026-10-05)
+
+- **Who:** only the super admin can search people and change roles.
+- **Search** by email (start of the address) shows each person's name, email and roles (student, lecturer, university admin, super admin, with university).
+- **Role changes:** lecturer ↔ university admin. Students stay students (accounts remain student or staff, never both); making someone a super admin stays a CLI step, and a super admin's own role can't be changed here.
+- **University:** a lecturer or university admin can also be moved to another university, or (lecturers) made an independent teacher. Their existing courses stay where they were created.
+- **Remove access:** a staff role can be removed entirely; without any staff role they can't use the staff app. Their courses stay, manageable by the university's admins and the super admin.
+
+### Acceptance criteria
+
+- [x] Only the super admin can search people and change roles (backend refuses everyone else).
+- [x] Searching an email (start of the address) lists matching people with their roles and universities; deleted accounts don't show.
+- [x] Lecturer ↔ university admin and the university can be changed; a university admin always has a university; students and super admins can't be changed here.
+- [x] Removing a staff role works; with no staff role left the person loses staff access, and their courses stay.
+- [x] Moving someone away from a university takes them off that university's groups (courses they shared stay with the students).
+- [ ] User tested and accepted the result.
+
+### Implementation and verification notes
+
+2026-10-05, Claude (Claude Code):
+
+- **Backend** `kalami-stuff/convex/people.ts` (new), super admin only (`requireSuperAdmin`):
+  - `people.search({ query })`: people whose email starts with the query (at least 2 characters, case-insensitive, `users.by_email` range, max 25), without deleted accounts, each with name, email and memberships (role, university and its name).
+  - `people.changeStaffRole({ membershipId, role, universityId? })`: lecturer ↔ uni_admin and/or another university (lecturers may have none = independent teacher); a university admin needs a university; the university must be active; changing into a role the person already has at that university removes the duplicate row; student and super admin rows are refused (CONFLICT).
+  - `people.removeStaffRole({ membershipId })`: deletes a lecturer/uni_admin row (students and super admin refused).
+  - Both are logged with `logAudit`. When nothing else ties the person to their old university, they're taken off its groups (`stopTeachingAtUniversity` in `convex/model/groups.ts`); course links stay, so students keep the courses (same rule as deleted lecturers).
+- **UI**: Admin page "People" section (super admin only): `components/admin/PeoplePanel.tsx` (search by email with 250 ms debounce in `SuperAdminPeople.tsx`; each person with their roles; staff roles get Change (role segmented + university select; "independent teacher" only for lecturers) and Remove… with a confirmation; students show "Students stay students", the platform admin role "Changed from the command line"; empty, too-short and no-match states), `AdminView.tsx` (`people` slot), `app/(staff)/admin/page.tsx`. Dev gallery `?view=admin` has sample people.
+- **Tests** `convex/people.test.ts` (7): non-super-admins refused for search/change/remove; prefix search with roles and university names, deleted hidden; lecturer→uni_admin (gains admin page) →lecturer elsewhere→independent; uni_admin without university refused; student and super admin rows refused; removing the only staff role ends staff access while the course stays; moving away removes them from the old university's groups while students keep the shared course, and a second role at the same university keeps them; merging duplicates.
+
+Checks run (2026-10-05): `kalami-stuff` `npx tsc --noEmit` ✅, `npm run lint` ✅, `npx vitest run` ✅ 20 files / 213 tests; deployed to dev with `npx convex dev --once` ✅; `npm run api:student` + `kalami` `npx tsc --noEmit` ✅. Browser, staff gallery `?view=admin`: People section lists sample people; Change shows the university select with "No university: independent teacher" for a lecturer and drops it (keeping the chosen university) when switching to University admin; Remove… shows the confirmation; no horizontal overflow from the section at 1440 and 375 px.
+
+Limitations: verified with backend tests and gallery sample data, not with a signed-in super admin in the browser. Search matches the start of an email only (not names or the middle of an address). A person's existing courses stay with their original university when they move.
 
 ### User review
 
