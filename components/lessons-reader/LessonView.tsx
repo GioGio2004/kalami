@@ -1,10 +1,9 @@
 "use client";
 
 import type { FunctionReturnType } from "convex/server";
-import { motion, useReducedMotion, useScroll, useSpring } from "motion/react";
 import Link from "next/link";
 import { ContactCard } from "@/components/contact/ContactCard";
-import { LessonBlocks } from "@/components/lessons/LessonBlocks";
+import { LessonSlides } from "@/components/lessons/LessonSlides";
 import type { LessonBlock } from "@/components/lessons/types";
 import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
 import { Enter } from "@/components/motion/Reveal";
@@ -63,85 +62,86 @@ export function readingMinutes(blocks: LessonBlock[]): number {
 }
 
 /**
- * A lesson as the student reads it: where it sits (course › week), the title,
- * the lecturer's blocks in a calm reading column, then the way on (next lesson,
- * or a note that this is the latest) and a way to ask about it.
+ * A lesson as the student reads it: a compact header (course › week, the
+ * title, how long it is), then the lecturer's blocks as slides, one block per
+ * slide, so the slide gets the room. Below: the way on to other lessons (next,
+ * or a note that this is the latest), back to the course, and a way to ask.
  */
 export function LessonView({ lesson }: { lesson: Lesson }) {
   const courseHref = `/courses/${lesson.course._id}`;
   const minutes = readingMinutes(lesson.blocks);
+  const slides = lesson.blocks.length;
   const alone = !lesson.previous;
 
   return (
-    <>
-      <ReadingProgress />
-      <article className="mx-auto w-full max-w-[52rem]">
-        <Enter
-          as="header"
-          kind="scale"
-          className="rounded-[2.25rem] bg-panel px-5 pb-9 pt-7 sm:rounded-[2.75rem] sm:px-12 sm:pb-12 sm:pt-10"
+    <article className="mx-auto w-full max-w-[52rem]">
+      <Enter
+        as="header"
+        kind="scale"
+        className="rounded-[2rem] bg-panel px-5 py-5 sm:rounded-[2.25rem] sm:px-8 sm:py-6"
+      >
+        <nav aria-label="Breadcrumb">
+          <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-graphite">
+            <li className="min-w-0">
+              <Link
+                href={courseHref}
+                className={`rounded-full underline decoration-ink/25 underline-offset-4 transition hover:text-ink hover:decoration-ink ${focusRing}`}
+              >
+                {lesson.course.title}
+              </Link>
+            </li>
+            <li aria-hidden="true" className="text-graphite/60">
+              ›
+            </li>
+            <li className="min-w-0">{lesson.week.title}</li>
+          </ol>
+        </nav>
+        <AnimatedHeading
+          as="h1"
+          className="mt-3 text-3xl font-medium leading-[1.05] tracking-[-0.035em] hyphens-auto wrap-anywhere sm:text-4xl"
         >
-          <nav aria-label="Breadcrumb">
-            <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-graphite">
-              <li className="min-w-0">
-                <Link
-                  href={courseHref}
-                  className={`rounded-full underline decoration-ink/25 underline-offset-4 transition hover:text-ink hover:decoration-ink ${focusRing}`}
-                >
-                  {lesson.course.title}
-                </Link>
-              </li>
-              <li aria-hidden="true" className="text-graphite/60">
-                ›
-              </li>
-              <li className="min-w-0">{lesson.week.title}</li>
-            </ol>
-          </nav>
-          <p className="mt-8 -rotate-1 font-hand text-[1.6rem] leading-none text-graphite sm:mt-10">
-            {minutes} min read
+          {lesson.title}
+        </AnimatedHeading>
+        {slides > 0 && (
+          <p className="mt-2 text-sm text-graphite">
+            {slides} slide{slides === 1 ? "" : "s"} · about {minutes} min
           </p>
-          <AnimatedHeading
-            as="h1"
-            className="mt-3 text-4xl font-medium leading-[1.02] tracking-[-0.04em] hyphens-auto wrap-anywhere sm:text-6xl sm:leading-[0.98]"
-          >
-            {lesson.title}
-          </AnimatedHeading>
-        </Enter>
+        )}
+      </Enter>
 
-        {/* The reading column sits on the page's paper; paragraphs get a little more air than elsewhere. */}
-        <div className="mx-auto mt-10 max-w-[720px] px-2 sm:mt-14 sm:px-4 [&_li]:leading-[1.75] [&_p]:leading-[1.75]">
-          {lesson.blocks.length > 0 ? (
-            <LessonBlocks blocks={lesson.blocks} />
+      {/* Paragraphs get a little more air than elsewhere. */}
+      <div className="mt-5 sm:mt-6 [&_li]:leading-[1.75] [&_p]:leading-[1.75]">
+        <LessonSlides
+          blocks={lesson.blocks}
+          label={lesson.title}
+          empty={<p className="px-2 text-[17px] text-graphite">This lesson is empty for now.</p>}
+        />
+      </div>
+
+      <footer className="mt-12 rounded-[2.25rem] bg-panel p-3 sm:mt-16 sm:rounded-[2.75rem] sm:p-5">
+        <nav aria-label="Other lessons" className="grid grid-cols-1 gap-3 *:min-w-0 sm:grid-cols-2">
+          {lesson.next ? (
+            <NextCard courseId={lesson.course._id} lesson={lesson.next} wide={alone} />
           ) : (
-            <p className="text-[17px] text-graphite">This lesson is empty for now.</p>
+            <LatestCard wide={alone} />
           )}
+          {lesson.previous && <PreviousCard courseId={lesson.course._id} lesson={lesson.previous} />}
+        </nav>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 px-2 pb-2 sm:px-1 sm:pb-0">
+          <ButtonLink href={courseHref} variant="outline" className="bg-card max-sm:w-full">
+            <ArrowLeft className="size-4" />
+            Back to course
+          </ButtonLink>
+          <ContactCard
+            variant="compact"
+            label={QUESTION}
+            courseId={lesson.course._id}
+            weekId={lesson.week._id}
+            initialTopic="other"
+          />
         </div>
-
-        <footer className="mt-16 rounded-[2.25rem] bg-panel p-3 sm:mt-20 sm:rounded-[2.75rem] sm:p-5">
-          <nav aria-label="More lessons" className="grid grid-cols-1 gap-3 *:min-w-0 sm:grid-cols-2">
-            {lesson.next ? (
-              <NextCard courseId={lesson.course._id} lesson={lesson.next} wide={alone} />
-            ) : (
-              <LatestCard wide={alone} />
-            )}
-            {lesson.previous && <PreviousCard courseId={lesson.course._id} lesson={lesson.previous} />}
-          </nav>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 px-2 pb-2 sm:px-1 sm:pb-0">
-            <ButtonLink href={courseHref} variant="outline" className="bg-card max-sm:w-full">
-              <ArrowLeft className="size-4" />
-              Back to course
-            </ButtonLink>
-            <ContactCard
-              variant="compact"
-              label={QUESTION}
-              courseId={lesson.course._id}
-              weekId={lesson.week._id}
-              initialTopic="other"
-            />
-          </div>
-        </footer>
-      </article>
-    </>
+      </footer>
+    </article>
   );
 }
 
@@ -176,7 +176,7 @@ function PreviousCard({ courseId, lesson }: { courseId: string; lesson: Neighbou
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-panel transition-transform group-hover:-translate-x-0.5">
           <ArrowLeft className="size-4" />
         </span>
-        <span className={`${eyebrow} text-graphite`}>Previous</span>
+        <span className={`${eyebrow} text-graphite`}>Previous lesson</span>
       </span>
       <span className="text-lg font-medium leading-snug tracking-tight wrap-anywhere sm:text-xl">{lesson.title}</span>
     </Link>
@@ -203,21 +203,6 @@ function LatestCard({ wide }: { wide: boolean }) {
         </span>
       </span>
     </div>
-  );
-}
-
-/** A slim highlighter line along the top that fills as the page scrolls. */
-function ReadingProgress() {
-  const { scrollYProgress } = useScroll();
-  const smooth = useSpring(scrollYProgress, { stiffness: 220, damping: 32, restDelta: 0.001 });
-  // With reduced motion the bar follows the scroll exactly, without the spring's glide.
-  const reduce = useReducedMotion();
-  return (
-    <motion.div
-      aria-hidden
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 origin-left bg-highlighter-deep"
-      style={{ scaleX: reduce ? scrollYProgress : smooth }}
-    />
   );
 }
 

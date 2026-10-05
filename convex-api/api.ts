@@ -461,6 +461,23 @@ export type PublicApiType = {
         token?: string;
       }>
     >;
+    listAll: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _creationTime: number;
+        _id: Id<"invites">;
+        acceptedAt?: number;
+        email: string;
+        expiresAt: number;
+        revokedAt?: number;
+        role: "lecturer" | "uni_admin";
+        token?: string;
+        universityId?: Id<"universities">;
+        universityName?: { en: string; ka: string };
+      }>
+    >;
     getByToken: FunctionReference<
       "query",
       "public",
@@ -3084,10 +3101,45 @@ export type PublicApiType = {
         }>;
         description?: string;
         inviteEnabled: boolean;
+        isPrivate: boolean;
+        lecturers: number;
+        manages: boolean;
         members: number;
         name: string;
+        otherCourses: number;
         pendingInvites: number;
+        teaches: boolean;
+        universityName?: { en: string; ka: string };
         updatedAt: number;
+      }>
+    >;
+    forUniversity: FunctionReference<
+      "query",
+      "public",
+      { universityId: Id<"universities"> },
+      Array<{
+        _id: Id<"groups">;
+        archived: boolean;
+        courses: number;
+        description?: string;
+        inviteEnabled: boolean;
+        lecturers: number;
+        members: number;
+        name: string;
+      }>
+    >;
+    search: FunctionReference<
+      "query",
+      "public",
+      { query: string },
+      Array<{
+        _id: Id<"groups">;
+        description?: string;
+        joined: boolean;
+        lecturers: number;
+        members: number;
+        name: string;
+        universityName: { en: string; ka: string };
       }>
     >;
     get: FunctionReference<
@@ -3113,6 +3165,14 @@ export type PublicApiType = {
           emailedAt?: number;
           expiresAt: number;
         }>;
+        isPrivate: boolean;
+        lecturerList: Array<{
+          joinedAt: number;
+          name: string;
+          userId: Id<"users">;
+        }>;
+        lecturers: number;
+        manages: boolean;
         memberList: Array<{
           email: string;
           joinedAt: number;
@@ -3122,16 +3182,37 @@ export type PublicApiType = {
         }>;
         members: number;
         name: string;
+        otherCourses: number;
         ownerName: string;
         pendingInvites: number;
+        teaches: boolean;
+        universityName?: { en: string; ka: string };
         updatedAt: number;
       }
     >;
     create: FunctionReference<
       "mutation",
       "public",
-      { description?: string; name: string },
+      { description?: string; name: string; universityId?: Id<"universities"> },
       Id<"groups">
+    >;
+    joinAsLecturer: FunctionReference<
+      "mutation",
+      "public",
+      { groupId: Id<"groups"> },
+      null
+    >;
+    leaveAsLecturer: FunctionReference<
+      "mutation",
+      "public",
+      { groupId: Id<"groups"> },
+      number
+    >;
+    removeLecturer: FunctionReference<
+      "mutation",
+      "public",
+      { groupId: Id<"groups">; userId: Id<"users"> },
+      null
     >;
     update: FunctionReference<
       "mutation",
