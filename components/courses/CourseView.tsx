@@ -213,14 +213,19 @@ function WeekCard({
 
         {week.lessons.length > 0 && (
           <WeekPart title="Lessons">
-            {week.lessons.map((lesson) => (
+            {week.lessons.map((lesson, index) => (
               <li key={lesson._id}>
                 <Link href={lessonPath(courseId, lesson._id)} className={rowClass}>
-                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-card">
-                    <BookOpen className="size-5" />
+                  {/* Lessons are a sequence: numbered, so the student knows where they are. */}
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-card text-sm font-semibold tabular-nums">
+                    {index + 1}
                   </span>
-                  <span className="min-w-0 flex-1 font-medium leading-snug wrap-anywhere">{lesson.title}</span>
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-card px-3 py-1.5 text-sm font-medium">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium leading-snug wrap-anywhere">{lesson.title}</span>
+                    <span className="mt-0.5 block text-sm text-graphite">Lesson {index + 1} of {week.lessons.length}</span>
+                  </span>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-sm font-medium text-paper">
+                    <BookOpen className="size-4" />
                     Read
                     <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
                   </span>

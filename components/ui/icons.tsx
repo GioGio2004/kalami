@@ -303,3 +303,11 @@ export function Sparkle({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function Expand(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+    </Icon>
+  );
+}

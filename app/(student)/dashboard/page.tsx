@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useCurrentUser } from "@/components/CurrentUserProvider";
 import type { UseCourse } from "@/components/dashboard/CourseCard";
 import { DashboardView } from "@/components/dashboard/DashboardView";
+import { InstallCard } from "@/components/pwa/InstallCard";
 import { api } from "@/convex-api/api";
 
 /** A course's work loads only when its card is opened. */
@@ -37,6 +38,7 @@ export default function DashboardPage() {
       onAcceptInvite={(token) => acceptInvite({ token })}
       onLeaveGroup={(groupId) => leaveGroup({ groupId })}
       useCourse={useCourse}
+      install={<InstallCard />}
     />
   );
 }

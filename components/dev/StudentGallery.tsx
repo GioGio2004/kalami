@@ -16,6 +16,10 @@ import { MessagesView } from "@/components/messages/MessagesView";
 import { ThreadView } from "@/components/messages/ThreadView";
 import { Bell } from "@/components/notifications/NotificationBell";
 import type { Inbox } from "@/components/notifications/NotificationsPanel";
+import { InstallCardView } from "@/components/pwa/InstallCard";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { PushSettingView } from "@/components/pwa/PushSetting";
+import type { PushState } from "@/components/pwa/usePush";
 import { TaskOnPhone } from "@/components/tasks/TaskOnPhone";
 import {
   OnboardingWizard,
@@ -313,10 +317,14 @@ const inbox: Inbox = {
   ],
 };
 
-function studentPage(children: ReactNode, { bellOpen = false, empty = false } = {}) {
+function studentPage(
+  children: ReactNode,
+  { bellOpen = false, empty = false, push = "on" as PushState }: { bellOpen?: boolean; empty?: boolean; push?: PushState } = {},
+) {
   return (
     // Every contact card in the gallery opens the sample composer instead of the Convex one.
     <ContactComposerProvider render={renderSampleComposer}>
+      <OfflineBanner />
       <StudentNav
         unread={empty ? 0 : conversations.filter((item) => item.unread).length}
         actions={
@@ -325,6 +333,16 @@ function studentPage(children: ReactNode, { bellOpen = false, empty = false } = 
               inbox={empty ? { unread: 0, items: [], emailEnabled: true, emailBlocked: false } : inbox}
               onMarkAllRead={() => undefined}
               onSetEmail={() => undefined}
+              push={
+                <PushSettingView
+                  state={push}
+                  error={null}
+                  tested={push === "on" ? "Sent to 2 devices. It should arrive in a moment." : null}
+                  onEnable={() => undefined}
+                  onDisable={() => undefined}
+                  onTest={() => undefined}
+                />
+              }
               defaultOpen={bellOpen}
               now={NOW}
             />
@@ -538,7 +556,12 @@ const views: Record<string, string> = {
   dashboard: "Dashboard · with an invite and groups",
   "dashboard-empty": "Dashboard · no courses yet",
   "dashboard-invite": "Dashboard · new student without a university, one invite",
-  notifications: "Dashboard · notifications open",
+  notifications: "Dashboard · notifications open (push on for this device)",
+  "notifications-push-off": "Dashboard · notifications open, push off",
+  "notifications-push-iphone": "Dashboard · notifications open on an iPhone in Safari (install first)",
+  "notifications-push-blocked": "Dashboard · notifications open, push blocked in the browser",
+  "pwa-install": "Dashboard · install card (Android / desktop Chrome)",
+  "pwa-install-ios": "Dashboard · install card (iPhone: Add to Home Screen guide)",
   course: "Course · three weeks with lessons and materials, exams, other work",
   "course-empty": "Course · nothing published yet",
   lesson: "Lesson · every block type, with previous and next",
@@ -634,6 +657,20 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
       );
     case "notifications":
       return studentPage(<DashboardView {...dashboardProps} invites={[]} />, { bellOpen: true });
+    case "notifications-push-off":
+      return studentPage(<DashboardView {...dashboardProps} invites={[]} />, { bellOpen: true, push: "off" });
+    case "notifications-push-iphone":
+      return studentPage(<DashboardView {...dashboardProps} invites={[]} />, { bellOpen: true, push: "needs-install" });
+    case "notifications-push-blocked":
+      return studentPage(<DashboardView {...dashboardProps} invites={[]} />, { bellOpen: true, push: "blocked" });
+    case "pwa-install":
+      return studentPage(
+        <DashboardView {...dashboardProps} invites={[]} install={<InstallCardView platform="chrome" onInstall={() => undefined} onDismiss={() => undefined} />} />,
+      );
+    case "pwa-install-ios":
+      return studentPage(
+        <DashboardView {...dashboardProps} invites={[]} install={<InstallCardView platform="ios" onDismiss={() => undefined} />} />,
+      );
     case "course":
       return studentPage(<CourseView course={course} />);
     case "course-empty":

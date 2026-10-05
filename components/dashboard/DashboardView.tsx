@@ -3,7 +3,7 @@
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { ContactCard } from "@/components/contact/ContactCard";
 import type { Me } from "@/components/CurrentUserProvider";
 import { AnimatedHeading } from "@/components/motion/AnimatedHeading";
@@ -52,6 +52,7 @@ export function DashboardView({
   onAcceptInvite,
   onLeaveGroup,
   useCourse,
+  install,
 }: {
   me: Me;
   courses: MyCourse[] | undefined;
@@ -63,6 +64,8 @@ export function DashboardView({
   onAcceptInvite: (token: string) => Promise<unknown>;
   onLeaveGroup: (groupId: MyGroup["_id"]) => Promise<unknown>;
   useCourse: UseCourse;
+  /** The "install Kalami" card (components/pwa/InstallCard), when there is something to offer. */
+  install?: ReactNode;
 }) {
   const [greeting] = useState(() => greetingFor(new Date().getHours()));
   // Only cards the student toggled; the rest follow the defaults below.
@@ -118,6 +121,12 @@ export function DashboardView({
           </RevealGroup>
         )}
       </div>
+
+      {install && (
+        <Enter kind="up" delay={0.5} className="mt-6">
+          {install}
+        </Enter>
+      )}
 
       <RevealGroup stagger={0.1} delay={0.4} className="mt-8 grid gap-3 *:min-w-0 lg:grid-cols-12 lg:items-start">
         <div className="grid gap-3 *:min-w-0 lg:col-span-7">

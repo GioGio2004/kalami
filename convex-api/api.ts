@@ -4839,5 +4839,41 @@ export type PublicApiType = {
       null
     >;
   };
+  push: {
+    vapidPublicKey: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      string | null
+    >;
+    subscribe: FunctionReference<
+      "mutation",
+      "public",
+      {
+        endpoint: string;
+        keys: { auth: string; p256dh: string };
+        userAgent?: string;
+      },
+      null
+    >;
+    unsubscribe: FunctionReference<
+      "mutation",
+      "public",
+      { endpoint: string },
+      null
+    >;
+    mine: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{ endpoint: string; lastUsedAt: number; userAgent?: string }>
+    >;
+    requestTest: FunctionReference<
+      "mutation",
+      "public",
+      Record<string, never>,
+      number
+    >;
+  };
 };
 export type InternalApiType = {};

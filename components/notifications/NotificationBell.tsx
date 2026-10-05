@@ -2,8 +2,9 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useCurrentUser } from "@/components/CurrentUserProvider";
+import { PushSetting } from "@/components/pwa/PushSetting";
 import { Bell as BellIcon } from "@/components/ui/icons";
 import { api } from "@/convex-api/api";
 import { NotificationsPanel, type Inbox } from "./NotificationsPanel";
@@ -16,12 +17,15 @@ export function Bell({
   inbox,
   onMarkAllRead,
   onSetEmail,
+  push,
   defaultOpen = false,
   now: fixedNow,
 }: {
   inbox: Inbox | undefined;
   onMarkAllRead: () => void;
   onSetEmail: (enabled: boolean) => void;
+  /** The push switch for this device, shown in the panel's footer. */
+  push?: ReactNode;
   defaultOpen?: boolean;
   /** For the gallery, so "2 hours ago" renders the same on the server and in the browser. */
   now?: number;
@@ -98,6 +102,7 @@ export function Bell({
         onClose={close}
         onMarkAllRead={onMarkAllRead}
         onSetEmail={onSetEmail}
+        push={push}
       />
     </div>
   );
@@ -119,5 +124,5 @@ export function NotificationBell() {
     },
     [setEmailPreference],
   );
-  return <Bell inbox={inbox} onMarkAllRead={onMarkAllRead} onSetEmail={onSetEmail} />;
+  return <Bell inbox={inbox} onMarkAllRead={onMarkAllRead} onSetEmail={onSetEmail} push={ready ? <PushSetting /> : undefined} />;
 }

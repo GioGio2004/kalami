@@ -3,7 +3,7 @@
 import type { FunctionReturnType } from "convex/server";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { KIND_LABEL } from "@/components/courses/AssessmentRow";
 import { EASE } from "@/components/motion/Reveal";
@@ -68,6 +68,7 @@ export function NotificationsPanel({
   onClose,
   onMarkAllRead,
   onSetEmail,
+  push,
 }: {
   inbox: Inbox | undefined;
   now: number;
@@ -76,6 +77,8 @@ export function NotificationsPanel({
   onMarkAllRead: () => void;
   /** The switch at the bottom: emails about new work and deadlines. */
   onSetEmail: (enabled: boolean) => void;
+  /** The push switch for this device (components/pwa/PushSetting), above the email one. */
+  push?: ReactNode;
 }) {
   const mobile = useIsMobile();
 
@@ -138,7 +141,8 @@ export function NotificationsPanel({
         )}
       </div>
       {inbox !== undefined && (
-        <footer className="border-t border-line px-5 py-3">
+        <footer className="space-y-3 border-t border-line px-5 py-3">
+          {push}
           <label className="flex items-start gap-3 text-sm">
             <input
               type="checkbox"

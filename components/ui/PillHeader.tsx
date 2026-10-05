@@ -24,7 +24,8 @@ export function PillHeader({
 }) {
   const pathname = usePathname();
   return (
-    <div className="sticky top-3 z-40 px-3 sm:top-4 sm:px-6">
+    // In the installed app the page runs under the status bar; the inset keeps the header below it.
+    <div className="sticky top-[calc(0.75rem+env(safe-area-inset-top))] z-40 px-3 sm:top-[calc(1rem+env(safe-area-inset-top))] sm:px-6">
       <motion.header
         initial={{ y: -70, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

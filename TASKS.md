@@ -27,6 +27,8 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-006 | Staff invites emailed through Resend; professional email design | Ready for review | Claude (Claude Code) |
 | TASK-007 | Super admin: find people by email and change their staff role | Ready for review | Claude (Claude Code) |
 | TASK-008 | Standalone admin panel at `/admin`: own sidebar, student and lecturer stats, status controls for everything | Ready for review | Claude (Claude Code) |
+| TASK-009 | High-end lesson presentation: roomy slides, real code windows, full-screen presenter, polished student lesson page | Ready for review | Claude (Claude Code) |
+| TASK-010 | Student app as a PWA: installable, offline-aware, Web Push notifications end to end, install prompts | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -485,6 +487,120 @@ Today the admin page is one long page inside the staff layout (`kalami-stuff/app
 Checks run (2026-10-05): `kalami-stuff` `npx tsc --noEmit` ✅ (after `npx next typegen`, since the running dev server still listed the deleted page), `npm run lint` ✅, `npx vitest run` ✅ 21 files / 227 tests; deployed to dev `glad-mockingbird-933` with `npx convex dev --once` ✅; `npm run api:student`, then `kalami` `npx tsc --noEmit` ✅ and `npm run lint` ✅. Browser (the user's dev server on 3101, gallery): every `panel-*` view and `admin`/`admin-uni` at 1440 px: sidebar with grouped sections and the picker, stat tiles and status bars, the three dialogs; the university-admin overview hides Find a person / Activity / System and shows one university. At 375 px: top bar with picker and avatar, scrollable chips, student rows wrap, course dialog fits; `document.documentElement.scrollWidth` = 375 (no horizontal overflow). Real routes `/admin`, `/admin/students`, `/admin/courses`, `/admin/system` compile and redirect to sign-in when signed out (307).
 
 Limitations: verified with backend tests and gallery sample data, not with a signed-in super admin in the browser (same as TASK-004/007). Email search matches the start of an address only; course search covers the newest 1000 courses in scope. Staff and groups lists aren't paginated (they read up to 1000 rows per role/university). Activity and System are super-admin only. Page headings animate in with `AnimatedHeading`; in the browser pane they can look blurred in screenshots (known rAF throttling), not in a real tab. Kept out on purpose, as listed above: attempt status, reading conversations, super admin promotion, deleting accounts.
+
+### User review
+
+Pending.
+
+## TASK-009 — High-end lesson presentation: roomy slides, real code windows, full-screen presenter, polished student lesson page
+
+- **Status:** Ready for review (requested 2026-10-05 with a screenshot of "Basics of Web Technologies › Week 3 · Tables", slide 2 of 8; implemented the same day)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-05
+
+### Problem / reproduction
+
+Student app, a published lesson in slides mode (TASK-002). The user's screenshot shows the slide squeezed into nested cards: the dark code block is clipped on the right and scrolls sideways, the live result floats loose next to it with no frame, the slide card is narrow (52 rem) with the controls pill overlapping its bottom edge, and the whole thing reads "tight". In the user's words: the course presentation should be high-end and professional, there should be a full-screen view, the code is not well organised and doesn't look good, and the entire student page should be polished too.
+
+### Agreed behavior and scope (Claude's reading of the request)
+
+- **Slide stage** (shared `components/lessons/LessonSlides.tsx`, staff-owned, copied to the student app): a wide stage (up to 64 rem), generous padding, the content vertically centred with a readable measure for prose and the full width for code, images and video; a small "Slide 2 of 8 · Example" eyebrow on the slide; a refined controls bar (Previous, a per-slide progress strip with the count, Next, and a Present button) that no longer overlaps the slide; keyboard hint on wide screens. Everything TASK-002 settled stays: one block per slide, no wrap, state kept per block, ← / → rules, announcements, reduced motion.
+- **Full screen**: a Present mode in the player (button in the bar, in the lesson header, and the `F` key): the player takes over the screen (the Fullscreen API where the browser allows it, a fixed overlay otherwise, so phones work too), with a top bar (lesson title, slide count, Exit), bigger type, the same controls; `Esc` or Exit leaves it; answers and revealed steps survive entering and leaving.
+- **Code blocks** (shared `LessonBlocks.tsx`): an editor-window look (window dots, language tag, Copy), line numbers, syntax colouring for HTML, CSS and JavaScript from a small tokenizer of our own (no new dependency; colours are theme tokens), code scrolling inside its own window; the live result in a matching "browser window" frame (dots, "Result") beside the code on wide slides and under it on narrow ones, both the same height. Markdown headings inside text blocks render as real headings.
+- **Student lesson page** (`components/lessons-reader/LessonView.tsx`): a calmer header (breadcrumb, title, "N slides · about M min", Present and Back to course), the wider stage, polished next/previous lesson cards and footer. The course page's lesson rows become a numbered sequence with the same look. No backend, route or content-model changes; the staff editor's full Preview widens to match (its side preview stays compact).
+- Not in scope: a redesign of the dashboard or other student pages beyond the lesson/course pages above (say so if wanted), slide export, speaker notes, changing how lessons are authored.
+
+### Acceptance criteria
+
+- [x] A lesson with a code + result block shows the code in a framed window with line numbers and colours, no clipping, and the result framed beside/under it; the slide has room and the controls never cover its content (desktop and 375 px).
+- [x] Present enters a full-screen view (API or overlay), Esc/Exit leaves it, and a quick check answered before presenting is still answered after.
+- [x] Every block type renders well in the stage; keyboard navigation, announcements and state retention from TASK-002 still hold. *(Checked in the student dev gallery; the real "Tables" lesson needs the user's signed-in check.)*
+- [x] The student lesson page header, footer and the course page's lesson rows match the new look; the staff editor's preview still works.
+- [x] Lint/type checks pass in both repos, slide/highlight tests pass, shared lesson files are identical in both repos.
+- [ ] User tested and accepted the result.
+
+### Implementation and verification notes
+
+2026-10-05, Claude (Claude Code). The shared lesson files are edited in `kalami-stuff/components/lessons` and copied to `kalami/components/lessons` (scoped copy, tests excluded); `components/sandbox/Markdown.tsx` likewise.
+
+- **Code colouring** `components/lessons/highlight.ts` (new, shared): a tokenizer for HTML (tags, attributes, strings, comments; `<style>`/`<script>` bodies as CSS/JS), CSS (selectors, at-rules, properties, values, numbers, functions, nested `@media` blocks) and JavaScript/other (keywords, strings, comments, numbers, calls). Every character comes back in order, broken into lines. Colours are theme tokens `--code-*` in both apps' `globals.css` (`text-code-tag` etc.), so a theme can restyle them. Tests `highlight.test.ts` (6, staff).
+- **Blocks** `LessonBlocks.tsx`: the code block is an editor window (dots, file name from the language such as `index.html`, Copy pill, line numbers, coloured tokens, scrolling inside the window, 60 % of the screen high at most) and, for examples with a preview, a matching "Result · live" browser window; side by side from 42 rem of block width (container query, so the editor's narrow preview stacks them), stretched to the same height. Callouts, steps (with a thread between the numbers), quick checks (chip + ring instead of the dashed border), images and videos got the same rounded, ringed treatment. Type sizes are now em-based, so the presenter scales a whole slide. `blockKindLabel` / `blockIsProse` tell the player what a slide is. Markdown `#`/`##`/`###` render as h3/h4 headings sized in em.
+- **Player** `LessonSlides.tsx`: the stage is a wide card (prose blocks centred at 46 rem, code/figures full width), 36 rem / 70 dvh minimum height, a slide eyebrow "05 / 15 · Example with result", a controls pill with Previous, "5 / 15" over a per-slide progress strip (a single bar past 20 slides), a Present button and Next, plus a keyboard hint on wide slides. **Presenter**: `present()`/`exit()` through a `ref` handle, the bar button, or `F` (never while typing); the root becomes a fixed overlay (title bar with Exit and "← → to move · Esc to leave", 18 px base type, scrolling stage, controls at the bottom), `requestFullscreen` is asked for where the browser allows it, `fullscreenchange`/Esc leave it, the body stops scrolling behind it. Nothing remounts, so answers and revealed steps survive. The compact editor preview is unchanged (no eyebrow, no Present).
+- **Student page** `kalami/components/lessons-reader/LessonView.tsx`: 66 rem wide; header without the panel (course pill with a back arrow › week, big title, "15 slides · about 2 min · ← → to move", a Present button), the player, then "Other lessons" cards and a footer strip with Back to course and the contact card. New `Expand` icon in the student `icons.tsx`. **Course page** `CourseView.tsx`: lesson rows numbered ("Lesson 1 of 2") with an ink Read pill.
+- **Staff editor** `LessonEditor.tsx`: the full Preview article is 64 rem wide and passes the lesson title to the presenter.
+
+Checks run (2026-10-05): `kalami-stuff` `npx tsc --noEmit` ✅, `npm run lint` ✅, `npx vitest run` ✅ 22 files / 233 tests (incl. the 6 new highlight tests and the 16 slide tests); `kalami` `npx tsc --noEmit` ✅, `npm run lint` ✅; `diff -rq` of the shared folders: identical. Browser, student dev server (3100, gallery `?view=lesson`, 15 blocks): at 1440 px the code and result windows sit side by side (474 px each, equal height 328 px), the code doesn't overflow its window, the controls bar sits below the slide (no overlap), the keyboard hint shows, the page has no horizontal overflow; at 375 px they stack, no overflow, Present offered. Presenter: `F` opened the overlay (fixed, 1440×1000, 18 px type, body scroll locked, focus on the slide, top bar with the title and Exit); a quick check answered before presenting still showed its answer and "Not quite" inside the presenter and after Esc, with focus back on the slide and body scrolling restored. Keyboard ← / → moved 8 slides each way. Staff gallery: the editor's side preview has no Present button and no eyebrow ("1 / 9"), the full Preview is 1024 px wide with the eyebrow and Present. Course gallery: "Lesson 1 of 2 / 2 of 2" rows. No console errors on either page.
+
+Limitations: the Browser pane was hidden during the check, so the layout was verified by DOM measurements and page text rather than screenshots after the first slide (the first screenshot showed the new stage, pill and hint); `requestFullscreen` was refused in the automated pane (no user gesture), so the overlay fallback is what was exercised; the real "Tables" lesson in a signed-in student session, touch devices, screen readers and reduced motion were not tested. The dashboard and other student pages were not redesigned.
+
+### User review
+
+Pending.
+
+## TASK-010 — Student app as a PWA: installable, offline-aware, Web Push notifications end to end, install prompts
+
+- **Status:** Ready for review (requested and implemented 2026-10-05; needs the user's real-phone check)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-05
+
+### Problem / reproduction
+
+The user wants the whole student app to work as a Progressive Web App ("the dashboard is using it properly but the rest is not optimized"), and push notifications that actually work. Today there is no manifest, no service worker and no push: the plan from 2026-10-04 (dashboard cards and the bell done; "next: PWA with push + install prompts") was never built. Notifications exist as rows (`notifications` table) shown by the bell and emailed through Resend; push was meant to carry the same rows.
+
+### Agreed behavior and scope
+
+- **Installable**: a web app manifest (`app/manifest.ts`: name, start at `/dashboard`, standalone, Kalami colours, 192/512 icons plus maskable ones and a badge, rendered from the existing mark), Apple home-screen metadata and theme colour, so Android/Chrome offer "Install" and iOS can add it to the Home Screen.
+- **Service worker** (`public/sw.js`, hand-written, no new dependency): caches the app shell's static files and icons, serves an `/offline` page when a page can't load, never touches Convex or Clerk traffic, receives pushes and opens the right page on tap. Not registered in development's caching mode (dev gets push handling only), so HMR keeps working.
+- **Web Push, end to end**: VAPID keys on the Convex deployment (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`; the public key is served by a query, so the apps need no extra variable); a `pushSubscriptions` table; `push.subscribe/unsubscribe/mine`; delivery from the same notification fan-out as email, through a Node action using `web-push` (dead subscriptions removed on 404/410); a "Send a test notification" button under the bell and a CLI test action for the user's own devices.
+- **Turning it on**: a "Notify this device" switch under the bell with honest states (unsupported browser, blocked by the browser, iPhone not yet installed, on/off), and the browser's permission prompt only on tap.
+- **Install prompts**: a dismissable card on the dashboard: a real Install button on Android/desktop Chrome (`beforeinstallprompt`), a "Share → Add to Home Screen" guide on iPhone/iPad; hidden once installed.
+- **Standalone polish across pages**: safe-area insets (notch and home indicator) for the header, the lesson controls and page bottoms; no pull-to-refresh bounce in the installed app; an offline banner on every student page; the whole app shell works at phone width in standalone mode.
+- Out of scope: offline reading of lesson content or doing quizzes offline (Convex needs a connection; the app says so), push for staff, background sync.
+
+### Acceptance criteria
+
+- [x] The manifest and icons validate; `/manifest.webmanifest`, `/sw.js`, `/offline` and the icons are public (no sign-in redirect); the SW registers in the student app. *(Registration itself could not run in the in-app browser, see Limitations; the worker's behaviour was verified in a Node harness.)*
+- [x] With VAPID set, a student can turn push on under the bell, receives the test notification on that device, and gets a push when work is published or a deadline is near; turning it off removes the subscription; a dead subscription is removed after a push fails with 404/410. *(Sending verified end to end against a fake device on the dev deployment; the on-device part needs the user's phone.)*
+- [x] The install card shows the right thing per platform and disappears when installed or dismissed.
+- [x] Offline: a page load without a connection shows the offline page; the banner appears and disappears with the connection.
+- [x] Lint/type checks pass in both repos; backend tests cover subscriptions, delivery scheduling and dead-subscription cleanup.
+- [ ] User tested on a real phone (install + push) and accepted the result.
+
+### Implementation and verification notes
+
+2026-10-05, Claude (Claude Code).
+
+**Backend (`kalami-stuff`)**
+
+- `convex/schema.ts`: `pushSubscriptions` (userId, endpoint, keys, userAgent, lastUsedAt, failures; indexes by user and by endpoint); `notifications.pushedAt` so a retried batch never pushes twice.
+- `convex/push.ts`: `vapidPublicKey` (public key or null until the deployment is set up), `subscribe` (upsert by endpoint; a device follows whoever signs in on it; at most 8 devices per student, oldest dropped; rate-limited `pushSubscribe`), `unsubscribe`, `mine`, `requestTest` (schedules the test push to all of the student's devices; `pushTest` limit); internal `payloadsFor`, `devicesOf`, `userIdByEmail`, `recordResults` (gone → deleted, failure → strike and dropped after 5, success → fresh; rows marked pushed).
+- `convex/pushDelivery.ts` ("use node", `web-push` + types installed): `deliver` (scheduled by the notification fan-out in `model/notifications.ts` next to `email.deliver`), `sendTest`, `sendTestByEmail` (CLI: `npx convex run pushDelivery:sendTestByEmail '{"email":"…"}'`). `web-push` is imported dynamically only when VAPID is configured, so tests and keyless deployments never load it; TTL one day, urgency high, a topic per notification.
+- `convex/lib/pushMessage.ts`: the push text in Georgian/English (same wording family as the email templates, due times in Tbilisi time).
+- `convex/lib/limits.ts`: `pushSubscribe`, `pushTest`. `OPERATIONS.md`: VAPID rows in the settings table and a "Push notifications" section.
+- Dev deployment `glad-mockingbird-933`: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` set (keys generated locally with `web-push`). **Production needs its own pair** (`npx web-push generate-vapid-keys`, then `npx convex env set … --prod`); nothing else to configure, the app fetches the public key from the backend.
+- Tests: `convex/push.test.ts` (5: on/off and refusals, device follows the account + the 8-device cap, test button counts and schedules only when configured, fan-out rows reach the devices of enrolled students once, gone/failed/ok bookkeeping and lookups) and `convex/lib/pushMessage.test.ts` (3).
+
+**Student app (`kalami`)**
+
+- `app/manifest.ts` (id/start `/dashboard`, standalone, paper colours, education, shortcuts Dashboard/Messages), `public/icons/` (192/512 plain, 192/512 maskable, 96 badge, rendered from `app/icon.svg` with sharp), root `layout.tsx` metadata (`manifest`, `appleWebApp`, `applicationName`, `formatDetection`) and `viewport` (`viewport-fit=cover`, theme colour), `<ServiceWorker />`.
+- `public/sw.js` (hand-written): precaches `/offline`, the manifest and icons; page loads network-first with the offline page as fallback; `/_next/static` cache-first; icons/manifest stale-while-revalidate; never touches `/api`, Clerk, the dev gallery or other origins; `push` shows the payload (icon, badge, tag, language, URL), `notificationclick` focuses an open Kalami window and navigates it (or opens one), foreign URLs fall back to the dashboard; `pushsubscriptionchange` re-subscribes; `?mode=dev` (development) caches and intercepts nothing.
+- `app/offline/page.tsx` (static, public in `proxy.ts`), `lib/pwa.ts` (key conversion, iOS/standalone detection, the deferred `beforeinstallprompt` store, dismiss memory), `components/pwa/`: `ServiceWorker`, `usePwa` (online, standalone, install prompt), `OfflineBanner` (student layout), `InstallCard` (+ `InstallCardView`: Chrome/Android Install button, iPhone three-step Share → Add to Home Screen guide; hidden when installed/standalone or dismissed for 14 days) on the dashboard (`DashboardView` `install` slot), `usePush` + `PushSetting` (+ `PushSettingView`) in the bell's footer (`NotificationsPanel`/`Bell` `push` slot): states loading / unavailable / unsupported / needs-install (iPhone in Safari) / blocked / off / on, the browser's permission prompt only on tap, a stale-key subscription replaced, "Send a test notification" with the device count.
+- Standalone polish: the pill header and the offline banner keep clear of the status bar (`safe-area-inset-top`), the student `main` and the lesson slide controls (shared `LessonSlides`, copied) keep clear of the home indicator, `overscroll-behavior-y: none` and no text-size auto-adjust in `display-mode: standalone` (globals.css).
+- Dev gallery: `pwa-install`, `pwa-install-ios`, `notifications` (push on, with the test line), `notifications-push-off`, `notifications-push-iphone`, `notifications-push-blocked`; `studentPage` now includes the offline banner.
+
+**Checks run (2026-10-05)**
+
+- `kalami-stuff`: `npx convex dev --once` ✅ (deployed to dev), `npx tsc --noEmit` ✅, `npm run lint` ✅, `npx vitest run` ✅ 24 files / 241 tests; `npm run api:student` ✅. `kalami`: `npx tsc --noEmit` ✅, `npm run lint` ✅.
+- HTTP on the dev server (3100): `/manifest.webmanifest` 200 `application/manifest+json` with the expected content, `/sw.js` 200 JavaScript, `/offline` 200 (no sign-in redirect), icons 200 `image/png`.
+- **Push end to end on the dev deployment:** a fake device (a valid P-256 key, an endpoint at Mozilla's push service) was imported for the user's own account, then `npx convex run pushDelivery:sendTestByEmail '{"email":"giokhvichia69@gmail.com"}'` answered `Sent to 0 device(s); 1 gone (removed), 0 failed.` and `push:devicesOf` showed no devices left: the Node action loaded `web-push`, signed with the dev VAPID key, reached the push service, read its 404 and removed the device.
+- **Service worker in a Node harness** (vm with fake `self`/`caches`/`clients`): precaches `/offline` and the icons; an offline navigation returns the cached offline page; a static chunk is served from cache on the second request even offline; `/api`, Convex, Clerk and other origins are never intercepted; a push payload becomes a notification with icon, badge, tag, language and URL, a bad payload still shows "Kalami"; a tap opens the page in a new window, or navigates an open Kalami window, and a foreign URL falls back to the dashboard; dev mode caches and intercepts nothing but still shows pushes.
+- Browser (student dev gallery, pane hidden so by DOM/text): manifest link, theme colour, `apple-mobile-web-app-capable`, `viewport-fit=cover` present; install card renders for Chrome (Install / Not now) and iPhone (three steps, Got it), fits at 375 px without horizontal overflow; the bell's footer shows the push switch in the on / off / iPhone / blocked states with the right wording and disabled states; the offline banner appears when the browser reports offline and goes when back online.
+
+**Limitations**
+
+- The in-app browser refuses every service-worker registration (even a missing script gives "An unknown error occurred when fetching the script"), and its permission prompt can't be granted, so installing, registering the worker and turning push on were not exercised in a browser here; the worker was verified in the harness and the sending side against a real push service. **Please test on your phone:** open the dev or deployed app over HTTPS, install it (Android: the card's Install; iPhone: Share → Add to Home Screen, then open from the home screen), turn on "Notify this device" under the bell, tap "Send a test notification". From a computer, `npx convex run pushDelivery:sendTestByEmail '{"email":"<yours>"}'` reports what happened.
+- Production has no VAPID keys until you set them (OPERATIONS.md); until then the switch says "Not available on this server yet" and nothing else changes.
+- Offline covers the app shell and the offline page, not lesson content or quizzes (Convex needs a connection; the banner says so). Staff get no push.
 
 ### User review
 
