@@ -9,7 +9,9 @@ import { Enter, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { ExpandableCard } from "@/components/ui/ExpandableCard";
 import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Folder, Globe } from "@/components/ui/icons";
 import type { api } from "@/convex-api/api";
-import { lessonPath } from "@/lib/urls";
+import { THEMES } from "@/components/presentations/themes";
+import type { DeckTheme } from "@/lib/presentation";
+import { lessonPath, presentationPath } from "@/lib/urls";
 import { AssessmentRow, type CourseItem } from "./AssessmentRow";
 
 type Course = FunctionReturnType<typeof api.learn.course>;
@@ -33,11 +35,27 @@ function weekSummary(week: Week, work: CourseItem[]): string {
   const quizzes = work.length - tasks;
   const parts = [
     week.lessons.length > 0 && plural(week.lessons.length, "lesson", "lessons"),
+    week.presentations.length > 0 && plural(week.presentations.length, "presentation", "presentations"),
     materials > 0 && plural(materials, "material", "materials"),
     tasks > 0 && plural(tasks, "task", "tasks"),
     quizzes > 0 && plural(quizzes, "quiz", "quizzes"),
   ].filter((part): part is string => Boolean(part));
   return parts.length > 0 ? parts.join(" · ") : "Nothing here yet";
+}
+
+/** A presentation's theme in miniature: its background and accent, like a tiny slide. */
+function ThemeChip({ theme }: { theme: DeckTheme }) {
+  const t = THEMES[theme];
+  return (
+    <span
+      aria-hidden="true"
+      className="relative grid h-10 w-14 shrink-0 place-items-center overflow-hidden rounded-xl ring-1 ring-ink/10"
+      style={{ background: t.bg }}
+    >
+      <span className="absolute -right-2 -top-3 size-8 rounded-full opacity-80" style={{ background: t.glow[0] }} />
+      <span className="relative h-1.5 w-7 rounded-full" style={{ background: t.markBg }} />
+    </span>
+  );
 }
 
 /**
@@ -177,7 +195,7 @@ function WeekCard({
   onToggle: () => void;
 }) {
   const hasMaterials = week.driveUrl !== undefined || week.links.length > 0;
-  const nothing = week.lessons.length === 0 && !hasMaterials && work.length === 0;
+  const nothing = week.lessons.length === 0 && week.presentations.length === 0 && !hasMaterials && work.length === 0;
   return (
     <ExpandableCard
       heading="h3"
@@ -227,6 +245,31 @@ function WeekCard({
                   <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-sm font-medium text-paper">
                     <BookOpen className="size-4" />
                     Read
+                    <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </WeekPart>
+        )}
+
+        {week.presentations.length > 0 && (
+          <WeekPart title="Presentations">
+            {week.presentations.map((deck) => (
+              <li key={deck._id}>
+                <Link href={presentationPath(courseId, deck._id)} className={rowClass}>
+                  <ThemeChip theme={deck.theme} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium leading-snug wrap-anywhere">{deck.title}</span>
+                    <span className="mt-0.5 block text-sm text-graphite">
+                      Presentation · {plural(deck.slideCount, "slide", "slides")}
+                    </span>
+                  </span>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-sm font-medium text-paper">
+                    <svg viewBox="0 0 20 20" aria-hidden="true" className="size-4" fill="currentColor">
+                      <path d="M6.5 4.2v11.6a.8.8 0 0 0 1.2.7l9.2-5.8a.8.8 0 0 0 0-1.4L7.7 3.5a.8.8 0 0 0-1.2.7z" />
+                    </svg>
+                    Watch
                     <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
                   </span>
                 </Link>

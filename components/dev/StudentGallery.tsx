@@ -33,6 +33,8 @@ import { Button } from "@/components/ui/buttons";
 import { PillHeader } from "@/components/ui/PillHeader";
 import { LoadingScreen } from "@/components/ui/StatusScreen";
 import { buildDraft, type ContactOptions } from "@/lib/contact";
+import { SAMPLE_DECK } from "@/components/presentations/samples";
+import { PresentationView } from "@/components/presentations-reader/PresentationView";
 import { sampleLastLesson, sampleLesson } from "./sampleLessons";
 
 // Development-only screen gallery with sample data: lets signed-in screens be
@@ -139,6 +141,7 @@ const course: ComponentProps<typeof CourseView>["course"] = {
         { _id: lessonId("l_what_html"), title: "What HTML is for" },
         { _id: lessonId("l_first_page"), title: "Your first page" },
       ],
+      presentations: [{ _id: id<"presentations">("p_web"), title: "How the web works", theme: "ink", slideCount: 15 }],
       driveUrl: "https://drive.google.com/drive/folders/sample-week-1",
       links: [
         { id: "k1", title: "MDN: Getting started with the web", url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started", host: "developer.mozilla.org" },
@@ -151,6 +154,7 @@ const course: ComponentProps<typeof CourseView>["course"] = {
         { _id: lessonId("l_selectors"), title: "Selectors and properties" },
         { _id: lessonId("l_colours"), title: "Colours and fonts" },
       ],
+      presentations: [],
       driveUrl: "https://drive.google.com/drive/folders/sample-week-2",
       links: [],
     },
@@ -161,6 +165,10 @@ const course: ComponentProps<typeof CourseView>["course"] = {
       lessons: [
         { _id: lessonId("l_box_model"), title: "The CSS box model" },
         { _id: lessonId("l_margins"), title: "Margins that collapse" },
+      ],
+      presentations: [
+        { _id: id<"presentations">("p_box"), title: "Boxes all the way down", theme: "aurora", slideCount: 9 },
+        { _id: id<"presentations">("p_margin"), title: "Margins, visually", theme: "chalk", slideCount: 6 },
       ],
       driveUrl: "https://drive.google.com/drive/folders/sample-week-3",
       links: [
@@ -577,6 +585,9 @@ const views: Record<string, string> = {
   course: "Course · three weeks with lessons and materials, exams, other work",
   "course-empty": "Course · nothing published yet",
   lesson: "Lesson · every block type, with previous and next",
+  presentation: "Presentation · every slide type (Ink)",
+  "presentation-aurora": "Presentation · every slide type (Aurora)",
+  "presentation-paper": "Presentation · every slide type (Paper)",
   "lesson-last": "Lesson · the latest one (no next lesson)",
   "lesson-not-found": "Lesson · not available",
   assistant: "AI assistant · connect your own assistant to Kalami",
@@ -692,6 +703,21 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
       return studentPage(<CourseView course={emptyCourse} />);
     case "lesson":
       return studentPage(<LessonView lesson={sampleLesson} />);
+    case "presentation":
+    case "presentation-aurora":
+    case "presentation-paper":
+      return studentPage(
+        <PresentationView
+          presentation={{
+            _id: id<"presentations">("p_web"),
+            title: "How the web works",
+            theme: view === "presentation" ? "ink" : view === "presentation-aurora" ? "aurora" : "paper",
+            slides: SAMPLE_DECK.slides,
+            course: { _id: courseId, title: "HTML & CSS Fundamentals" },
+            week: { _id: weekId1, title: "Week 1 · HTML structure" },
+          }}
+        />,
+      );
     case "lesson-last":
       return studentPage(<LessonView lesson={sampleLastLesson} />);
     case "lesson-not-found":

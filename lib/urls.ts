@@ -15,6 +15,11 @@ export function lessonPath(courseId: string, lessonId: string): string {
   return `/courses/${courseId}/lessons/${lessonId}`;
 }
 
+/** A presentation in the player. */
+export function presentationPath(courseId: string, presentationId: string): string {
+  return `/courses/${courseId}/presentations/${presentationId}`;
+}
+
 /** This app's own Clerk pages, used even when the NEXT_PUBLIC_CLERK_* URL vars are missing. */
 export const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in";
 export const SIGN_UP_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || "/sign-up";

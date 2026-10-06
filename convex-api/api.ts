@@ -598,6 +598,12 @@ export type PublicApiType = {
             title: string;
             url: string;
           }>;
+          presentations: Array<{
+            _id: Id<"presentations">;
+            slideCount: number;
+            theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
+            title: string;
+          }>;
           title: string;
         }>;
       }
@@ -1827,6 +1833,15 @@ export type PublicApiType = {
           }>;
           links: Array<{ id: string; title: string; url: string }>;
           order: number;
+          presentations: Array<{
+            _id: Id<"presentations">;
+            createdVia: "web" | "mcp";
+            slideCount: number;
+            status: "draft" | "published";
+            theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
+            title: string;
+            updatedAt: number;
+          }>;
           publishedAt?: number;
           status: "draft" | "published";
           title: string;
@@ -3620,6 +3635,377 @@ export type PublicApiType = {
       { client?: string; lessonId: Id<"lessons">; token: string },
       null
     >;
+    getPresentationAsAgent: FunctionReference<
+      "query",
+      "public",
+      { client?: string; presentationId: Id<"presentations">; token: string },
+      {
+        _id: Id<"presentations">;
+        canEdit: boolean;
+        courseId: Id<"courses">;
+        courseTitle: string;
+        createdVia: "web" | "mcp";
+        slides: Array<
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              subtitle?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "title";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "section";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              text: string;
+              tone?: "default" | "accent";
+              type: "statement";
+            }
+          | {
+              build?: boolean;
+              id: string;
+              notes?: string;
+              points: Array<string>;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "points";
+            }
+          | {
+              decimals?: number;
+              detail?: string;
+              id: string;
+              label: string;
+              notes?: string;
+              prefix?: string;
+              suffix?: string;
+              tone?: "default" | "accent";
+              type: "number";
+              value: number;
+            }
+          | {
+              id: string;
+              left: { points: Array<string>; title: string };
+              notes?: string;
+              right: { points: Array<string>; title: string };
+              title?: string;
+              tone?: "default" | "accent";
+              type: "compare";
+              verdict?: string;
+            }
+          | {
+              author?: string;
+              id: string;
+              notes?: string;
+              quote: string;
+              role?: string;
+              tone?: "default" | "accent";
+              type: "quote";
+            }
+          | {
+              code: string;
+              highlights?: Array<{ from: number; note?: string; to?: number }>;
+              id: string;
+              language: string;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id: string;
+              layout?: "split" | "full";
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "image";
+              url: string;
+            }
+          | {
+              build?: boolean;
+              id: string;
+              layout: "flow" | "cycle" | "stack" | "hub";
+              nodes: Array<{ detail?: string; edge?: string; label: string }>;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "diagram";
+            }
+          | {
+              id: string;
+              next?: string;
+              notes?: string;
+              points?: Array<string>;
+              title: string;
+              tone?: "default" | "accent";
+              type: "closing";
+            }
+        >;
+        status: "draft" | "published";
+        theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
+        title: string;
+        updatedAt: number;
+        weekId: Id<"weeks">;
+        weekStatus: "draft" | "published";
+        weekTitle: string;
+      }
+    >;
+    createPresentationAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        requestId?: string;
+        slides: Array<
+          | {
+              id?: string;
+              kicker?: string;
+              notes?: string;
+              subtitle?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "title";
+            }
+          | {
+              id?: string;
+              kicker?: string;
+              notes?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "section";
+            }
+          | {
+              id?: string;
+              kicker?: string;
+              notes?: string;
+              text: string;
+              tone?: "default" | "accent";
+              type: "statement";
+            }
+          | {
+              build?: boolean;
+              id?: string;
+              notes?: string;
+              points: Array<string>;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "points";
+            }
+          | {
+              decimals?: number;
+              detail?: string;
+              id?: string;
+              label: string;
+              notes?: string;
+              prefix?: string;
+              suffix?: string;
+              tone?: "default" | "accent";
+              type: "number";
+              value: number;
+            }
+          | {
+              id?: string;
+              left: { points: Array<string>; title: string };
+              notes?: string;
+              right: { points: Array<string>; title: string };
+              title?: string;
+              tone?: "default" | "accent";
+              type: "compare";
+              verdict?: string;
+            }
+          | {
+              author?: string;
+              id?: string;
+              notes?: string;
+              quote: string;
+              role?: string;
+              tone?: "default" | "accent";
+              type: "quote";
+            }
+          | {
+              code: string;
+              highlights?: Array<{ from: number; note?: string; to?: number }>;
+              id?: string;
+              language: string;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              layout?: "split" | "full";
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "image";
+              url: string;
+            }
+          | {
+              build?: boolean;
+              id?: string;
+              layout: "flow" | "cycle" | "stack" | "hub";
+              nodes: Array<{ detail?: string; edge?: string; label: string }>;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "diagram";
+            }
+          | {
+              id?: string;
+              next?: string;
+              notes?: string;
+              points?: Array<string>;
+              title: string;
+              tone?: "default" | "accent";
+              type: "closing";
+            }
+        >;
+        theme?: "ink" | "paper" | "aurora" | "ember" | "chalk";
+        title: string;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      Id<"presentations">
+    >;
+    updatePresentationAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        presentationId: Id<"presentations">;
+        slides?: Array<
+          | {
+              id?: string;
+              kicker?: string;
+              notes?: string;
+              subtitle?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "title";
+            }
+          | {
+              id?: string;
+              kicker?: string;
+              notes?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "section";
+            }
+          | {
+              id?: string;
+              kicker?: string;
+              notes?: string;
+              text: string;
+              tone?: "default" | "accent";
+              type: "statement";
+            }
+          | {
+              build?: boolean;
+              id?: string;
+              notes?: string;
+              points: Array<string>;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "points";
+            }
+          | {
+              decimals?: number;
+              detail?: string;
+              id?: string;
+              label: string;
+              notes?: string;
+              prefix?: string;
+              suffix?: string;
+              tone?: "default" | "accent";
+              type: "number";
+              value: number;
+            }
+          | {
+              id?: string;
+              left: { points: Array<string>; title: string };
+              notes?: string;
+              right: { points: Array<string>; title: string };
+              title?: string;
+              tone?: "default" | "accent";
+              type: "compare";
+              verdict?: string;
+            }
+          | {
+              author?: string;
+              id?: string;
+              notes?: string;
+              quote: string;
+              role?: string;
+              tone?: "default" | "accent";
+              type: "quote";
+            }
+          | {
+              code: string;
+              highlights?: Array<{ from: number; note?: string; to?: number }>;
+              id?: string;
+              language: string;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              layout?: "split" | "full";
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "image";
+              url: string;
+            }
+          | {
+              build?: boolean;
+              id?: string;
+              layout: "flow" | "cycle" | "stack" | "hub";
+              nodes: Array<{ detail?: string; edge?: string; label: string }>;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "diagram";
+            }
+          | {
+              id?: string;
+              next?: string;
+              notes?: string;
+              points?: Array<string>;
+              title: string;
+              tone?: "default" | "accent";
+              type: "closing";
+            }
+        >;
+        theme?: "ink" | "paper" | "aurora" | "ember" | "chalk";
+        title?: string;
+        token: string;
+      },
+      Array<string>
+    >;
+    deletePresentationAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      { client?: string; presentationId: Id<"presentations">; token: string },
+      null
+    >;
     exportCourseForAgent: FunctionReference<
       "query",
       "public",
@@ -3643,6 +4029,7 @@ export type PublicApiType = {
             language: "ka" | "en";
             lessons: number;
             links: number;
+            presentations: number;
             questions: number;
             title: string;
             weeks: number;
@@ -3663,6 +4050,7 @@ export type PublicApiType = {
             language: "ka" | "en";
             lessons: number;
             links: number;
+            presentations: number;
             questions: number;
             title: string;
             weeks: number;
@@ -3693,6 +4081,7 @@ export type PublicApiType = {
             language: "ka" | "en";
             lessons: number;
             links: number;
+            presentations: number;
             questions: number;
             title: string;
             weeks: number;
@@ -3713,6 +4102,7 @@ export type PublicApiType = {
             language: "ka" | "en";
             lessons: number;
             links: number;
+            presentations: number;
             questions: number;
             title: string;
             weeks: number;
@@ -7037,6 +7427,15 @@ export type PublicApiType = {
           }>;
           links: Array<{ id: string; title: string; url: string }>;
           order: number;
+          presentations: Array<{
+            _id: Id<"presentations">;
+            createdVia: "web" | "mcp";
+            slideCount: number;
+            status: "draft" | "published";
+            theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
+            title: string;
+            updatedAt: number;
+          }>;
           publishedAt?: number;
           status: "draft" | "published";
           title: string;
@@ -7164,6 +7563,7 @@ export type PublicApiType = {
             language: "ka" | "en";
             lessons: number;
             links: number;
+            presentations: number;
             questions: number;
             title: string;
             weeks: number;
@@ -7184,6 +7584,7 @@ export type PublicApiType = {
             language: "ka" | "en";
             lessons: number;
             links: number;
+            presentations: number;
             questions: number;
             title: string;
             weeks: number;
@@ -7208,6 +7609,7 @@ export type PublicApiType = {
             language: "ka" | "en";
             lessons: number;
             links: number;
+            presentations: number;
             questions: number;
             title: string;
             weeks: number;
@@ -7228,6 +7630,7 @@ export type PublicApiType = {
             language: "ka" | "en";
             lessons: number;
             links: number;
+            presentations: number;
             questions: number;
             title: string;
             weeks: number;
@@ -8081,6 +8484,12 @@ export type PublicApiType = {
             title: string;
             url: string;
           }>;
+          presentations: Array<{
+            _id: Id<"presentations">;
+            slideCount: number;
+            theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
+            title: string;
+          }>;
           title: string;
         }>;
       }
@@ -8684,6 +9093,392 @@ export type PublicApiType = {
         documentKey: string;
         url: string;
         weekId: Id<"weeks">;
+      }
+    >;
+  };
+  presentations: {
+    get: FunctionReference<
+      "query",
+      "public",
+      { presentationId: Id<"presentations"> },
+      {
+        _id: Id<"presentations">;
+        canEdit: boolean;
+        courseId: Id<"courses">;
+        courseTitle: string;
+        createdVia: "web" | "mcp";
+        slides: Array<
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              subtitle?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "title";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "section";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              text: string;
+              tone?: "default" | "accent";
+              type: "statement";
+            }
+          | {
+              build?: boolean;
+              id: string;
+              notes?: string;
+              points: Array<string>;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "points";
+            }
+          | {
+              decimals?: number;
+              detail?: string;
+              id: string;
+              label: string;
+              notes?: string;
+              prefix?: string;
+              suffix?: string;
+              tone?: "default" | "accent";
+              type: "number";
+              value: number;
+            }
+          | {
+              id: string;
+              left: { points: Array<string>; title: string };
+              notes?: string;
+              right: { points: Array<string>; title: string };
+              title?: string;
+              tone?: "default" | "accent";
+              type: "compare";
+              verdict?: string;
+            }
+          | {
+              author?: string;
+              id: string;
+              notes?: string;
+              quote: string;
+              role?: string;
+              tone?: "default" | "accent";
+              type: "quote";
+            }
+          | {
+              code: string;
+              highlights?: Array<{ from: number; note?: string; to?: number }>;
+              id: string;
+              language: string;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id: string;
+              layout?: "split" | "full";
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "image";
+              url: string;
+            }
+          | {
+              build?: boolean;
+              id: string;
+              layout: "flow" | "cycle" | "stack" | "hub";
+              nodes: Array<{ detail?: string; edge?: string; label: string }>;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "diagram";
+            }
+          | {
+              id: string;
+              next?: string;
+              notes?: string;
+              points?: Array<string>;
+              title: string;
+              tone?: "default" | "accent";
+              type: "closing";
+            }
+        >;
+        status: "draft" | "published";
+        theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
+        title: string;
+        updatedAt: number;
+        weekId: Id<"weeks">;
+        weekStatus: "draft" | "published";
+        weekTitle: string;
+      }
+    >;
+    create: FunctionReference<
+      "mutation",
+      "public",
+      {
+        theme?: "ink" | "paper" | "aurora" | "ember" | "chalk";
+        title: string;
+        weekId: Id<"weeks">;
+      },
+      Id<"presentations">
+    >;
+    save: FunctionReference<
+      "mutation",
+      "public",
+      {
+        presentationId: Id<"presentations">;
+        slides?: Array<
+          | {
+              id?: string;
+              kicker?: string;
+              notes?: string;
+              subtitle?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "title";
+            }
+          | {
+              id?: string;
+              kicker?: string;
+              notes?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "section";
+            }
+          | {
+              id?: string;
+              kicker?: string;
+              notes?: string;
+              text: string;
+              tone?: "default" | "accent";
+              type: "statement";
+            }
+          | {
+              build?: boolean;
+              id?: string;
+              notes?: string;
+              points: Array<string>;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "points";
+            }
+          | {
+              decimals?: number;
+              detail?: string;
+              id?: string;
+              label: string;
+              notes?: string;
+              prefix?: string;
+              suffix?: string;
+              tone?: "default" | "accent";
+              type: "number";
+              value: number;
+            }
+          | {
+              id?: string;
+              left: { points: Array<string>; title: string };
+              notes?: string;
+              right: { points: Array<string>; title: string };
+              title?: string;
+              tone?: "default" | "accent";
+              type: "compare";
+              verdict?: string;
+            }
+          | {
+              author?: string;
+              id?: string;
+              notes?: string;
+              quote: string;
+              role?: string;
+              tone?: "default" | "accent";
+              type: "quote";
+            }
+          | {
+              code: string;
+              highlights?: Array<{ from: number; note?: string; to?: number }>;
+              id?: string;
+              language: string;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id?: string;
+              layout?: "split" | "full";
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "image";
+              url: string;
+            }
+          | {
+              build?: boolean;
+              id?: string;
+              layout: "flow" | "cycle" | "stack" | "hub";
+              nodes: Array<{ detail?: string; edge?: string; label: string }>;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "diagram";
+            }
+          | {
+              id?: string;
+              next?: string;
+              notes?: string;
+              points?: Array<string>;
+              title: string;
+              tone?: "default" | "accent";
+              type: "closing";
+            }
+        >;
+        theme?: "ink" | "paper" | "aurora" | "ember" | "chalk";
+        title?: string;
+      },
+      Array<string>
+    >;
+    setStatus: FunctionReference<
+      "mutation",
+      "public",
+      { presentationId: Id<"presentations">; status: "draft" | "published" },
+      null
+    >;
+    remove: FunctionReference<
+      "mutation",
+      "public",
+      { presentationId: Id<"presentations"> },
+      null
+    >;
+    read: FunctionReference<
+      "query",
+      "public",
+      { presentationId: Id<"presentations"> },
+      {
+        _id: Id<"presentations">;
+        course: { _id: Id<"courses">; title: string };
+        slides: Array<
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              subtitle?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "title";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "section";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              text: string;
+              tone?: "default" | "accent";
+              type: "statement";
+            }
+          | {
+              build?: boolean;
+              id: string;
+              notes?: string;
+              points: Array<string>;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "points";
+            }
+          | {
+              decimals?: number;
+              detail?: string;
+              id: string;
+              label: string;
+              notes?: string;
+              prefix?: string;
+              suffix?: string;
+              tone?: "default" | "accent";
+              type: "number";
+              value: number;
+            }
+          | {
+              id: string;
+              left: { points: Array<string>; title: string };
+              notes?: string;
+              right: { points: Array<string>; title: string };
+              title?: string;
+              tone?: "default" | "accent";
+              type: "compare";
+              verdict?: string;
+            }
+          | {
+              author?: string;
+              id: string;
+              notes?: string;
+              quote: string;
+              role?: string;
+              tone?: "default" | "accent";
+              type: "quote";
+            }
+          | {
+              code: string;
+              highlights?: Array<{ from: number; note?: string; to?: number }>;
+              id: string;
+              language: string;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id: string;
+              layout?: "split" | "full";
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "image";
+              url: string;
+            }
+          | {
+              build?: boolean;
+              id: string;
+              layout: "flow" | "cycle" | "stack" | "hub";
+              nodes: Array<{ detail?: string; edge?: string; label: string }>;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "diagram";
+            }
+          | {
+              id: string;
+              next?: string;
+              notes?: string;
+              points?: Array<string>;
+              title: string;
+              tone?: "default" | "accent";
+              type: "closing";
+            }
+        >;
+        theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
+        title: string;
+        week: { _id: Id<"weeks">; title: string };
       }
     >;
   };

@@ -34,6 +34,7 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-013 | Notification center in the admin panel: messages to anyone, groups, courses and whole audiences by bell, push and email | Ready for review | Claude (Claude Code) |
 | TASK-014 | Notification center: message any email addresses, with or without an account, and turn a message into personal group invitations | Ready for review | Claude (Claude Code) |
 | TASK-015 | Animated scenes in lessons: a `scene` block agents build from a validated vocabulary, played with GSAP | Ready for review | Claude (Claude Code) |
+| TASK-016 | Presentations: their own item in a week, typed slides in curated themes, a GSAP player, an editor and agent tools | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -900,9 +901,11 @@ Lecturers want their AI assistant to build animated presentations, not only text
 
 **Galleries:** staff `?view=lesson-editor` (block 10) and `lesson-preview`; student `?view=lesson` (slides 16–19, one per template).
 
+**`create_presentation` MCP tool** (since replaced by TASK-016's deck tools; added the same day at the user's request, so the feature shows up in an assistant's tool list): takes `requestId`, `weekId`, `title` and 1–30 `scenes` (the scene schema itself, so the whole vocabulary is in the tool's input schema), creates a draft lesson of scene blocks through the existing `createLessonAsAgent` mutation and returns `lessonId`, `sceneBlockIds` and the `reviewUrl`. No backend change. The MCP instructions point to it for "a presentation". Test: `lib/mcp/server.test.ts` lists it and calls it with a scene whose step names a missing element; the tool refuses with `scenes.0: steps[0].actions[0].targets: no element with id "server".` before reaching Convex.
+
 ### Checks (2026-10-07)
 
-- `kalami-stuff`: `npx tsc --noEmit` clean (app and `convex/`); `npx vitest run` 281 passed (29 files; new `scene.test.ts`, a scene case in `lessons.test.ts`, the guide's scene example parsed in `kalami.test.ts`); `eslint` clean on touched files. `npx convex dev --once` pushed the validators to the dev deployment, then `npm run sync:student`.
+- `kalami-stuff`: `npx tsc --noEmit` clean (app and `convex/`); `npx vitest run` 282 passed (29 files; `create_presentation` test in `server.test.ts`, new `scene.test.ts`, a scene case in `lessons.test.ts`, the guide's scene example parsed in `kalami.test.ts`); `eslint` clean on touched files. `npx convex dev --once` pushed the validators to the dev deployment, then `npm run sync:student`.
 - `kalami`: `npx tsc --noEmit` and `eslint` clean on synced files.
 - Browser (student dev gallery, lesson view): the four template scenes play on desktop: heading cascades, list stagger, shapes pop, arrows draw with labels and follow a moved box, camera zooms to the DNS node and back, focus dims, code types line by line, numbers count up, notes slide in. → steps through a scene, then moves to the next slide; ← plays a step backwards. 375 px: stage scales, controls wrap, rotate hint shows. Staff editor: the scene block form, the Templates menu, the compact preview following the selected block; invalid JSON shows "Not valid JSON yet."; a bad target id shows `steps[0].actions[0].targets: no element with id "ghost".` and the preview tracks the valid version.
 - Not verified in motion: the fourth template was only watched in slow motion because the browser pane was hidden at that point (GSAP's ticker pauses without animation frames). Its end states and colours were checked in the DOM.
@@ -914,3 +917,74 @@ Lecturers want their AI assistant to build animated presentations, not only text
 - No free-form HTML/CSS element yet (the deferred escape hatch via the scriptless sandbox iframe).
 - The player's own Next/Previous buttons move slides, not scene steps (only the arrow keys and the scene's buttons step).
 - Console shows pre-existing "An unknown error occurred when fetching the script." errors on the student dev gallery (service worker in dev), unrelated to this task.
+
+## TASK-016 — Presentations: their own item in a week, typed slides in curated themes, a GSAP player, an editor and agent tools
+
+- **Status:** Ready for review (asked for 2026-10-07; built the same day)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-07
+
+### Problem
+
+Presentations built from lesson scenes (TASK-015) came out dull: the agent placed boxes by coordinates and picked colour tokens, and the editor showed raw JSON. The user asked for a dedicated presentation feature with GSAP-homepage-level text animation, transitions and colour, and a clean setup.
+
+### Decided by the user (2026-10-07)
+
+- Build the proposal as described, in one go, and polish afterwards: presentations as their own content type in a week next to its lessons; typed slides, each with a designed layout and animation; curated themes; a full-screen player; a form-based editor; agent tools replacing the scene-based `create_presentation`.
+- Not answered explicitly: own content type versus a kind of lesson. Built as its own content type (the recommendation).
+
+### Implementation notes (2026-10-07)
+
+**Vocabulary and rules** (`kalami-stuff/convex/lib/presentation/`, synced to `kalami/lib/presentation`, re-exported from staff `lib/presentation`):
+- 11 slide types: title, section, statement, points, number, compare, quote, code, image, diagram (flow, cycle, stack, hub), closing. Every slide may have `tone` (`accent` fills it with the theme colour; sections are accent by default) and speaker `notes`.
+- 5 themes: ink (default), paper, aurora, ember, chalk. Slide text marks words with `**accent**` and `` `code` ``; nothing is positioned or coloured by hand.
+- `deckProblems` lists every problem with where it is; `tidySlide`, `slideSteps` (builds), `sectionNumbers`, `slideLabel`, `deckText`. `geometry.ts` lays out diagrams (edges per layout, node widths, placement, curved or straight connectors) as pure functions.
+
+**Backend:**
+- `presentations` table (`by_weekId_and_order`, `by_courseId`).
+- `convex/model/presentations.ts`: create (a new one starts as one title slide), save the whole deck (title, theme, slides; every problem reported at once; ids kept), publish and unpublish (lecturer only), delete, and the student read (same visibility rules as lessons).
+- `convex/presentations.ts` for the staff editor and the student player.
+- The outline (staff and agents) lists presentations. Publishing a week publishes its draft presentations. Removing a week deletes them, and an agent is refused if one is published. The course purge drains them; a failed import discards them. Students' course weeks list the published ones.
+- `.kalami` v1 gains `week.presentations` (export, check, import), with a guide section whose example a test parses. Old files still import.
+
+**MCP (0.8.0):** `create_presentation` replaces TASK-015's scene-based tool; also new are `get_presentation`, `update_presentation` and `delete_presentation`. The deck rules run in the tool's input schema before Convex. The instructions send any slides or deck request to presentations; scene blocks stay for one custom animation inside a lesson.
+
+**Player** (`components/presentations/`, synced):
+- `DeckPlayer`: slides as layers. Next plays builds, then moves on; Back reverses. Between slides, the old slide rewinds its own entrance while the new one plays, the backdrop's glows travel, and an accent slide fills the stage with a growing circle.
+- Keys (and the page takes them without a click), tap and swipe, full screen with a fixed-overlay fallback, controls that hide while presenting, speaker notes, an all-slides overview, replay, and reduced motion.
+- `views.tsx`: the 11 layouts in container units. Long text gets a smaller size, and narrow (phone) stages stack.
+- `choreo.ts` (GSAP 3.15, SplitText, DrawSVG, CustomEase): masked line reveals, words out of a blur, decoding kickers, counting numbers, typing code with a highlight band and notes, arrows and ticks that draw, accent marks drawn on after their words.
+- `Backdrop.tsx`, `themes.ts` and `deck.module.css`: three mark styles (hand-drawn underline, highlighter, chalk loop), drawn with masks.
+- `samples.ts`: a 15-slide showcase deck.
+
+**Staff UI:**
+- Course outline: a Presentations section per week (theme-chip rows, a New presentation dialog); the publish and remove week dialogs mention presentations.
+- Editor at `/courses/[courseId]/presentations/[presentationId]`: a theme picker with live thumbnails; slide cards with a plain form per type, tone and notes; an add-slide menu that inserts placeholder words; a live preview that follows the selected slide; Present (full screen, from the unsaved draft); Save and Ctrl/Cmd+S; publish and delete; changes made elsewhere are picked up or flagged.
+- `TitleEditor` and `SaveBar` are now exported from `LessonEditor` for reuse. The agents page copy and the admin activity filter mention presentations.
+
+**Student UI:** a Presentations part in each course week (theme chip, Watch), and `/courses/[courseId]/presentations/[presentationId]` with the player and a not-available state.
+
+**Galleries:** staff `deck-ink`, `deck-paper`, `deck-aurora`, `deck-ember`, `deck-chalk`, `presentation-editor`, `course`; student `course`, `presentation`, `presentation-aurora`, `presentation-paper`.
+
+### Checks (2026-10-07)
+
+- `kalami-stuff`: `npx tsc --noEmit` clean (app and `convex/`). `npx vitest run`: 295 passed (31 files), including `convex/lib/presentation/presentation.test.ts` (9), `convex/presentations.test.ts` (4), the MCP server test for the new tools, the `.kalami` round trip with a presentation, and the guide's example. `eslint` clean on touched files. `npx convex dev --once` pushed to the dev deployment, then `sync:student`.
+- `kalami`: `npx tsc --noEmit` and `eslint` clean on touched files.
+- Browser, dev galleries at 1280 × 860 and 375 × 812:
+  - All 11 slide types in Ink; Paper, Aurora, Chalk and Ember on the title, statement and section slides.
+  - Builds on the diagram, points and code slides; transitions leave no ghost layer behind.
+  - Phone layouts: title, vertical flow diagram, code with its notes below, stacked compare.
+  - Staff outline section and New presentation dialog.
+  - Editor: add a slide, the preview follows the typing, the empty-text problem refuses the save, a theme switch, Present overlay and Esc.
+
+### Limitations and follow-ups
+
+- Not verified here:
+  - The browser's own full screen: the pane refuses it, though the fallback overlay was verified.
+  - Swipe on a real phone.
+  - The Caveat and Noto Georgian web fonts: this dev server only served their fallbacks, so Chalk's handwritten headings showed in the fallback face.
+- The browser pane pauses animation frames while it's hidden. Verification drove GSAP's ticker by hand through `window.__deckGsap`, which exists in development builds only.
+- Presentations keep creation order within a week; there is no reorder or move-to-another-week yet.
+- The student MCP connector and the student lesson search don't include presentations yet.
+- The gallery sample's image is a `data:` link, so that sample can't be saved through the backend (images must be https).
+- Speaker notes are visible to students behind the Notes toggle.
