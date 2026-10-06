@@ -3066,12 +3066,13 @@ export type PublicApiType = {
         items: Array<{
           _creationTime: number;
           _id: Id<"notifications">;
-          assessmentKind: "task" | "quiz" | "midterm" | "final";
-          courseId: Id<"courses">;
+          assessmentKind?: "task" | "quiz" | "midterm" | "final";
+          body?: string;
+          courseId?: Id<"courses">;
           courseTitle: string;
           dueAt?: number;
           href: string;
-          kind: "published" | "due_24h" | "due_1h";
+          kind: "published" | "due_24h" | "due_1h" | "announcement";
           read: boolean;
           title: string;
         }>;
@@ -4775,6 +4776,120 @@ export type PublicApiType = {
         updatedAt: number;
       }>
     >;
+    findPeople: FunctionReference<
+      "query",
+      "public",
+      { query: string },
+      Array<{
+        email: string;
+        name: string;
+        roles: Array<"student" | "lecturer" | "uni_admin" | "super_admin">;
+        universityName?: { en: string; ka: string };
+        userId: Id<"users">;
+      }>
+    >;
+    broadcastPreview: FunctionReference<
+      "query",
+      "public",
+      {
+        audience:
+          | { kind: "everyone" }
+          | { kind: "students"; universityId?: Id<"universities"> | "none" }
+          | { kind: "staff"; universityId?: Id<"universities"> | "none" }
+          | { kind: "university"; universityId: Id<"universities"> }
+          | { groupId: Id<"groups">; kind: "group" }
+          | { courseId: Id<"courses">; kind: "course" }
+          | { kind: "people"; userIds: Array<Id<"users">> };
+        emailEveryone: boolean;
+      },
+      {
+        blocked: number;
+        capped: boolean;
+        emailConfigured: boolean;
+        emailable: number;
+        optedOut: number;
+        pushConfigured: boolean;
+        recipients: number;
+        staff: number;
+        students: number;
+        withPush: number;
+      }
+    >;
+    sendBroadcast: FunctionReference<
+      "mutation",
+      "public",
+      {
+        audience:
+          | { kind: "everyone" }
+          | { kind: "students"; universityId?: Id<"universities"> | "none" }
+          | { kind: "staff"; universityId?: Id<"universities"> | "none" }
+          | { kind: "university"; universityId: Id<"universities"> }
+          | { groupId: Id<"groups">; kind: "group" }
+          | { courseId: Id<"courses">; kind: "course" }
+          | { kind: "people"; userIds: Array<Id<"users">> };
+        body: string;
+        channels: { email: boolean; push: boolean };
+        emailEveryone: boolean;
+        link?: string;
+        title: string;
+      },
+      Id<"broadcasts">
+    >;
+    broadcasts: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      Array<{
+        _creationTime: number;
+        _id: Id<"broadcasts">;
+        audienceLabel: string;
+        body: string;
+        channels: { email: boolean; push: boolean };
+        emailEveryone: boolean;
+        emailed: number;
+        finishedAt?: number;
+        from: { en: string; ka: string };
+        inApp: number;
+        link?: string;
+        pushed: number;
+        recipients: number;
+        senderName: string;
+        status: "sending" | "sent";
+        title: string;
+      }>
+    >;
+    broadcastRecipients: FunctionReference<
+      "query",
+      "public",
+      {
+        broadcastId: Id<"broadcasts">;
+        paginationOpts: {
+          cursor: string | null;
+          endCursor?: string | null;
+          id?: number;
+          maximumBytesRead?: number;
+          maximumRowsRead?: number;
+          numItems: number;
+        };
+      },
+      {
+        continueCursor: string;
+        isDone: boolean;
+        page: Array<{
+          _id: Id<"broadcastDeliveries">;
+          devices: number;
+          email: string;
+          emailSkipped?: "off" | "opted_out" | "blocked" | "not_configured";
+          emailed: boolean;
+          inApp: boolean;
+          name: string;
+          role: "student" | "lecturer" | "uni_admin" | "super_admin";
+          userId: Id<"users">;
+        }>;
+        pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+        splitCursor?: string | null;
+      }
+    >;
     activity: FunctionReference<
       "query",
       "public",
@@ -4840,11 +4955,17 @@ export type PublicApiType = {
     >;
   };
   push: {
-    vapidPublicKey: FunctionReference<
+    mine: FunctionReference<
       "query",
       "public",
       Record<string, never>,
-      string | null
+      Array<{ endpoint: string; lastUsedAt: number; userAgent?: string }>
+    >;
+    requestTest: FunctionReference<
+      "mutation",
+      "public",
+      Record<string, never>,
+      number
     >;
     subscribe: FunctionReference<
       "mutation",
@@ -4862,17 +4983,11 @@ export type PublicApiType = {
       { endpoint: string },
       null
     >;
-    mine: FunctionReference<
+    vapidPublicKey: FunctionReference<
       "query",
       "public",
       Record<string, never>,
-      Array<{ endpoint: string; lastUsedAt: number; userAgent?: string }>
-    >;
-    requestTest: FunctionReference<
-      "mutation",
-      "public",
-      Record<string, never>,
-      number
+      string | null
     >;
   };
   study: {

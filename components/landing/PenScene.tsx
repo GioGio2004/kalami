@@ -2,6 +2,7 @@
 
 import { useAnimationFrame, useInView, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
+import { encouragementWords } from "./encouragementStrokes";
 
 // Actual pen strokes, including the separate K arm and the final dot over the i.
 const kalami = [
@@ -14,7 +15,7 @@ const kalami = [
   { d: "M368 280 L362 302 Q360 316 378 301", duration: 0.6 },
   { d: "M370 265 l0.8 -1.5", duration: 0.16 },
 ];
-const words = [
+const storyWords = [
   { name: "Kalami", strokes: kalami },
   { name: "Build an idea", strokes: [
     { d: "M174 223 L381 223 Q391 223 391 233 L391 339 Q391 349 381 349 L174 349 Q164 349 164 339 L164 233 Q164 223 174 223", duration: 1.35 },
@@ -31,11 +32,13 @@ const words = [
   ] },
 ];
 const gap = 0.18;
-const durations = words.map(({ strokes }) => strokes.reduce((sum, stroke) => sum + stroke.duration + gap, 0) + 3.5);
-const cycleTime = durations.reduce((sum, duration) => sum + duration, 0);
+
 
 /** Native SVG transforms keep the nib and ink in exactly the same coordinate space. */
-export function PenScene() {
+export function PenScene({ encouragement = false, decoration = false }: { encouragement?: boolean; decoration?: boolean }) {
+  const words = encouragement ? encouragementWords : storyWords;
+  const durations = words.map(({ strokes }) => strokes.reduce((sum, stroke) => sum + stroke.duration + gap, 0) + 3.5);
+  const cycleTime = durations.reduce((sum, duration) => sum + duration, 0);
   const ref = useRef<HTMLDivElement>(null);
   const paths = useRef<(SVGPathElement | null)[][]>(words.map(() => []));
   const wordGroups = useRef<(SVGGElement | null)[]>([]);
@@ -53,7 +56,7 @@ export function PenScene() {
     elapsed.current = 0;
     burst.current?.setAttribute("opacity", "0");
     accents.current?.setAttribute("opacity", "0");
-    if (chapterLabel.current) chapterLabel.current.textContent = "01 / THE FIRST SPARK";
+    if (chapterLabel.current) chapterLabel.current.textContent = encouragement ? "A NOTE FOR YOU" : "01 / THE FIRST SPARK";
     paths.current.flat().forEach((path) => {
       path?.setAttribute("stroke-dashoffset", reduce === false ? "1" : "0");
       path?.setAttribute("opacity", reduce === false ? "0" : "1");
@@ -61,7 +64,7 @@ export function PenScene() {
     wordGroups.current.forEach((group, index) => group?.setAttribute("visibility", index === 0 ? "visible" : "hidden"));
     ink.current?.setAttribute("opacity", "1");
     pen.current?.setAttribute("transform", "translate(390 335) rotate(24) scale(0.72) translate(0 -294)");
-  }, [reduce]);
+  }, [reduce, encouragement]);
 
   useAnimationFrame((_, delta) => {
     if (reduce !== false || !visible || document.hidden || !pen.current) return;
@@ -72,7 +75,7 @@ export function PenScene() {
       time -= durations[wordIndex];
       wordIndex++;
     }
-    if (chapterLabel.current) chapterLabel.current.textContent = ["01 / THE FIRST SPARK", "02 / AN IDEA TAKES SHAPE", "03 / MADE BY YOU"][wordIndex];
+    if (chapterLabel.current) chapterLabel.current.textContent = encouragement ? "A NOTE FOR YOU" : ["01 / THE FIRST SPARK", "02 / AN IDEA TAKES SHAPE", "03 / MADE BY YOU"][wordIndex];
     floating.current?.setAttribute("transform", `translate(0 ${Math.sin(elapsed.current * 1.4) * 5})`);
     const strokes = words[wordIndex].strokes;
     const currentPaths = paths.current[wordIndex];
@@ -80,8 +83,8 @@ export function PenScene() {
     wordGroups.current.forEach((group, index) => group?.setAttribute("visibility", index === wordIndex ? "visible" : "hidden"));
     const reveal = Math.max(0, Math.min(1, (time - writingTime) * 3));
     const fade = 1 - Math.max(0, (time - writingTime - 2) / 1.5);
-    accents.current?.setAttribute("opacity", String(wordIndex === 1 ? reveal * fade : 0));
-    burst.current?.setAttribute("opacity", String(wordIndex === 2 ? reveal * fade : 0));
+    accents.current?.setAttribute("opacity", String(!encouragement && wordIndex === 1 ? reveal * fade : 0));
+    burst.current?.setAttribute("opacity", String(!encouragement && wordIndex === 2 ? reveal * fade : 0));
     burst.current?.setAttribute("transform", `translate(280 283) scale(${0.75 + reveal * 0.25}) translate(-280 -283)`);
     let start = 0;
     let tip = { x: 181, y: 244 };
@@ -129,16 +132,18 @@ export function PenScene() {
   return (
     <div ref={ref} aria-hidden="true" className="pointer-events-none relative mx-auto aspect-square w-full max-w-[550px] select-none">
       <svg viewBox="0 0 560 560" className="absolute inset-0 size-full overflow-visible">
+        <g visibility={decoration ? "hidden" : "visible"}>
         <circle cx="280" cy="280" r="225" fill="var(--ink)" />
         <circle cx="280" cy="280" r="204" fill="none" stroke="var(--paper)" strokeOpacity="0.12" />
         <circle cx="280" cy="280" r="244" fill="none" stroke="var(--ink)" strokeOpacity="0.2" strokeDasharray="2 12" />
         <rect x="101" y="119" width="335" height="355" rx="15" fill="var(--highlighter)" transform="rotate(4 280 280)" />
         <rect x="100" y="115" width="335" height="355" rx="15" fill="var(--panel-strong)" transform="rotate(-2 280 280)" />
+        </g>
         <g transform="rotate(-8 280 280)">
           <rect x="95" y="110" width="335" height="355" rx="15" fill="var(--card)" stroke="var(--line)" />
           {[185, 230, 275, 320, 365, 410].map((line) => <path key={line} d={`M120 ${line} H405`} stroke="var(--line)" />)}
           <path d="M155 110V465" stroke="var(--red-pen)" strokeOpacity="0.25" />
-          <text ref={chapterLabel} x="171" y="168" fill="var(--graphite)" fontSize="10" letterSpacing="1.3" fontFamily="var(--font-mono)">01 / THE FIRST SPARK</text>
+          <text ref={chapterLabel} x="171" y="168" fill="var(--graphite)" fontSize="10" letterSpacing="1.3" fontFamily="var(--font-mono)">{encouragement ? "A NOTE FOR YOU" : "01 / THE FIRST SPARK"}</text>
           <g ref={accents} opacity="0">
             <rect x="185" y="300" width="59" height="26" rx="4" fill="var(--highlighter)" />
             <circle cx="179" cy="236" r="3" fill="var(--red-pen)" />
@@ -171,7 +176,7 @@ export function PenScene() {
             <path d="M0 250V294" stroke="var(--ink)" strokeWidth="2" /><circle cy="245" r="5" fill="var(--ink)" />
           </g>
         </g>
-        <g ref={floating}>
+        <g ref={floating} visibility={encouragement ? "hidden" : "visible"}>
           <g transform="translate(22 118) rotate(-12)">
             <rect width="138" height="73" rx="14" fill="var(--highlighter)" />
             <text x="17" y="28" fontSize="10" fontFamily="var(--font-mono)" fill="var(--ink)">THE INGREDIENT</text>
@@ -184,7 +189,7 @@ export function PenScene() {
           </g>
         </g>
       </svg>
-      <span className="absolute bottom-[2%] left-1/2 -translate-x-1/2 whitespace-nowrap font-hand text-2xl text-graphite">An idea. A little practice. Something yours.</span>
+      <span hidden={encouragement} className="absolute bottom-[2%] left-1/2 -translate-x-1/2 whitespace-nowrap font-hand text-2xl text-graphite">An idea. A little practice. Something yours.</span>
     </div>
   );
 }

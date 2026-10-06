@@ -18,16 +18,19 @@ export type InboxItem = Inbox["items"][number];
 function headline(item: InboxItem): string {
   switch (item.kind) {
     case "published":
-      return `New ${KIND_LABEL[item.assessmentKind].toLowerCase()}`;
+      return `New ${KIND_LABEL[item.assessmentKind ?? "task"].toLowerCase()}`;
     case "due_24h":
       return "Due tomorrow";
     case "due_1h":
       return "Due in an hour";
+    case "announcement":
+      return `From ${item.courseTitle}`;
   }
 }
 
 function Row({ item, now, onOpen }: { item: InboxItem; now: number; onOpen: () => void }) {
   const fresh = item.kind === "published";
+  const announcement = item.kind === "announcement";
   return (
     <Link
       href={item.href}
@@ -38,19 +41,22 @@ function Row({ item, now, onOpen }: { item: InboxItem; now: number; onOpen: () =
     >
       <span
         className={`relative grid size-10 shrink-0 place-items-center rounded-full ${
-          fresh ? "bg-ink text-highlighter" : "bg-panel text-ink"
+          fresh || announcement ? "bg-ink text-highlighter" : "bg-panel text-ink"
         }`}
       >
-        {fresh ? <Sparkle className="size-4" /> : <Clock className="size-5" />}
+        {announcement ? <Bell className="size-4" /> : fresh ? <Sparkle className="size-4" /> : <Clock className="size-5" />}
         {!item.read && <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-red-pen ring-2 ring-paper" />}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-xs font-semibold uppercase tracking-[0.12em] text-graphite">{headline(item)}</span>
         <span className="mt-0.5 block font-medium leading-snug">{item.title}</span>
+        {announcement && item.body !== undefined && (
+          <span className="mt-1 line-clamp-3 block text-sm leading-relaxed text-ink/80">{item.body}</span>
+        )}
         <span className="mt-1 block text-xs leading-relaxed text-graphite">
-          {item.courseTitle}
+          {!announcement && item.courseTitle}
           {item.dueAt !== undefined && ` · due ${formatShort(item.dueAt)}`}
-          {` · ${relativeTime(item._creationTime, now)}`}
+          {announcement ? relativeTime(item._creationTime, now) : ` · ${relativeTime(item._creationTime, now)}`}
         </span>
       </span>
     </Link>

@@ -276,10 +276,20 @@ const onboardingViews: Record<string, { me: Me; step: number; universities: Univ
 };
 
 const inbox: Inbox = {
-  unread: 2,
+  unread: 3,
   emailEnabled: true,
   emailBlocked: false,
   items: [
+    {
+      _id: id<"notifications">("n0"),
+      _creationTime: NOW - 20 * 60 * 1000,
+      kind: "announcement",
+      title: "Library closed on Friday",
+      courseTitle: "Gori State University",
+      body: "The main library is closed this Friday for maintenance. The reading rooms on the second floor stay open until 18:00.",
+      href: "/dashboard",
+      read: false,
+    },
     {
       _id: id<"notifications">("n1"),
       _creationTime: NOW - 2 * HOUR,

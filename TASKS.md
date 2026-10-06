@@ -31,6 +31,7 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-010 | Student app as a PWA: installable, offline-aware, Web Push notifications end to end, install prompts | Ready for review | Claude (Claude Code) |
 | TASK-011 | Read-only MCP connector for students: study their courses, lessons, materials and finished work with their own AI | Ready for review | Claude (Claude Code) |
 | TASK-012 | Staff `/agents` page: the Copy button covers the connector address on phones | Ready | Unassigned |
+| TASK-013 | Notification center in the admin panel: messages to anyone, groups, courses and whole audiences by bell, push and email | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -698,6 +699,71 @@ Same fix as the student page: below `sm` stack the button under the address (wra
 ### Implementation and verification notes
 
 Pending.
+
+### User review
+
+Pending.
+
+## TASK-013 — Notification center in the admin panel: messages to anyone, groups, courses and whole audiences by bell, push and email
+
+- **Status:** Ready for review (requested 2026-10-06, built 2026-10-06)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-06
+
+### Problem / reproduction
+
+The user wants a notification center in the admin panel: send push notifications and emails to anyone they want, with a person search, broadcasts to groups ("I want the specific groups to be able to get the notifications"), "basically full controls". Today only the system sends notifications (new work, deadline reminders); an admin has no way to reach people.
+
+### Agreed behavior and scope
+
+- **New section "Notifications"** at `/admin/notifications`, for the platform admin and university admins (scoped like the rest of the panel).
+- **Compose:** a title, the message, an optional link (a path in the student app or an https address). **Audience:** everyone on Kalami (platform admin only); all students or all lecturers and admins, optionally at one university or outside any; everyone at a university; one group (its students); one course (its active students); specific people found by email (students and staff, picked one by one). **Channels:** a push to students' devices and/or an email; the bell in the student app always shows it, since the row there is the record. An option to email people who switched notification emails off, for important notices; bounced or complained addresses are never emailed.
+- **Before sending:** a live count of who it reaches (students, staff, how many have push on, how many get the email and why the rest don't), then a confirmation.
+- **Delivery:** in batches of 100 through scheduled mutations, one delivery row per person, so a retried batch never reaches anyone twice; pushes go through the existing push pipeline, emails through Resend with the one-click unsubscribe headers. Lecturers and admins get email only (the staff app has no bell or push).
+- **History:** every broadcast with its status and counts (reached, bell, push, email), and per broadcast the list of recipients with what each one got. An audit log entry per broadcast; at most 30 per hour per admin.
+- **Student app:** the bell and the push show an announcement with its text and who sent it ("Kalami" or the university).
+- Out of scope: scheduling for later, saved templates, replies, two-language messages, a bell for staff, SMS.
+
+### Acceptance criteria
+
+- [x] An admin can send to each audience type; students get the bell row, a push when chosen and a device is on, an email when chosen and allowed; staff get the email (backend tests; the real send with a Clerk session is for the user to try).
+- [x] A university admin can only target their own university's people, groups and courses; everyone-on-Kalami and cross-university audiences are refused (backend tests).
+- [x] Opted-out people get no email unless the override is on; bounced or complained addresses never do; the recipient list says why (backend tests).
+- [x] The history shows counts and recipients; the audit log shows the send; a second run of a batch sends nothing twice (backend tests; gallery views).
+- [x] Backend tests cover authorization, every audience, dedupe, channels and the email rules; lint and type checks pass in both repos; the student API spec is regenerated.
+- [ ] User tested and accepted the result.
+
+### Implementation and verification notes
+
+**Backend (kalami-stuff, Convex):**
+
+- `convex/schema.ts`: `broadcasts` (sender, who it's from as people see it, title, body, link, the audience rule and its label, channels, the opt-out override, status, counts) and `broadcastDeliveries` (one row per person: the bell row, devices with push on, the email id or why no email went; indexed by broadcast and by broadcast + person). `notifications` gained the kind `announcement`; `courseId`, `assessmentId` and `assessmentKind` are optional now, `body` and `broadcastId` new. Deployed to the **dev** deployment only.
+- `convex/model/broadcasts.ts` (new): an audience is turned into sources (`users`, memberships by role and university, `groupMembers`, active `enrollments`, or a list of ids); `checkAudience` applies the scope rules and writes the label (the platform admin only for everyone, a whole role across universities and people outside any; `covers` for the rest; picked people must have a membership the caller administers; at most 200 people); `previewAudience` counts up to 1000 with `take` (students, staff, with push on, emailable / opted out / bounced, whether email and push are set up); `createBroadcast` validates (title ≤ 120, message ≤ 2000, link a path or https address), rate-limits (`broadcast`, 30 an hour per admin), logs `broadcast.send` and schedules the fan-out; `fanOutBroadcast` handles 100 people per scheduled mutation with `paginate`, skips anyone who already has a delivery row, writes the bell row for students (from label in the student's language: "Kalami" or the university), hands rows for students with a device to `pushDelivery.deliver`, sends the email through `sendAnnouncementEmail`, adds to the counts, then schedules the next page, the next source, or marks it sent; `listBroadcasts` (all for the platform admin, own for a university admin), `listRecipients` (paginated, with the role and the marks), `searchPeople` (email prefix, students and staff within reach).
+- `convex/broadcasts.ts` (new): the internal `fanOut`. `convex/platform.ts`: `findPeople`, `broadcastPreview`, `sendBroadcast`, `broadcasts`, `broadcastRecipients`.
+- Email: `renderAnnouncementEmail` (+ `paragraphsOf`) in `lib/email/templates.ts`; `sendAnnouncementEmail` in `email.ts` (skips `not_configured` / `blocked` / `opted_out` unless the override, unsubscribe link and List-Unsubscribe headers, idempotency key per broadcast and person, logged in `emailLog` so bounces trace back); `deliverNotifications` leaves announcement rows alone. Push: `announcementPushMessage` + `pushUrl` in `lib/pushMessage.ts`, `push.payloadsFor` carries the text, `pushDelivery.deliver` picks the message by kind. `WorkNotificationKind` keeps the work-only code typed.
+- `convex/broadcasts.test.ts` (new, 9 tests): students, lecturers and signed-out callers refused; a university admin refused for everyone, all students, outside-any, another university, another university's group and a person outside their reach; validation; everyone (counts, the bell row's content, no row for staff, the recipient list, the audit entry, a repeated batch sends nothing twice); group, course and picked people (dedupe, labels, the link as the bell row's href); the email rules (preview counts, opted out, bounced, the override, devices counted, each admin's own history, no access to another's recipients); nothing emailed without `RESEND_API_KEY`; finding people; the email and push texts.
+- `OPERATIONS.md`: a section on the notification center. `components/dev/EmailPreviews.tsx`: two announcement samples (staff `/dev/ui?view=emails`).
+
+**Staff app (kalami-stuff):**
+
+- `/admin/notifications` (`app/(admin)/admin/notifications/page.tsx`): `components/admin/panel/NotificationsView.tsx` (audience tabs with the university select, the group list, the course search, the people search with chips; title, message and link; push and email cards with the override; the live "Reaches N people" box with the warnings when push or email isn't set up; a confirmation dialog; the history list with status and counts) and `BroadcastDetail.tsx` (the message, the counts, the recipients with Bell / Push · devices / Email · reason marks, paged). Sidebar item "Notifications" under People (new `Bell` and `Megaphone` icons). Gallery views `panel-notifications` and `panel-notification`.
+
+**Student app (kalami):**
+
+- `components/notifications/NotificationsPanel.tsx`: an announcement shows "From <sender>", the title, the text (three lines) and when; the dev gallery inbox has one. `convex-api/api.ts` regenerated.
+
+**Checks run (2026-10-06):**
+
+- kalami-stuff: `npx tsc --noEmit` clean, `npm run lint` clean, `npx vitest run` 26 files / 257 tests passed (9 new).
+- kalami: `npx tsc --noEmit` clean, `npm run lint` clean.
+- Staff gallery (`localhost:3101/dev/ui?view=panel-notifications`, `panel-notification`, `emails`) at 1440 px and 375 px: composer with every audience picker, preview box, history, the detail dialog with recipients; no horizontal overflow on phones. Student gallery `localhost:3100/dev/ui?view=notifications`: the announcement row renders in the bell.
+
+**Limitations / follow-ups:**
+
+- Not sent from a real signed-in admin session in the browser (the pane can't sign in to Clerk): the user's test is the real send on dev or prod. The dev deployment has no `RESEND_API_KEY`, so dev shows "email not set up" per recipient; prod has both email and push settings already and needs nothing new.
+- The audience is a rule evaluated when it's sent: someone who joins the group or course later doesn't get earlier messages.
+- "Push" counts people who had a device on when it was sent; without the VAPID settings nothing is actually pushed (the preview says so in red).
+- Lecturers and admins get the email only: the staff app has no bell or push. No scheduling for later, no saved templates, no replies.
 
 ### User review
 

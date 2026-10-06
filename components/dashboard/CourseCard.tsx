@@ -48,19 +48,19 @@ export function CourseCard({
     ? `${nextDue.closesAt ? `Due ${formatShort(nextDue.closesAt)} · ` : ""}${nextDue.title}`
     : [course.lecturer, course.semester].filter(Boolean).join(" · ");
   return (
-    <article className="overflow-hidden rounded-2xl border border-line bg-card shadow-[0_2px_8px_-5px_rgba(20,20,20,0.12)] transition-shadow hover:shadow-[0_6px_22px_-14px_rgba(20,20,20,0.2)]">
+    <article className="overflow-hidden rounded-[2rem] bg-card shadow-[0_2px_8px_-5px_rgba(20,20,20,0.12)] transition-shadow hover:shadow-[0_6px_22px_-14px_rgba(20,20,20,0.2)]">
       <div className="p-5 sm:p-6">
         <div className="mb-5 flex items-center justify-between gap-3">
-          <span className="grid size-11 place-items-center rounded-xl bg-panel"><Notebook className="size-5" /></span>
-          <span className={`rounded-md px-2.5 py-1 text-xs font-medium ${course.openCount > 0 ? "bg-highlighter/50 text-ink" : "bg-panel/60 text-graphite"}`}>{course.openCount > 0 ? `${course.openCount} open task${course.openCount === 1 ? "" : "s"}` : "Course materials"}</span>
+          <span className="grid size-11 place-items-center rounded-full bg-highlighter"><Notebook className="size-5" /></span>
+          <span className={`rounded-full px-3 py-1 text-xs font-medium ${course.openCount > 0 ? "bg-highlighter/50 text-ink" : "bg-panel/60 text-graphite"}`}>{course.openCount > 0 ? `${course.openCount} open task${course.openCount === 1 ? "" : "s"}` : "Course materials"}</span>
         </div>
-        <h3 className="max-w-2xl text-xl font-semibold leading-snug tracking-[-0.025em] wrap-anywhere"><Link href={`/courses/${course._id}`} className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">{course.title}</Link></h3>
+        <h3 className="max-w-2xl text-2xl font-medium leading-snug tracking-[-0.025em] wrap-anywhere"><Link href={`/courses/${course._id}`} className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">{course.title}</Link></h3>
         <p className="mt-2 text-sm leading-relaxed text-graphite">{[course.lecturer, course.semester].filter(Boolean).join(" · ")}</p>
         {course.description && <p className="mt-4 line-clamp-2 max-w-2xl text-sm leading-relaxed text-graphite">{course.description}</p>}
         {nextDue && <p className="mt-4 border-l-2 border-highlighter-deep pl-3 text-sm leading-relaxed">{summary}</p>}
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <Link href={`/courses/${course._id}`} aria-label={`Open course: ${course.title}`} className="inline-flex min-h-11 items-center gap-5 rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">Open course<ArrowRight className="size-4 text-highlighter" /></Link>
-          <button type="button" onClick={onToggle} aria-expanded={open} aria-controls={bodyId} className="min-h-11 rounded-xl px-3 text-sm text-graphite transition hover:bg-panel hover:text-ink focus-visible:outline-2">{open ? "Hide tasks −" : "View tasks +"}</button>
+          <Link href={`/courses/${course._id}`} aria-label={`Open course: ${course.title}`} className="inline-flex min-h-11 items-center gap-5 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">Open course<ArrowRight className="size-4 text-highlighter" /></Link>
+          <button type="button" onClick={onToggle} aria-expanded={open} aria-controls={bodyId} className="min-h-11 rounded-full px-3 text-sm text-graphite transition hover:bg-panel hover:text-ink focus-visible:outline-2">{open ? "Hide tasks −" : "View tasks +"}</button>
         </div>
       </div>
       <div id={bodyId} hidden={!open} className="px-5 pb-5 sm:px-6 sm:pb-6">{open && <CourseBody course={course} useCourse={useCourse} />}</div>
