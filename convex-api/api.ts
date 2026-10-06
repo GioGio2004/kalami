@@ -1975,6 +1975,279 @@ export type PublicApiType = {
               id: string;
               type: "check";
             }
+          | {
+              id: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
+            }
         >;
         canEdit: boolean;
         courseId: Id<"courses">;
@@ -2033,6 +2306,279 @@ export type PublicApiType = {
               };
               id?: string;
               type: "check";
+            }
+          | {
+              id?: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
             }
         >;
         client?: string;
@@ -2100,6 +2646,279 @@ export type PublicApiType = {
               id?: string;
               type: "check";
             }
+          | {
+              id?: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
+            }
         >;
         client?: string;
         lessonId: Id<"lessons">;
@@ -2152,6 +2971,279 @@ export type PublicApiType = {
               };
               id?: string;
               type: "check";
+            }
+          | {
+              id?: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
             }
         >;
         client?: string;
@@ -2207,6 +3299,279 @@ export type PublicApiType = {
               };
               id?: string;
               type: "check";
+            }
+          | {
+              id?: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
             };
         blockId: string;
         client?: string;
@@ -2353,6 +3718,12 @@ export type PublicApiType = {
             weeks: number;
           };
         }
+    >;
+    prepareWeekDriveAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      { client?: string; token: string; weekId: Id<"weeks"> },
+      null
     >;
   };
   questions: {
@@ -3608,6 +4979,279 @@ export type PublicApiType = {
               id: string;
               type: "check";
             }
+          | {
+              id: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
+            }
         >;
         canEdit: boolean;
         courseId: Id<"courses">;
@@ -3667,6 +5311,279 @@ export type PublicApiType = {
               id?: string;
               type: "check";
             }
+          | {
+              id?: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
+            }
         >;
         title: string;
         weekId: Id<"weeks">;
@@ -3725,6 +5642,279 @@ export type PublicApiType = {
               id?: string;
               type: "check";
             }
+          | {
+              id?: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
+            }
         >;
         lessonId: Id<"lessons">;
       },
@@ -3775,6 +5965,279 @@ export type PublicApiType = {
               };
               id?: string;
               type: "check";
+            }
+          | {
+              id?: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
             }
         >;
         lessonId: Id<"lessons">;
@@ -3827,6 +6290,279 @@ export type PublicApiType = {
               };
               id?: string;
               type: "check";
+            }
+          | {
+              id?: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
             };
         blockId: string;
         lessonId: Id<"lessons">;
@@ -3908,6 +6644,279 @@ export type PublicApiType = {
               };
               id: string;
               type: "check";
+            }
+          | {
+              id: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
             }
         >;
         course: { _id: Id<"courses">; title: string };
@@ -4799,7 +7808,8 @@ export type PublicApiType = {
           | { kind: "university"; universityId: Id<"universities"> }
           | { groupId: Id<"groups">; kind: "group" }
           | { courseId: Id<"courses">; kind: "course" }
-          | { kind: "people"; userIds: Array<Id<"users">> };
+          | { kind: "people"; userIds: Array<Id<"users">> }
+          | { emails: Array<string>; kind: "emails" };
         emailEveryone: boolean;
       },
       {
@@ -4807,6 +7817,7 @@ export type PublicApiType = {
         capped: boolean;
         emailConfigured: boolean;
         emailable: number;
+        noAccount: number;
         optedOut: number;
         pushConfigured: boolean;
         recipients: number;
@@ -4826,10 +7837,12 @@ export type PublicApiType = {
           | { kind: "university"; universityId: Id<"universities"> }
           | { groupId: Id<"groups">; kind: "group" }
           | { courseId: Id<"courses">; kind: "course" }
-          | { kind: "people"; userIds: Array<Id<"users">> };
+          | { kind: "people"; userIds: Array<Id<"users">> }
+          | { emails: Array<string>; kind: "emails" };
         body: string;
         channels: { email: boolean; push: boolean };
         emailEveryone: boolean;
+        groupId?: Id<"groups">;
         link?: string;
         title: string;
       },
@@ -4849,6 +7862,8 @@ export type PublicApiType = {
         emailed: number;
         finishedAt?: number;
         from: { en: string; ka: string };
+        groupId?: Id<"groups">;
+        groupName?: string;
         inApp: number;
         link?: string;
         pushed: number;
@@ -4882,9 +7897,10 @@ export type PublicApiType = {
           emailSkipped?: "off" | "opted_out" | "blocked" | "not_configured";
           emailed: boolean;
           inApp: boolean;
+          invited: boolean;
           name: string;
-          role: "student" | "lecturer" | "uni_admin" | "super_admin";
-          userId: Id<"users">;
+          role: "student" | "lecturer" | "uni_admin" | "super_admin" | "none";
+          userId?: Id<"users">;
         }>;
         pageStatus?: "SplitRecommended" | "SplitRequired" | null;
         splitCursor?: string | null;
@@ -4939,7 +7955,7 @@ export type PublicApiType = {
             at: number;
             email: string;
             name?: string;
-            status: "bounced" | "complained";
+            status: "bounced" | "complained" | "unsubscribed";
             userId?: Id<"users">;
           }>;
         };
@@ -5116,6 +8132,279 @@ export type PublicApiType = {
               };
               id: string;
               type: "check";
+            }
+          | {
+              id: string;
+              scene: {
+                elements: Array<
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "heading";
+                      size?: "sm" | "md" | "lg" | "xl";
+                      text: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      align?: "left" | "center" | "right";
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "text";
+                      md: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      items: Array<string>;
+                      kind: "list";
+                      ordered?: boolean;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      code: string;
+                      h?: number;
+                      id: string;
+                      kind: "code";
+                      language: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      alt: string;
+                      fit?: "cover" | "contain";
+                      h?: number;
+                      id: string;
+                      kind: "image";
+                      url: string;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      fill?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      h?: number;
+                      id: string;
+                      kind: "shape";
+                      label?: string;
+                      shape: "rect" | "circle" | "pill" | "diamond";
+                      stroke?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      curve?: number;
+                      from: string;
+                      id: string;
+                      kind: "arrow";
+                      label?: string;
+                      to: string;
+                    }
+                  | {
+                      color?:
+                        | "ink"
+                        | "paper"
+                        | "graphite"
+                        | "panel"
+                        | "card"
+                        | "charcoal"
+                        | "highlighter"
+                        | "highlighter-deep"
+                        | "red-pen"
+                        | "ok"
+                        | "warn";
+                      decimals?: number;
+                      h?: number;
+                      id: string;
+                      kind: "number";
+                      label?: string;
+                      prefix?: string;
+                      size?: "sm" | "md" | "lg" | "xl";
+                      suffix?: string;
+                      value: number;
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                  | {
+                      h?: number;
+                      id: string;
+                      kind: "note";
+                      md: string;
+                      tone: "tip" | "definition" | "warning" | "note";
+                      w?: number;
+                      x: number;
+                      y: number;
+                    }
+                >;
+                steps: Array<{
+                  actions: Array<
+                    | {
+                        at?: number;
+                        do: "enter";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "rise"
+                          | "drop"
+                          | "slide-left"
+                          | "slide-right"
+                          | "pop"
+                          | "cascade"
+                          | "wipe"
+                          | "draw"
+                          | "count"
+                          | "type";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "exit";
+                        duration?: number;
+                        effect?:
+                          | "fade"
+                          | "sink"
+                          | "shrink"
+                          | "slide-left"
+                          | "slide-right";
+                        stagger?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "emphasize";
+                        duration?: number;
+                        effect?:
+                          "pulse" | "shake" | "glow" | "flash" | "bounce";
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "focus";
+                        duration?: number;
+                        targets: Array<string>;
+                      }
+                    | {
+                        at?: number;
+                        do: "move";
+                        duration?: number;
+                        h?: number;
+                        target: string;
+                        w?: number;
+                        x?: number;
+                        y?: number;
+                      }
+                    | {
+                        at?: number;
+                        do: "camera";
+                        duration?: number;
+                        scale?: number;
+                        target?: string;
+                        x?: number;
+                        y?: number;
+                      }
+                  >;
+                  note?: string;
+                }>;
+                theme?: "paper" | "ink";
+                title?: string;
+              };
+              type: "scene";
             }
         >;
         course: { _id: Id<"courses">; title: string };
@@ -5370,6 +8659,32 @@ export type PublicApiType = {
         title: string;
         weekTitle: string;
       }>
+    >;
+  };
+  readingDocuments: {
+    listForAgent: FunctionReference<
+      "query",
+      "public",
+      { client?: string; token: string; weekId: Id<"weeks"> },
+      Array<{ documentKey: string; linked: boolean; url?: string }>
+    >;
+    saveAsAgent: FunctionReference<
+      "action",
+      "public",
+      {
+        client?: string;
+        content: string;
+        documentKey: string;
+        title: string;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      {
+        documentId: string;
+        documentKey: string;
+        url: string;
+        weekId: Id<"weeks">;
+      }
     >;
   };
 };

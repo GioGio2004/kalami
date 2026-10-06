@@ -32,6 +32,8 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-011 | Read-only MCP connector for students: study their courses, lessons, materials and finished work with their own AI | Ready for review | Claude (Claude Code) |
 | TASK-012 | Staff `/agents` page: the Copy button covers the connector address on phones | Ready | Unassigned |
 | TASK-013 | Notification center in the admin panel: messages to anyone, groups, courses and whole audiences by bell, push and email | Ready for review | Claude (Claude Code) |
+| TASK-014 | Notification center: message any email addresses, with or without an account, and turn a message into personal group invitations | Ready for review | Claude (Claude Code) |
+| TASK-015 | Animated scenes in lessons: a `scene` block agents build from a validated vocabulary, played with GSAP | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -769,6 +771,65 @@ The user wants a notification center in the admin panel: send push notifications
 
 Pending.
 
+## TASK-014 — Notification center: message any email addresses, with or without an account, and turn a message into personal group invitations
+
+- **Status:** Ready for review (requested 2026-10-06, built 2026-10-06)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-06
+
+### Problem / reproduction
+
+After TASK-013 the user asked to "send the notifications to any emails I want, in groups, like to send the invitations to my students before they authenticate on the application". The notification center reaches accounts only; a class list of addresses with no accounts yet can't be messaged, and inviting them to a group means the lecturer's group page.
+
+### Agreed behavior and scope
+
+- **A new audience, "Email addresses":** paste a list (commas, spaces or new lines; up to 200). An address with an account the admin can reach gets the usual treatment (bell, push, email); an address with no account, or whose account is outside a university admin's reach, gets the email only. Bad addresses are named and nothing is sent until they're fixed.
+- **A message as an invitation:** for pasted addresses or picked people, "Turn this message into a group invitation" with a group picker. Each person gets a personal invite to that group, the email's button accepts it, the bell row opens it, and the recipient list marks them "Invited". People already in the group get the plain message; an invite already waiting is reused, not doubled. The invitation always goes by email and also reaches people who switched notification emails off (like one from the group's page); bounced or unsubscribed addresses never get it. The group's pending-invite count and the per-admin invite allowance apply.
+- **Unsubscribe for addresses without an account:** the email's unsubscribe link puts the address on the list Kalami no longer emails (status `unsubscribed`, shown in System and clearable there); an account with that address is also switched off.
+- **Preview** counts addresses without an account ("email only"). The history label says "N email addresses, invited to <group>".
+- Out of scope: importing CSV files, replacing the group page's own invite list, inviting to courses.
+
+### Acceptance criteria
+
+- [x] Pasted addresses reach accounts in full and addresses without an account by email; bad addresses are refused by name; a university admin's paste can include an address from another university and that one gets the email only (backend tests).
+- [x] With a group chosen, every recipient who isn't a member gets a personal invite; the email and the bell row carry the join link; sending again reuses the open invite; members get no invite (backend tests).
+- [x] The unsubscribe link in an address-only email works (GET shows the page, POST lists the address), and later messages skip that address as blocked (backend tests, through the HTTP route).
+- [x] Backend tests cover the audience, the invitation, the unsubscribe and the validation; lint and type checks pass in both repos.
+- [ ] User tested and accepted the result.
+
+### Implementation and verification notes
+
+**Backend (kalami-stuff, Convex):**
+
+- `convex/lib/validators.ts`: audience kind `emails` (a list of strings). `convex/schema.ts`: `broadcasts.groupId` (the message is an invitation to this group); `broadcastDeliveries.userId` optional, `email` and `inviteId` new, index `by_broadcastId_and_email`; `emailSuppressions.status` gains `unsubscribed`.
+- `convex/model/broadcasts.ts`: recipients are now an account id or an address. `cleanEmails` splits a paste (commas, spaces, new lines), keeps each address once, names bad ones in the error, caps at 200. `resolve` turns an address into its account when one exists within the sender's reach (`reachOfScope` for the preview, `reachOfSender` in the fan-out), else into an address to email; dedupe by account or by address (`deliveryOf` uses either index). `createBroadcast` takes `groupId` (addresses or picked people only; the group must be open and within reach; the `groupInvite` allowance is charged for the count); the label becomes "N email addresses, invited to <group>"; the email channel is forced on. The fan-out asks `openInviteFor` for each recipient, puts the join link in the email (`invite`) and in the bell row's `href` (`/join/invite/<token>`), and emails an invitation even to people who switched notification emails off. The preview counts `noAccount`. Recipient rows carry `invited` and the role `none` for address-only recipients.
+- `convex/model/groups.ts`: `isEmailAddress`, `openInviteFor` (the open invite for an address, or a new row with the group's pending count bumped; null for members, archived groups, or a full waiting list; never emailed by itself).
+- `convex/email.ts`: `sendAnnouncementEmail` takes a target (an address with or without an account) and an optional invitation; an address without an account gets the unsubscribe link with `e=<address>` and an idempotency key by address. `lib/email/templates.ts`: `renderAnnouncementEmail` with an optional locale (unknown: Georgian, the reason in both languages) and `invite` (the group as a detail row, "Accept the invitation" button, a note to sign in with that address).
+- Unsubscribe by address: `model/notifications.ts unsubscribeEmailByToken` (lists the address as `unsubscribed`, switches off any account with it), `notifications.unsubscribeEmail` (internal), `http.ts` accepts `e` next to `u` on GET and POST. `model/platform.ts` system validator and `SystemView` show "Unsubscribed"; "Allow again" clears it like a bounce.
+- `convex/broadcastInvites.test.ts` (new, 6 tests): a dean's paste of accounts, a stranger and a student of another university (that one by email only; the platform admin reaches her account); bad addresses refused by name; the invitation (labels, forced email, the opted-out student still invited, members skipped, invite rows without `emailedAt`, the bell href, `pendingInvites`, a second send reuses the invites); the group rules (audience kind, reach, archived); the unsubscribe link end to end through the HTTP route and the later skip; the invitation email text.
+- `OPERATIONS.md`: the notification center section covers addresses, invitations and `unsubscribed`. `EmailPreviews.tsx`: an invitation sample.
+
+**Staff app (kalami-stuff):**
+
+- `NotificationsView.tsx`: the "Email addresses" tab with a textarea (count, bad addresses named, the 200 cap); for addresses or picked people the card "Turn this message into a group invitation" with the group picker; the email card reads "Always on for an invitation"; the preview says how many have no account; the confirmation names the group. `BroadcastDetail.tsx`: "Invitation to <group>" pill, "Invited" marks, "Address" rows for people without an account in reach. Gallery samples updated (`panel-notification` shows an invitation).
+
+**Checks run (2026-10-06):**
+
+- kalami-stuff: `npx tsc --noEmit` clean, `npm run lint` clean, `npx vitest run` 28 files / 272 tests passed (6 new). Deployed to the dev Convex deployment only.
+- kalami: `npx tsc --noEmit` clean, `npm run lint` clean, API spec regenerated (nothing student-facing changed).
+- Staff gallery `panel-notifications` (the Email addresses tab and the invitation card), `panel-notification` (an invitation's recipients), `emails` (the invitation sample) render; no console errors.
+
+**Limitations / follow-ups:**
+
+- An address that belongs to an account outside a university admin's reach is treated as an address: it gets the email (and the invite), not the bell or push; the recipient list shows it as "Address".
+- Invitations are not sent as a separate invite email: the message is the invitation. The group's page lists the invite as pending like any other and can resend or withdraw it.
+- An address that unsubscribed is skipped by invites from the group's page too (same suppression list); "Allow again" in System lifts it.
+- Not sent from a real signed-in admin session in the browser; dev has no `RESEND_API_KEY`.
+
+### User review
+
+Pending.
+
 ## Template for new tasks
 
 Copy this section and add a queue row. Replace `TASK-NNN` with the next unused ID.
@@ -800,3 +861,56 @@ Record changed files, actual checks and results, and remaining limitations.
 #### User review
 
 Pending.
+
+## TASK-015 — Animated scenes in lessons: a `scene` block agents build from a validated vocabulary, played with GSAP
+
+- **Status:** Ready for review (asked for 2026-10-07; design agreed in chat and implemented the same day)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-07
+
+### Problem
+
+Lecturers want their AI assistant to build animated presentations, not only text slides. Letting the assistant write React (or any script) that the apps then run is not acceptable: it would be an XSS surface inside signed-in sessions, could not be validated before rendering, could not be exported to `.kalami`, and lecturers could not edit it.
+
+### Decided by the user (2026-10-07)
+
+- **A declarative scene, not code.** A scene is a list of typed elements on a fixed 1200 × 675 stage, plus ordered steps; each step applies named animations to elements by id (the "nodes linking to each other" idea expressed as data). The backend validates the whole thing; the renderer only knows the vocabulary.
+- **GSAP is the animator** (free since the Webflow acquisition, plugins included): one timeline per scene, SplitText for text cascades, DrawSVG for arrows. The existing `motion` package stays for app chrome.
+- **A scene is a lesson block** (`type: "scene"`), so the editor, the slide player, the MCP block tools, `.kalami` export/import and course deletion all pick it up. A presentation is a lesson made of scenes.
+- An escape hatch for free-form HTML/CSS in the scriptless sandbox iframe is deferred until a real need shows up.
+
+### Implementation notes (2026-10-07)
+
+**The vocabulary** (`kalami-stuff/convex/lib/scene/index.ts`, copied to `kalami/lib/scene` by `sync:student`; `lib/scene` re-exports it in the staff app). A scene is `{ title?, theme?: "paper" | "ink", elements, steps }` on a 1200 × 675 stage.
+
+- Elements (up to 24, lowercase unique ids, `x`/`y` required, `w`/`h` defaulted per kind): `heading`, `text` (Markdown), `list`, `code`, `image`, `shape` (rect/circle/pill/diamond, label), `arrow` (`from`/`to` element ids, `curve`, label; no box, it follows its ends), `number` (counts up), `note` (callout chip). Colours are the design tokens (`ink`, `paper`, `highlighter`, `red-pen`, `ok` …).
+- Steps (up to 30, each `note?` + 1–12 actions with optional `at`/`duration`): `enter` (fade, rise, drop, slide-left/right, pop, cascade, wipe, draw, count, type; per-kind default), `exit` (fade, sink, shrink, slide), `emphasize` (pulse, shake, glow, flash, bounce), `focus` (dims the rest; `[]` lifts it), `move` (arrows follow), `camera` (frame an element or a point at a zoom; nothing = home).
+- `sceneProblems()` lists every rule a type can't express (ids, dangling targets, positions on the stage, limits). The backend refuses blocks with problems (`convex/model/lessons.ts`), the zod schema runs it in `superRefine` (`convex/lib/contentSchemas.ts`, so the MCP tools, `check_kalami_file` and the JSON Schema all check it), the editor lists the same problems live.
+- Also there: `arrowGeometry` (edge-to-edge path with a bow, head angle, label position) and `cameraFor`/`cameraAt` (zoom kept inside the stage), unit-tested in `scene.test.ts`.
+
+**Block plumbing.** `type: "scene"` added to the Convex validators (`lessonBlockValidator` and the input one), the zod `lessonBlockSchema`, `normalizeBlock`, lesson search text (`study.ts`), the shared `LessonBlock` type, the `.kalami` guide (new section **Lessons: animated scenes** with a full example that the guide test parses), and the MCP instructions (when to use a scene; server version 0.7.0). Agents get it through the existing `create_lesson` / `add_lesson_blocks` / `replace_lesson_blocks` / `update_lesson_block` tools and `.kalami` import; no new tool was needed.
+
+**The player** (`components/lessons/scene/`, shared by both apps):
+- `SceneView.tsx`: the stage scaled to its width (ResizeObserver), Back / progress / Next under it with the step's note, tap on the stage to move on, a hint to rotate on narrow screens. Built with GSAP 3.15 (free, plugins included): `timeline.ts` turns the steps into one timeline with a label per step end; Next scrubs forward to the next label, Back scrubs backwards, so a step plays in reverse. Reduced motion seeks instantly. The editor changing a scene rebuilds the timeline and keeps the step.
+- `elements.tsx`: each element kind in stage pixels; SplitText cascades for headings, line-by-line typing for code, DrawSVG for arrows (head and label laid out from `arrowGeometry`, re-laid on every move frame), counting numbers, focus dimming on an inner layer so it never fights an element's own opacity. Colours use the raw `:root` tokens (`var(--ok)`), not Tailwind's `--color-*` twins, which Tailwind 4 only emits for classes in use.
+- GSAP loads through `next/dynamic` only on pages that show a scene; `codeWindow.tsx` holds the code-window pieces `LessonBlocks` and scenes share.
+- `LessonSlides`: ← and → now go first to the active slide's `data-stepper` buttons (scene steps, and the Steps block's "Show next step"), and move slides once there is no step left. Slide eyebrow reads "Scene · <title>".
+
+**Editor** (`kalami-stuff/components/lessons-editor`): "Animated scene" in the Add block menu; the block form is the scene's JSON (lecturers mostly get scenes from their assistant) with a Templates menu (4 starters in `scene/templates.ts`: title and points, diagram with arrows, code walkthrough, before and after), a parse error line, and the rule problems under the block; the side preview plays every valid change.
+
+**Galleries:** staff `?view=lesson-editor` (block 10) and `lesson-preview`; student `?view=lesson` (slides 16–19, one per template).
+
+### Checks (2026-10-07)
+
+- `kalami-stuff`: `npx tsc --noEmit` clean (app and `convex/`); `npx vitest run` 281 passed (29 files; new `scene.test.ts`, a scene case in `lessons.test.ts`, the guide's scene example parsed in `kalami.test.ts`); `eslint` clean on touched files. `npx convex dev --once` pushed the validators to the dev deployment, then `npm run sync:student`.
+- `kalami`: `npx tsc --noEmit` and `eslint` clean on synced files.
+- Browser (student dev gallery, lesson view): the four template scenes play on desktop: heading cascades, list stagger, shapes pop, arrows draw with labels and follow a moved box, camera zooms to the DNS node and back, focus dims, code types line by line, numbers count up, notes slide in. → steps through a scene, then moves to the next slide; ← plays a step backwards. 375 px: stage scales, controls wrap, rotate hint shows. Staff editor: the scene block form, the Templates menu, the compact preview following the selected block; invalid JSON shows "Not valid JSON yet."; a bad target id shows `steps[0].actions[0].targets: no element with id "ghost".` and the preview tracks the valid version.
+- Not verified in motion: the fourth template was only watched in slow motion because the browser pane was hidden at that point (GSAP's ticker pauses without animation frames). Its end states and colours were checked in the DOM.
+
+### Limitations and follow-ups
+
+- Phones: a 1200-unit stage at 375 px makes body text small; the hint suggests landscape or full screen. A per-scene "stack elements on narrow screens" mode is a possible follow-up.
+- No visual editor: lecturers edit JSON or ask their assistant. A drag-and-drop editor would be its own task.
+- No free-form HTML/CSS element yet (the deferred escape hatch via the scriptless sandbox iframe).
+- The player's own Next/Previous buttons move slides, not scene steps (only the arrow keys and the scene's buttons step).
+- Console shows pre-existing "An unknown error occurred when fetching the script." errors on the student dev gallery (service worker in dev), unrelated to this task.

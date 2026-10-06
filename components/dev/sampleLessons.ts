@@ -1,3 +1,4 @@
+import { SCENE_TEMPLATES } from "@/components/lessons/scene/templates";
 import type { Lesson } from "@/components/lessons-reader/LessonView";
 
 // Sample lessons for the dev gallery: what `api.lessons.read` returns, with
@@ -172,6 +173,10 @@ button {
         explanation: "`box-sizing: border-box`. Plenty of stylesheets set it on every element, like the example above.",
       },
     },
+    { id: "b_scene_title", type: "scene", scene: SCENE_TEMPLATES[0].scene },
+    { id: "b_scene_diagram", type: "scene", scene: SCENE_TEMPLATES[1].scene },
+    { id: "b_scene_code", type: "scene", scene: SCENE_TEMPLATES[2].scene },
+    { id: "b_scene_compare", type: "scene", scene: SCENE_TEMPLATES[3].scene },
   ],
 };
 
