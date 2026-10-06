@@ -35,6 +35,9 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-014 | Notification center: message any email addresses, with or without an account, and turn a message into personal group invitations | Ready for review | Claude (Claude Code) |
 | TASK-015 | Animated scenes in lessons: a `scene` block agents build from a validated vocabulary, played with GSAP | Ready for review | Claude (Claude Code) |
 | TASK-016 | Presentations: their own item in a week, typed slides in curated themes, a GSAP player, an editor and agent tools | Ready for review | Claude (Claude Code) |
+| TASK-017 | Presentations: reorder and move between weeks; the student study assistant can open and search them | Ready for review | Claude (Claude Code) |
+| TASK-018 | Presentation files: export one presentation as a .kalami file and import it into any week, on any Kalami | Ready for review | Claude (Claude Code) |
+| TASK-019 | Presentation share links: a public link anyone can watch a presentation with, no account needed | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -984,7 +987,128 @@ Presentations built from lesson scenes (TASK-015) came out dull: the agent place
   - Swipe on a real phone.
   - The Caveat and Noto Georgian web fonts: this dev server only served their fallbacks, so Chalk's handwritten headings showed in the fallback face.
 - The browser pane pauses animation frames while it's hidden. Verification drove GSAP's ticker by hand through `window.__deckGsap`, which exists in development builds only.
-- Presentations keep creation order within a week; there is no reorder or move-to-another-week yet.
-- The student MCP connector and the student lesson search don't include presentations yet.
+- Presentations keep creation order within a week; there is no reorder or move-to-another-week yet. (Done in TASK-017.)
+- The student MCP connector and the student lesson search don't include presentations yet. (Done in TASK-017.)
 - The gallery sample's image is a `data:` link, so that sample can't be saved through the backend (images must be https).
 - Speaker notes are visible to students behind the Notes toggle.
+
+## TASK-017 — Presentations: reorder and move between weeks; the student study assistant can open and search them
+
+- **Status:** Ready for review (asked for 2026-10-07, after TASK-016's known limits; built the same night)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-07
+
+### Requested behavior
+
+- Lecturers and agents can reorder a week's presentations and move a presentation to another week of the course (the two TASK-016 limits).
+- The student study assistant (the read-only MCP connector) can open a presentation, and its search covers presentations as well as lessons.
+
+### Implementation notes (2026-10-07)
+
+**Reorder and move** (`kalami-stuff/convex/model/presentations.ts`):
+- `movePresentation`: up or down within the week (a swap), or to the end of another week of the same course. Another course's week is NOT_FOUND, and a full week (20) is a CONFLICT. Moves between weeks are logged (`presentation.move`).
+- `reorderPresentations`: every presentation of the week exactly once.
+- Agents only move drafts. They can't swap a draft with a published neighbour, and a reorder must keep the published ones in their order (`keepsPublishedOrder` now knows presentations).
+- `presentationsOf` moved into `model/weeks.ts` next to `lessonsOf`, so the two model files don't import each other.
+- Public `api.presentations.move`. Agent functions `movePresentationAsAgent` and `reorderPresentationsAsAgent`; MCP tools `move_presentation` and `reorder_presentations` (staff connector 0.9.0, listed in its outline-tidying instructions).
+
+**Staff outline:** each presentation row has up/down buttons and a "Move to…" picker that lists only weeks (a presentation always lives in a week). `MoveToSelect` now takes the item's name, so assessments and presentations share it.
+
+**Student study assistant:**
+- `api.study.getPresentation`: published ones only, same rules as the player.
+- Search now covers lessons and presentations (a presentation's title and slide words). Hits say which kind they are: `kind: "lesson"` with `lessonId`, or `kind: "presentation"` with `presentationId`. `api.study.findInLessons` became `findInCourses`, with one scan budget for both kinds.
+- Student connector (`kalami/lib/mcp/server.ts`): new `get_presentation`, and `find_in_lessons` renamed to `find_in_courses`. The instructions and `get_course` mention presentations, and say speaker notes carry what the lecturer meant to say.
+- The assistant page copy and STUDIO.md's tool table are updated.
+
+### Checks (2026-10-07)
+
+- `kalami-stuff`: `npx tsc --noEmit` clean (app and `convex/`). `npx vitest run`: 297 passed (31 files). New tests: move up/down, to another week, never into another course, and agent reorder or move refused around published ones (`convex/presentations.test.ts`); the study connector opening and searching presentations (`convex/study.test.ts`); the MCP tool list. `eslint` clean on touched files. `npx convex dev --once` pushed to dev, then `sync:student`.
+- `kalami`: `npx tsc --noEmit` and `eslint` clean on touched files. The student app has no test runner; its connector is a thin wrapper over the tested `api.study` functions.
+- Browser (staff gallery, course outline, Week 1): presentation rows show up/down buttons and a "Move to…" picker with weeks only; tasks and quizzes still offer Unplaced.
+
+### Limitations
+
+- Student assistants connected before this change see the old `find_in_lessons` until they reconnect.
+- The presentation editor has no week picker; moving happens in the course outline (or through an agent).
+
+## TASK-018 — Presentation files: export one presentation as a .kalami file and import it into any week, on any Kalami
+
+- **Status:** Ready for review (asked for and built 2026-10-07)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-07
+
+### Requested behavior
+
+Move a presentation "from one platform to another", like a course moves as a `.kalami` file: to another course, another lecturer or another Kalami site.
+
+### Decided
+
+- Read as a file, like course files: `.kalami` gains `"kind": "presentation"` (same envelope, a `presentation` instead of a `course`), version 1 unchanged.
+- Export from the presentation's editor; import into a week the lecturer picks, always as a new draft at the end of the week. Kalami signs exported files like course files ("Verified by Kalami").
+- Not done: export to other formats (PowerPoint, PDF, Google Slides). Separate work if wanted.
+
+### Implementation notes (2026-10-07)
+
+- **Format** (`kalami-stuff/convex/lib/kalami.ts`): `presentationKalamiFileSchema`, `parseKalamiPresentation`, `presentationSignedPart` (the signature covers the kind, so a course signature never passes for a presentation file), `summarizePresentation`, and a `fallback` for `kalamiFileName`. JSON reading is shared by both kinds. A presentation file given to the course import, or a course file to the presentation import, gets a sentence saying where it belongs. `anyKalamiFileSchema` (both kinds) feeds `/kalami.schema.json` and `get_kalami_format`.
+- **Backend** (`convex/model/kalami.ts`): `exportPresentationFile` (anyone on the course's staff; ids stripped; signed), `checkPresentationFile` (the format, then the deck rules through `normalizeSlides`, then the signature on the file as written), `importPresentationFile` (`createPresentation` into the week).
+- **Public functions** (`convex/kalami.ts`): `exportPresentation` and `inspectPresentation` (queries) and `importPresentation` (mutation), all staff only.
+- **Agents:** `exportPresentationForAgent` and `importPresentationForAgent` (a retry with the same `requestId` returns the same presentation). MCP tools `export_presentation_file` and `import_presentation_file` (staff connector 0.10.0), and the instructions mention presentation files.
+- **Staff UI:** Export .kalami in the presentation editor's header (exports the saved version; the button's tooltip says so while there are unsaved changes). Import in each week's Presentations (`components/presentations-editor/PresentationImport.tsx`): drop or choose a file, see its cover in its theme, its slide count and whether Kalami verified it, then import into the week (the editor opens), or read the list of problems (nothing created).
+- **Docs:** guide section "Presentation files" with an example the tests parse; KALAMI-FORMAT.md.
+
+### Checks (2026-10-07)
+
+- `kalami-stuff`: `npx tsc --noEmit` clean (app and `convex/`). `npx vitest run`: 300 passed (31 files).
+  - New in `convex/kalami.test.ts`: the export → import round trip into another course's week (same slides, draft, verified, no ids in the file); an edited file is unverified; a broken deck lists its problem; a course file refused by the presentation import and the other way round; a hand-written file imports with the default theme; students refused; an agent export and import with a retry; the guide's example parses.
+  - `eslint` clean on touched files. `npx convex dev --once` pushed to dev, then `sync:student`.
+- Browser (staff galleries): Import in a week's Presentations opens the dialog; a chosen file shows the summary card (cover in Aurora, 15 slides, Verified by Kalami); the error list shows when an import is refused. Export .kalami shows in the editor header.
+
+### Limitations
+
+- Moving between Kalami sites keeps "Verified by Kalami" only when both sites share the same signing secret (`MCP_SERVICE_SECRET`); otherwise the file imports as not verified, which is still fine.
+- Pictures stay links: an image slide's picture must stay reachable at its https address.
+
+## TASK-019 — Presentation share links: a public link anyone can watch a presentation with, no account needed
+
+- **Status:** Ready for review (asked for and built 2026-10-07)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-07
+
+### Requested behavior
+
+"Build me a presentation link": lecturers share their presentations' links as they please.
+
+### Decided
+
+- One public link per presentation, like "anyone with the link" in Google Slides. Whoever has it watches the deck in Kalami's player on the student app (`/p/<token>`), signed in or not: the saved slides and who shared it, nothing else of the course.
+- The lecturer turns it on with Share in the presentation's editor, chooses whether the speaker notes go along (off by default), can make a new link (the old one stops working at once) or stop sharing. Drafts and archived courses can be shared too: it's the lecturer's call, like publishing.
+- Who: the course's owner, the university's admins and the super admin (`requireCourseEditor`). Assistants see the link to copy it but can't change it. Agents see the link (`get_presentation` → `shareLink`) but never turn it on or off.
+- Links are unlisted (`noindex`) and live: changes the lecturer saves show up for viewers straight away; a stopped or replaced link says "This link doesn't work any more" and nothing about what it was.
+- Not done (ask if wanted): view counts, embedding in other sites (the student app refuses framing), a QR code to show in class, links that expire.
+
+### Implementation notes (2026-10-07)
+
+- **Data** (`kalami-stuff/convex/schema.ts`): `presentations.share` = `{ token, notes, by, at }` while shared, index `by_shareToken` on `share.token`. Tokens are 120 random bits in 20 URL-safe characters (`generateLinkToken`, the same as group join links), checked unique.
+- **Model** (`convex/model/presentations.ts`): `sharePresentation` (turn on, change the notes option, or `newLink`), `stopSharingPresentation`, `getSharedPresentation` (validates the token's shape before any lookup; strips speaker notes unless shared; the sharer's name as students see lecturers, never an email). Every change is in the activity log. The staff view of a presentation carries `canShare` and `share`; outline rows carry `shared`.
+- **Public functions** (`convex/presentations.ts`): `share`, `stopSharing` (staff) and `shared` (anyone, no sign-in).
+- **Staff UI:** Share in the editor's header opens `components/presentations-editor/SharePresentation.tsx`: create the link (with or without speaker notes), then a ticket with the deck's cover, the address, Copy link and Open; the notes option; New link and Stop sharing, each confirmed first. A "Shared by link" pill on the editor and on the outline's presentation rows. `DeckCover` (the cover in miniature) is shared with the import dialog. Gallery views `presentation-share`, `presentation-shared`, `presentation-shared-assistant`.
+- **Player:** `DeckPlayer` takes `speakerNotes={false}` (no notes button, no N key).
+- **Student app:** `app/p/[token]/page.tsx` (public in `proxy.ts`): the page in the deck's own colours and glows (the browser bar too), title, "Shared by", Copy link (the phone's share sheet on touch screens), Present, the player sized so a 16:9 slide and its controls fit a laptop window, and the address keeps the slide (`#5`). `generateMetadata` gives chats the title and a description; `opengraph-image.tsx` draws the preview card: the deck's cover in its theme (glows, accent mark, Watch), Georgian included (Noto Sans Georgian from Google Fonts), Chalk's title handwritten; a dead link gets a plain Kalami card. Component `components/presentations-reader/SharedPresentation.tsx`; gallery views `shared-presentation(-aurora|-paper|-chalk)` and `shared-link-off`.
+- **Agents:** `get_presentation` returns `shareLink` (`url`, `speakerNotes`, `sharedBy`) or null; the instructions say only the lecturer shares. Staff connector 0.11.0. The `/agents` page lists sharing under "Can't".
+
+### Checks (2026-10-07)
+
+- `kalami-stuff`: `npx tsc --noEmit` clean. `npx vitest run`: 302 passed (31 files). New in `convex/presentations.test.ts`: sharing a draft; a viewer without an account gets the deck without notes, then with notes; New link kills the old one; Stop sharing kills it, sharing again makes another; malformed tokens; deleting the presentation kills the link; assistants and students refused; archived courses can share; an agent sees the link. `eslint .` clean. `npx convex dev --once` added the index on dev, then `sync:student`.
+- `kalami`: `next typegen`, `npx tsc --noEmit` and `eslint .` clean.
+- Browser:
+  - Staff gallery: Create link → the ticket, notes toggle, New link (new address), Stop sharing (back to "make a link"), the assistant's view (Copy and Open only).
+  - Student gallery: Aurora at 1280×720 (slide and controls 688px tall, title and logo in line with the slide), at 375px (portrait slide, no sideways scroll), no notes button without notes; Chalk's title.
+  - Real route on the dev backend: a made-up token opens without sign-in and shows "This link doesn't work any more", with `noindex` and the preview image.
+  - Preview images rendered and looked at for Aurora, Chalk, Ember (long title) and a Georgian title, then put back to reading only real links.
+- Fixed on the way: Geist draws uneven gaps after long words in the preview renderer (the cards use Inter); capitals in the kicker need their own letters in the font subset; Chalk's page title was scaled from the wrong size.
+
+### Limitations
+
+- Not clicked through with a real link on the dev backend: the pane has no staff sign-in, so the live page with a real deck was checked in the gallery and the backend by tests.
+- Link previews need the student app reachable from the internet (production): chats fetch the picture from it. Fonts for the picture come from Google Fonts at request time; without them it falls back to the bundled font (Latin only).
+- Production needs the Convex deploy (new optional field and index) and both apps redeployed; reconnect the staff connector to get 0.11.0.

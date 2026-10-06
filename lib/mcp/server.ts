@@ -68,12 +68,12 @@ function auth(ctx: ToolContext) {
   return { token, client: typeof client === "string" ? client.slice(0, 200) : undefined };
 }
 
-const INSTRUCTIONS = `You are connected to Kalami, a learning and exam platform, as the study companion of the student who signed in. Everything you see is theirs and read-only: their courses, the weekly lessons and materials, what is due, and the work they have finished (tasks, quizzes, exams) with their own answers and, where the lecturer allows, what was right.
+const INSTRUCTIONS = `You are connected to Kalami, a learning and exam platform, as the study companion of the student who signed in. Everything you see is theirs and read-only: their courses, the weekly lessons, presentations and materials, what is due, and the work they have finished (tasks, quizzes, exams) with their own answers and, where the lecturer allows, what was right.
 
-Start with whoami, then list_courses. get_course gives a course's weeks: each week's lessons, materials (links and a Google Drive folder) and its tasks and quizzes with where the student stands. get_lesson gives a lesson's full content. find_in_lessons finds where a topic was covered. my_progress and whats_next show every piece of work and the deadlines.
+Start with whoami, then list_courses. get_course gives a course's weeks: each week's lessons, presentations, materials (links and a Google Drive folder) and its tasks and quizzes with where the student stands. get_lesson gives a lesson's full content and get_presentation a presentation's slides. find_in_courses finds where a topic was covered, in lessons and presentations. my_progress and whats_next show every piece of work and the deadlines.
 
 Studying together:
-- Explain ideas from the lessons in the student's own words, with examples; point to the lesson and week it comes from. Answer in the language the student writes in (lessons are in the course's language: ka = Georgian, en = English).
+- Explain ideas from the lessons and presentations in the student's own words, with examples; point to the lesson or presentation and the week it comes from. A presentation's speaker notes say what the lecturer meant to tell the class on each slide. Answer in the language the student writes in (lessons are in the course's language: ka = Georgian, en = English).
 - After finished work (get_my_work), go through it question by question: what they answered, why a wrong answer was wrong, what the right idea is, and which lesson covers it. Be kind and concrete; celebrate what went well.
 - Make practice questions and small exercises from the lessons, and quiz the student on them.
 - Help them plan around whats_next: what to read before which deadline.
@@ -118,7 +118,7 @@ const handler = createMcpHandler(
       {
         title: "Get course",
         description:
-          "A course week by week: each week's lessons (ids and titles), materials (links, Google Drive folder), and its tasks and quizzes with their state (upcoming, open, closed) and the student's result. Exams are the midterm/final items.",
+          "A course week by week: each week's lessons and presentations (ids and titles), materials (links, Google Drive folder), and its tasks and quizzes with their state (upcoming, open, closed) and the student's result. Exams are the midterm/final items.",
         inputSchema: z.object({ courseId }),
       },
       async (args, ctx) => run(() => convex.query(api.study.getCourse, { ...auth(ctx), courseId: args.courseId as Id<"courses"> })),
@@ -130,19 +130,34 @@ const handler = createMcpHandler(
         title: "Get lesson",
         description:
           "A lesson's full content: text (Markdown), definitions and tips, code examples, images and videos, step-by-step guides and quick checks, plus the previous and next lesson.",
-        inputSchema: z.object({ lessonId: z.string().describe("Lesson id from get_course or find_in_lessons") }),
+        inputSchema: z.object({ lessonId: z.string().describe("Lesson id from get_course or find_in_courses") }),
       },
       async (args, ctx) => run(() => convex.query(api.study.getLesson, { ...auth(ctx), lessonId: args.lessonId as Id<"lessons"> })),
     );
 
     server.registerTool(
-      "find_in_lessons",
+      "get_presentation",
       {
-        title: "Find in lessons",
-        description: "Where a word or phrase appears in the student's published lessons, across all their courses, with a snippet each.",
+        title: "Get presentation",
+        description:
+          "A presentation's slides in order: each slide's type (title, section, statement, points, number, compare, quote, code, image, diagram, closing) and its words, plus the lecturer's speaker notes. **Double asterisks** mark the words the lecturer stressed.",
+        inputSchema: z.object({ presentationId: z.string().describe("Presentation id from get_course or find_in_courses") }),
+      },
+      async (args, ctx) =>
+        run(() =>
+          convex.query(api.study.getPresentation, { ...auth(ctx), presentationId: args.presentationId as Id<"presentations"> }),
+        ),
+    );
+
+    server.registerTool(
+      "find_in_courses",
+      {
+        title: "Find in courses",
+        description:
+          "Where a word or phrase appears in the student's published lessons and presentations, across all their courses, with a snippet each. Each hit says whether it is a lesson (lessonId) or a presentation (presentationId).",
         inputSchema: z.object({ query: z.string().min(2).max(100).describe("A word or short phrase, e.g. “box model”") }),
       },
-      async (args, ctx) => run(() => convex.query(api.study.findInLessons, { ...auth(ctx), query: args.query })),
+      async (args, ctx) => run(() => convex.query(api.study.findInCourses, { ...auth(ctx), query: args.query })),
     );
 
     server.registerTool(

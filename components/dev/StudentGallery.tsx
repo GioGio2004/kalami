@@ -34,7 +34,9 @@ import { PillHeader } from "@/components/ui/PillHeader";
 import { LoadingScreen } from "@/components/ui/StatusScreen";
 import { buildDraft, type ContactOptions } from "@/lib/contact";
 import { SAMPLE_DECK } from "@/components/presentations/samples";
+import type { DeckTheme } from "@/lib/presentation";
 import { PresentationView } from "@/components/presentations-reader/PresentationView";
+import { SharedLinkOff, SharedPresentationView } from "@/components/presentations-reader/SharedPresentation";
 import { sampleLastLesson, sampleLesson } from "./sampleLessons";
 
 // Development-only screen gallery with sample data: lets signed-in screens be
@@ -588,6 +590,11 @@ const views: Record<string, string> = {
   presentation: "Presentation · every slide type (Ink)",
   "presentation-aurora": "Presentation · every slide type (Aurora)",
   "presentation-paper": "Presentation · every slide type (Paper)",
+  "shared-presentation": "Shared link · presentation (Ink, with speaker notes)",
+  "shared-presentation-aurora": "Shared link · presentation (Aurora, no notes)",
+  "shared-presentation-paper": "Shared link · presentation (Paper, no notes)",
+  "shared-presentation-chalk": "Shared link · presentation (Chalk, no notes)",
+  "shared-link-off": "Shared link · turned off or replaced",
   "lesson-last": "Lesson · the latest one (no next lesson)",
   "lesson-not-found": "Lesson · not available",
   assistant: "AI assistant · connect your own assistant to Kalami",
@@ -718,6 +725,27 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
           }}
         />,
       );
+    case "shared-presentation":
+    case "shared-presentation-aurora":
+    case "shared-presentation-paper":
+    case "shared-presentation-chalk": {
+      // A share link's page, as anyone opens it: no student shell. Ink keeps the speaker notes; the others leave them out.
+      const theme = view === "shared-presentation" ? "ink" : (view.slice("shared-presentation-".length) as DeckTheme);
+      const notes = theme === "ink";
+      return (
+        <SharedPresentationView
+          presentation={{
+            title: "How the web works",
+            theme,
+            slides: notes ? SAMPLE_DECK.slides : SAMPLE_DECK.slides.map((slide) => ({ ...slide, notes: undefined })),
+            notes,
+            sharedBy: "Nino Beridze",
+          }}
+        />
+      );
+    }
+    case "shared-link-off":
+      return <SharedLinkOff />;
     case "lesson-last":
       return studentPage(<LessonView lesson={sampleLastLesson} />);
     case "lesson-not-found":

@@ -1836,6 +1836,7 @@ export type PublicApiType = {
           presentations: Array<{
             _id: Id<"presentations">;
             createdVia: "web" | "mcp";
+            shared: boolean;
             slideCount: number;
             status: "draft" | "published";
             theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
@@ -3642,9 +3643,11 @@ export type PublicApiType = {
       {
         _id: Id<"presentations">;
         canEdit: boolean;
+        canShare: boolean;
         courseId: Id<"courses">;
         courseTitle: string;
         createdVia: "web" | "mcp";
+        share: null | { at: number; by: string; notes: boolean; token: string };
         slides: Array<
           | {
               id: string;
@@ -4006,11 +4009,63 @@ export type PublicApiType = {
       { client?: string; presentationId: Id<"presentations">; token: string },
       null
     >;
+    movePresentationAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        direction?: "up" | "down";
+        presentationId: Id<"presentations">;
+        token: string;
+        weekId?: Id<"weeks">;
+      },
+      null
+    >;
+    reorderPresentationsAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        presentationIds: Array<Id<"presentations">>;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      null
+    >;
     exportCourseForAgent: FunctionReference<
       "query",
       "public",
       { client?: string; courseId: Id<"courses">; token: string },
       { content: string; fileName: string }
+    >;
+    exportPresentationForAgent: FunctionReference<
+      "query",
+      "public",
+      { client?: string; presentationId: Id<"presentations">; token: string },
+      { content: string; fileName: string }
+    >;
+    importPresentationForAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        requestId?: string;
+        text: string;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      | {
+          ok: true;
+          presentationId: Id<"presentations">;
+          summary: {
+            exported?: { at: string; by: string; from: string };
+            slides: number;
+            theme?: "ink" | "paper" | "aurora" | "ember" | "chalk";
+            title: string;
+          };
+          verified: null | { at: string; by: string };
+        }
+      | { errors: Array<string>; ok: false }
     >;
     checkKalamiForAgent: FunctionReference<
       "action",
@@ -7430,6 +7485,7 @@ export type PublicApiType = {
           presentations: Array<{
             _id: Id<"presentations">;
             createdVia: "web" | "mcp";
+            shared: boolean;
             slideCount: number;
             status: "draft" | "published";
             theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
@@ -7636,6 +7692,45 @@ export type PublicApiType = {
             weeks: number;
           };
         }
+    >;
+    exportPresentation: FunctionReference<
+      "query",
+      "public",
+      { presentationId: Id<"presentations"> },
+      { content: string; fileName: string }
+    >;
+    inspectPresentation: FunctionReference<
+      "query",
+      "public",
+      { text: string },
+      | {
+          ok: true;
+          summary: {
+            exported?: { at: string; by: string; from: string };
+            slides: number;
+            theme?: "ink" | "paper" | "aurora" | "ember" | "chalk";
+            title: string;
+          };
+          verified: null | { at: string; by: string };
+        }
+      | { errors: Array<string>; ok: false }
+    >;
+    importPresentation: FunctionReference<
+      "mutation",
+      "public",
+      { text: string; weekId: Id<"weeks"> },
+      | {
+          ok: true;
+          presentationId: Id<"presentations">;
+          summary: {
+            exported?: { at: string; by: string; from: string };
+            slides: number;
+            theme?: "ink" | "paper" | "aurora" | "ember" | "chalk";
+            title: string;
+          };
+          verified: null | { at: string; by: string };
+        }
+      | { errors: Array<string>; ok: false }
     >;
   };
   people: {
@@ -8823,6 +8918,125 @@ export type PublicApiType = {
         week: { _id: Id<"weeks">; title: string };
       }
     >;
+    getPresentation: FunctionReference<
+      "query",
+      "public",
+      { client?: string; presentationId: Id<"presentations">; token: string },
+      {
+        _id: Id<"presentations">;
+        course: { _id: Id<"courses">; title: string };
+        slides: Array<
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              subtitle?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "title";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "section";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              text: string;
+              tone?: "default" | "accent";
+              type: "statement";
+            }
+          | {
+              build?: boolean;
+              id: string;
+              notes?: string;
+              points: Array<string>;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "points";
+            }
+          | {
+              decimals?: number;
+              detail?: string;
+              id: string;
+              label: string;
+              notes?: string;
+              prefix?: string;
+              suffix?: string;
+              tone?: "default" | "accent";
+              type: "number";
+              value: number;
+            }
+          | {
+              id: string;
+              left: { points: Array<string>; title: string };
+              notes?: string;
+              right: { points: Array<string>; title: string };
+              title?: string;
+              tone?: "default" | "accent";
+              type: "compare";
+              verdict?: string;
+            }
+          | {
+              author?: string;
+              id: string;
+              notes?: string;
+              quote: string;
+              role?: string;
+              tone?: "default" | "accent";
+              type: "quote";
+            }
+          | {
+              code: string;
+              highlights?: Array<{ from: number; note?: string; to?: number }>;
+              id: string;
+              language: string;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id: string;
+              layout?: "split" | "full";
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "image";
+              url: string;
+            }
+          | {
+              build?: boolean;
+              id: string;
+              layout: "flow" | "cycle" | "stack" | "hub";
+              nodes: Array<{ detail?: string; edge?: string; label: string }>;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "diagram";
+            }
+          | {
+              id: string;
+              next?: string;
+              notes?: string;
+              points?: Array<string>;
+              title: string;
+              tone?: "default" | "accent";
+              type: "closing";
+            }
+        >;
+        theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
+        title: string;
+        week: { _id: Id<"weeks">; title: string };
+      }
+    >;
     getWork: FunctionReference<
       "query",
       "public",
@@ -9057,17 +9271,28 @@ export type PublicApiType = {
         title: string;
       }>
     >;
-    findInLessons: FunctionReference<
+    findInCourses: FunctionReference<
       "query",
       "public",
       { client?: string; query: string; token: string },
-      Array<{
-        course: { _id: Id<"courses">; title: string };
-        lessonId: Id<"lessons">;
-        snippet: string;
-        title: string;
-        weekTitle: string;
-      }>
+      Array<
+        | {
+            course: { _id: Id<"courses">; title: string };
+            kind: "lesson";
+            lessonId: Id<"lessons">;
+            snippet: string;
+            title: string;
+            weekTitle: string;
+          }
+        | {
+            course: { _id: Id<"courses">; title: string };
+            kind: "presentation";
+            presentationId: Id<"presentations">;
+            snippet: string;
+            title: string;
+            weekTitle: string;
+          }
+      >
     >;
   };
   readingDocuments: {
@@ -9104,9 +9329,11 @@ export type PublicApiType = {
       {
         _id: Id<"presentations">;
         canEdit: boolean;
+        canShare: boolean;
         courseId: Id<"courses">;
         courseTitle: string;
         createdVia: "web" | "mcp";
+        share: null | { at: number; by: string; notes: boolean; token: string };
         slides: Array<
           | {
               id: string;
@@ -9350,6 +9577,16 @@ export type PublicApiType = {
       },
       Array<string>
     >;
+    move: FunctionReference<
+      "mutation",
+      "public",
+      {
+        direction?: "up" | "down";
+        presentationId: Id<"presentations">;
+        weekId?: Id<"weeks">;
+      },
+      null
+    >;
     setStatus: FunctionReference<
       "mutation",
       "public",
@@ -9361,6 +9598,140 @@ export type PublicApiType = {
       "public",
       { presentationId: Id<"presentations"> },
       null
+    >;
+    share: FunctionReference<
+      "mutation",
+      "public",
+      {
+        newLink?: boolean;
+        notes: boolean;
+        presentationId: Id<"presentations">;
+      },
+      string
+    >;
+    stopSharing: FunctionReference<
+      "mutation",
+      "public",
+      { presentationId: Id<"presentations"> },
+      null
+    >;
+    shared: FunctionReference<
+      "query",
+      "public",
+      { token: string },
+      null | {
+        notes: boolean;
+        sharedBy: string;
+        slides: Array<
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              subtitle?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "title";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              title: string;
+              tone?: "default" | "accent";
+              type: "section";
+            }
+          | {
+              id: string;
+              kicker?: string;
+              notes?: string;
+              text: string;
+              tone?: "default" | "accent";
+              type: "statement";
+            }
+          | {
+              build?: boolean;
+              id: string;
+              notes?: string;
+              points: Array<string>;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "points";
+            }
+          | {
+              decimals?: number;
+              detail?: string;
+              id: string;
+              label: string;
+              notes?: string;
+              prefix?: string;
+              suffix?: string;
+              tone?: "default" | "accent";
+              type: "number";
+              value: number;
+            }
+          | {
+              id: string;
+              left: { points: Array<string>; title: string };
+              notes?: string;
+              right: { points: Array<string>; title: string };
+              title?: string;
+              tone?: "default" | "accent";
+              type: "compare";
+              verdict?: string;
+            }
+          | {
+              author?: string;
+              id: string;
+              notes?: string;
+              quote: string;
+              role?: string;
+              tone?: "default" | "accent";
+              type: "quote";
+            }
+          | {
+              code: string;
+              highlights?: Array<{ from: number; note?: string; to?: number }>;
+              id: string;
+              language: string;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "code";
+            }
+          | {
+              alt: string;
+              caption?: string;
+              id: string;
+              layout?: "split" | "full";
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "image";
+              url: string;
+            }
+          | {
+              build?: boolean;
+              id: string;
+              layout: "flow" | "cycle" | "stack" | "hub";
+              nodes: Array<{ detail?: string; edge?: string; label: string }>;
+              notes?: string;
+              title?: string;
+              tone?: "default" | "accent";
+              type: "diagram";
+            }
+          | {
+              id: string;
+              next?: string;
+              notes?: string;
+              points?: Array<string>;
+              title: string;
+              tone?: "default" | "accent";
+              type: "closing";
+            }
+        >;
+        theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
+        title: string;
+      }
     >;
     read: FunctionReference<
       "query",

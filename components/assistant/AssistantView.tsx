@@ -51,7 +51,7 @@ export function AssistantView({ origin }: { origin: string }) {
           <h2 className="mt-8 text-2xl font-medium tracking-tight">What it can and can&apos;t see</h2>
           <ul className="mt-5 space-y-3 text-[15px]">
             {[
-              ["Can", "your courses, every published lesson, the materials and links, what's due"],
+              ["Can", "your courses, every published lesson and presentation, the materials and links, what's due"],
               ["Can", "work you've finished: the questions, your answers, your score and your lecturer's comments"],
               ["Can", "what was right and the explanations, where your lecturer shows them"],
               ["Can’t", "see a quiz, exam or task you're still doing, or one you could still retake"],
