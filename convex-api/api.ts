@@ -3727,6 +3727,7 @@ export type PublicApiType = {
           | {
               alt: string;
               caption?: string;
+              credit?: string;
               id: string;
               layout?: "split" | "full";
               notes?: string;
@@ -3849,6 +3850,7 @@ export type PublicApiType = {
           | {
               alt: string;
               caption?: string;
+              credit?: string;
               id?: string;
               layout?: "split" | "full";
               notes?: string;
@@ -3969,6 +3971,7 @@ export type PublicApiType = {
           | {
               alt: string;
               caption?: string;
+              credit?: string;
               id?: string;
               layout?: "split" | "full";
               notes?: string;
@@ -9004,6 +9007,7 @@ export type PublicApiType = {
           | {
               alt: string;
               caption?: string;
+              credit?: string;
               id: string;
               layout?: "split" | "full";
               notes?: string;
@@ -9413,6 +9417,7 @@ export type PublicApiType = {
           | {
               alt: string;
               caption?: string;
+              credit?: string;
               id: string;
               layout?: "split" | "full";
               notes?: string;
@@ -9544,6 +9549,7 @@ export type PublicApiType = {
           | {
               alt: string;
               caption?: string;
+              credit?: string;
               id?: string;
               layout?: "split" | "full";
               notes?: string;
@@ -9701,6 +9707,7 @@ export type PublicApiType = {
           | {
               alt: string;
               caption?: string;
+              credit?: string;
               id: string;
               layout?: "split" | "full";
               notes?: string;
@@ -9819,6 +9826,7 @@ export type PublicApiType = {
           | {
               alt: string;
               caption?: string;
+              credit?: string;
               id: string;
               layout?: "split" | "full";
               notes?: string;
@@ -9850,6 +9858,63 @@ export type PublicApiType = {
         theme: "ink" | "paper" | "aurora" | "ember" | "chalk";
         title: string;
         week: { _id: Id<"weeks">; title: string };
+      }
+    >;
+  };
+  media: {
+    generateUploadUrl: FunctionReference<
+      "mutation",
+      "public",
+      { courseId: Id<"courses"> },
+      string
+    >;
+  };
+  mediaActions: {
+    importForAgent: FunctionReference<
+      "action",
+      "public",
+      {
+        client?: string;
+        target:
+          | { courseId: Id<"courses"> }
+          | { weekId: Id<"weeks"> }
+          | { presentationId: Id<"presentations"> };
+        token: string;
+        url: string;
+      },
+      {
+        bytes: number;
+        height: number;
+        originalBytes: number;
+        reused: boolean;
+        url: string;
+        width: number;
+      }
+    >;
+    importLink: FunctionReference<
+      "action",
+      "public",
+      { courseId: Id<"courses">; url: string },
+      {
+        bytes: number;
+        height: number;
+        originalBytes: number;
+        reused: boolean;
+        url: string;
+        width: number;
+      }
+    >;
+    upload: FunctionReference<
+      "action",
+      "public",
+      { courseId: Id<"courses">; name?: string; storageId: Id<"_storage"> },
+      {
+        bytes: number;
+        height: number;
+        originalBytes: number;
+        reused: boolean;
+        url: string;
+        width: number;
       }
     >;
   };

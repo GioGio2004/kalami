@@ -1112,3 +1112,79 @@ Move a presentation "from one platform to another", like a course moves as a `.k
 - Not clicked through with a real link on the dev backend: the pane has no staff sign-in, so the live page with a real deck was checked in the gallery and the backend by tests.
 - Link previews need the student app reachable from the internet (production): chats fetch the picture from it. Fonts for the picture come from Google Fonts at request time; without them it falls back to the bundled font (Latin only).
 - Production needs the Convex deploy (new optional field and index) and both apps redeployed; reconnect the staff connector to get 0.11.0.
+
+## TASK-020 — Images in presentations: upload or import pictures into Kalami, compressed to WebP and served from ImageKit; agents import pictures from the internet
+
+- **Status:** Ready for review (built 2026-10-14)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-14
+
+### Requested behavior
+
+"Add the images into the presentation builder", with the ImageKit account the user set up (ImageKit ID `kalami`, endpoint `https://ik.imagekit.io/kalami`). The MCP must be able to pull pictures from the internet into Kalami, formatted properly: a pipeline that compresses every picture to WebP so it is light and fast to serve. Plan first, then build.
+
+### Decided by the user (2026-10-14)
+
+- **Always copy into Kalami:** image slides no longer hotlink other sites. The editor uploads or imports every picture; agents' outside links are imported automatically. Old decks with outside links keep working and offer "Copy into Kalami".
+- **Agents find pictures with their own web search;** Kalami imports the link (no image-search tool for now).
+- **Presentations only** get upload buttons in this pass; lessons and code tasks can use imported pictures through the MCP `import_image` tool.
+
+### Plan
+
+- **Pipeline (Convex, Node action with `sharp`):** bytes from an upload (Convex file storage, ≤ 15 MB) or a link Convex fetches itself (https only, no private/internal addresses, ≤ 3 redirects, 15 MB, 15 s, must be an image) → decode (refuse non-images and > 40 MP), rotate by EXIF, strip all metadata (GPS), fit inside 2400 px (never enlarge), WebP (≈80 photos, ≈90 graphics; animated GIFs stay animated), lower quality while over ~1 MB → upload to ImageKit under `IMAGEKIT_FOLDER/courses/<courseId>/` → `media` row (owner, course, ImageKit file id and URL, size, bytes before/after, source, credit). The same link in the same course reuses its copy.
+- **Serving:** slides keep the ImageKit URL; the player asks ImageKit for the width the screen needs (`?tr=w-…` srcset), preloads the next slides' pictures and fades them in.
+- **Editor:** Upload (button, drag and drop, paste), paste a link → import, progress and "2.4 MB → 186 KB", a "Copy into Kalami" button on old outside links, and a new optional `credit` on image slides.
+- **MCP:** `import_image`; `create_presentation`/`update_presentation` import outside image links before saving (a failed link saves nothing and names the slide); instructions on licences, credit and alt text; staff connector 0.12.0; `media` rate limit.
+- **Backend rule:** a new or changed image slide link must be a Kalami image; links a deck already had keep working.
+- **Settings:** Convex `IMAGEKIT_API_PRIVATE_KEY` (secret, Convex only) and `IMAGEKIT_FOLDER`; Vercel staff + student `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT` (public). Deleting a course deletes its pictures from ImageKit.
+
+### Implementation notes (2026-10-14)
+
+- **Pipeline** (`kalami-stuff/convex/lib/media/`): `link.ts` (pure: link rules, private-address ranges, limits, file names), `fetch.ts` (Node: DNS lookup refuses private addresses, manual redirects re-checked each hop, 15 s, 15 MB counted while streaming, HTML pages refused with "use the picture's own address"), `pipeline.ts` (Node, `sharp` 0.35.5: header read without a limit, then at most 50 MP, or 110 MP for JPEG/WebP, which decode at a smaller scale; auto-orient; metadata dropped; fit 2400 px; WebP q80 for photos / q88 for graphics, stepping down until ≤ 1 MB; animated GIF/WebP stay animated, ≤ 300 frames; SVG drawn at the density that makes it 2400 px), `imagekit.ts` (REST upload/delete with Basic auth, folder `<IMAGEKIT_FOLDER>/courses/<courseId>`, unique names, tags).
+- **Convex:** `convex.json` makes `sharp` an external package for Node actions. `convex/mediaActions.ts` ("use node"): `upload` (editor, from Convex file storage; the stored file is deleted afterwards), `importLink` (editor), `importForAgent` (MCP credential; target course, week or presentation), `deleteFiles` (internal). `convex/media.ts`: `generateUploadUrl`, internal `start` / `record`. `convex/model/media.ts`: who may (course content editors, people or agents), reuse (a Kalami picture, or the same link already copied into the course, costs nothing), the `media` rate limit (60/hour, burst 30), and `trackDeckImages`.
+- **Data:** new table `media` (course, owner, via, ImageKit fileId + url, width, height, bytes before/after, source upload/link/copy, sourceKey) with indexes by course+sourceKey, course+url, url, fileId. A Kalami picture used by another course (e.g. a deck from a .kalami file) gets a "copy" row for that course, so deleting one course never deletes a file another shows; `coursePurge` deletes a course's rows and schedules `deleteFiles` only for files no row uses any more.
+- **Rule:** `createPresentation` / `savePresentation` refuse a new or changed image link that isn't a Kalami picture ("slides[i].url: the picture on <host> has to be copied into Kalami first…"); links a deck already had stay; decks imported from .kalami files keep theirs (`outsideImages: "keep"`).
+- **Slides:** image slides have an optional `credit` (≤ 160 characters; lib/presentation, validators, zod schema, .kalami guide). The player (`components/presentations/views.tsx`) asks ImageKit for sized versions (`lib/presentation/images.ts`: `sizedImage`, `imageSrcSet`, widths 640–2400, `c-at_max` never enlarges); thumbnails load 480 px; `DeckPlayer` preloads the next two slides' pictures; an image slide without a picture draws no `<img>`; the credit is a small pill on the picture (top right when the picture fills the slide; hidden in thumbnails; at least 10 px).
+- **Editor:** `components/presentations-editor/ImagePicker.tsx` replaces the "Picture link" field: Choose picture / drop / paste a screenshot (the browser checks type and 15 MB; upload progress via `lib/upload.ts` XHR, then "Compressing to WebP…"), or paste a link → Import; shows "14.0 MB → 339 KB · WebP, 2400×1078"; Replace; a picture still linked from another site gets a "Copy into Kalami" notice. New Credit field. The page wires it to Convex (`pictures` prop, passed down through a context); the dev gallery fakes it (view `presentation-pictures`).
+- **MCP (staff connector 0.12.0):** new `import_image` (courseId + url → Kalami url, size, before/after); `create_presentation` / `update_presentation` copy every image slide's picture in first, 4 at a time, and save nothing if one fails (the error names the slide and why); results list `picturesCopiedIn`. Instructions: find pictures with your own search, give the file's address, prefer openly licensed sources, fill `credit` when the licence asks, lessons' image blocks via `import_image`.
+- **Settings:** Convex dev has `IMAGEKIT_API_PRIVATE_KEY` (copied from `kalami-stuff/.env.local`, checked equal by hash, never printed) and `IMAGEKIT_FOLDER=/dev`. Documented in `OPERATIONS.md` (new Pictures section) and `STUDIO.md`.
+
+### Checks (2026-10-14)
+
+- `kalami-stuff`: `npx tsc --noEmit` clean; `eslint .` clean; `npx vitest run`: 352 tests in 35 files; one run had 1 failure in `exam.test.ts` (a rate-limit timing test this task doesn't touch; it then passed 3/3 alone, see TASK-022), the run before passed all 352. New tests:
+  - `convex/lib/media/pipeline.test.ts`: EXIF orientation and GPS removed, shrinks but never enlarges, alpha kept, SVG to 2400 px, GIF stays animated, a noisy photo ends under 1 MB, non-pictures and oversize files refused.
+  - `convex/lib/media/link.test.ts`: https only, credentials, ports, IP literals (169.254.169.254 included), local names; private/public address ranges; file names.
+  - `convex/lib/presentation/images.test.ts`: Kalami vs other links, sized urls, srcset.
+  - `convex/media.test.ts`: reuse by link and by Kalami url; unsafe links refused; students and forged credentials refused; agents through a week; the rate limit; the save rule including links a deck already had; agents can't save outside links; a shared file is deleted only with the last course that shows it.
+  - `lib/mcp/server.test.ts`: `import_image` listed; `create_presentation` swaps in the Kalami url and keeps the credit; a failed picture saves nothing and names `slides[1]`.
+- Real run on the dev deployment (`npx convex dev --once`, then `mediaActions:importForAgent` with a signed dev credential into the dev course): Wikimedia JPEG 9 KB → 3 KB; transparent PNG 219 KB → 75 KB; SVG logo → WebP; **Fronalpstock_big.jpg 14.3 MB, 10109×4542 → 339 KB, 2400×1078**; the same link again → reused; refused with clear messages: a Wikipedia article page ("a web page, not a picture"), a 404, and `localtest.me` (a public name that resolves to 127.0.0.1: "isn't on the public internet"). ImageKit serves the stored file as `image/webp` (318 KB), `?tr=w-640` 30 KB, `?tr=w-1280` 98 KB.
+- Browser (staff gallery `presentation-pictures`, 1440 px and 375 px): the stored picture with "Stored in Kalami as WebP"; the old outside link's notice → Copy into Kalami → "14.0 MB → 339 KB · WebP, 2400×1078" and Unsaved changes; an `http://` link → "Only https:// links can be copied in."; a dropped PNG → "Uploading… 20%" → result; the player's `<img>` loads the 1280 px ImageKit size with a 5-width srcset, thumbnails 480 px; the credit pill on the slide; at 375 px no sideways scroll, picker 44–331 px. Student gallery `presentation` renders without console errors after `sync:student`; `kalami` `tsc` and `eslint` clean.
+
+### Limitations and follow-ups
+
+- **Production needs, before it works there:** `npx convex env set IMAGEKIT_API_PRIVATE_KEY … --prod` and `IMAGEKIT_FOLDER /prod`, a Convex prod deploy (new table, indexes and the `sharp` external package), and both apps redeployed. Lecturers reconnect the staff connector to get 0.12.0.
+- **Vercel:** `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/kalami` was not added: the Vercel connector here can list the projects but gets 403 on their settings (scope `girogis-projects`), and the Vercel CLI isn't installed. It is optional: the code defaults to that address. The private key must not go to Vercel.
+- The editor's real Upload/Import were checked through the gallery (the pane has no staff sign-in) plus the real backend actions from the CLI; a click-through in the signed-in editor is the user's check.
+- The DNS check and the download resolve the name separately (a site switching its DNS between the two could slip through).
+- Not built: pictures nobody uses any more inside a living course stay on ImageKit (no sweep yet); no "pick from this course's pictures" library; no Upload in the lesson and code-task editors (agents can use `import_image` there); `.kalami` presentation files keep outside links until the lecturer copies them in; an SVG or a tiny picture can come out larger as WebP than it went in (it is rasterised).
+- Dev data: four test pictures were copied into the dev course "Basics of Web Technologies" (`media` rows and files under `/dev/courses/…` on ImageKit); the gallery uses the Fronalpstock one.
+
+### User review
+
+Pending.
+
+## TASK-021 — Presentation editor on phones: the slide card's type name runs under its arrow buttons
+
+- **Status:** Needs clarification
+- **Owner:** —
+- **Reported:** 2026-10-14 (seen while checking TASK-020 at 375 px)
+
+At 375 px the slide card header ("03 Image" and its description) overlaps the move up/down, duplicate and delete buttons. Not changed in TASK-020.
+
+## TASK-022 — Flaky test: `exam.test.ts` "a client saving far faster than a person types is slowed down, not broken"
+
+- **Status:** Needs clarification
+- **Owner:** —
+- **Reported:** 2026-10-14
+
+Failed once in a full `npx vitest run` (the file took 5.9 s instead of about 2.3 s), then passed 3 of 3 runs alone. Looks timing-dependent under load; worth making it independent of wall-clock time.
