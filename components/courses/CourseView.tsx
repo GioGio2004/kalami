@@ -11,7 +11,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Folder, Globe } from "@/
 import type { api } from "@/convex-api/api";
 import { THEMES } from "@/components/presentations/themes";
 import type { DeckTheme } from "@/lib/presentation";
-import { lessonPath, presentationPath } from "@/lib/urls";
+import { crosswordPath, lessonPath, presentationPath } from "@/lib/urls";
 import { AssessmentRow, type CourseItem } from "./AssessmentRow";
 
 type Course = FunctionReturnType<typeof api.learn.course>;
@@ -36,11 +36,26 @@ function weekSummary(week: Week, work: CourseItem[]): string {
   const parts = [
     week.lessons.length > 0 && plural(week.lessons.length, "lesson", "lessons"),
     week.presentations.length > 0 && plural(week.presentations.length, "presentation", "presentations"),
+    week.crosswords.length > 0 && plural(week.crosswords.length, "crossword", "crosswords"),
     materials > 0 && plural(materials, "material", "materials"),
     tasks > 0 && plural(tasks, "task", "tasks"),
     quizzes > 0 && plural(quizzes, "quiz", "quizzes"),
   ].filter((part): part is string => Boolean(part));
   return parts.length > 0 ? parts.join(" · ") : "Nothing here yet";
+}
+
+/** A crossword in miniature: a few squares, one of them marked. */
+function CrosswordChip() {
+  const on = [[0, 0], [1, 0], [2, 0], [1, 1], [1, 2], [2, 2], [3, 2]];
+  return (
+    <span aria-hidden="true" className="grid h-10 w-14 shrink-0 place-items-center rounded-xl bg-ink ring-1 ring-ink/10">
+      <svg viewBox="0 0 40 30" className="h-7 w-9">
+        {on.map(([x, y], i) => (
+          <rect key={i} x={x * 10 + 1} y={y * 10 + 1} width="8" height="8" rx="1.5" fill={i === 3 ? "var(--highlighter)" : "var(--paper)"} />
+        ))}
+      </svg>
+    </span>
+  );
 }
 
 /** A presentation's theme in miniature: its background and accent, like a tiny slide. */
@@ -195,7 +210,8 @@ function WeekCard({
   onToggle: () => void;
 }) {
   const hasMaterials = week.driveUrl !== undefined || week.links.length > 0;
-  const nothing = week.lessons.length === 0 && week.presentations.length === 0 && !hasMaterials && work.length === 0;
+  const nothing =
+    week.lessons.length === 0 && week.presentations.length === 0 && week.crosswords.length === 0 && !hasMaterials && work.length === 0;
   return (
     <ExpandableCard
       heading="h3"
@@ -270,6 +286,28 @@ function WeekCard({
                       <path d="M6.5 4.2v11.6a.8.8 0 0 0 1.2.7l9.2-5.8a.8.8 0 0 0 0-1.4L7.7 3.5a.8.8 0 0 0-1.2.7z" />
                     </svg>
                     Watch
+                    <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </WeekPart>
+        )}
+
+        {week.crosswords.length > 0 && (
+          <WeekPart title="Crosswords">
+            {week.crosswords.map((crossword) => (
+              <li key={crossword._id}>
+                <Link href={crosswordPath(courseId, crossword._id)} className={rowClass}>
+                  <CrosswordChip />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium leading-snug wrap-anywhere">{crossword.title}</span>
+                    <span className="mt-0.5 block text-sm text-graphite">
+                      Crossword · {plural(crossword.wordCount, "word", "words")} · practice
+                    </span>
+                  </span>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-sm font-medium text-paper">
+                    Solve
                     <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
                   </span>
                 </Link>

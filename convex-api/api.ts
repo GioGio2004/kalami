@@ -589,6 +589,11 @@ export type PublicApiType = {
         title: string;
         weeks: Array<{
           _id: Id<"weeks">;
+          crosswords: Array<{
+            _id: Id<"crosswords">;
+            title: string;
+            wordCount: number;
+          }>;
           description?: string;
           driveUrl?: string;
           lessons: Array<{ _id: Id<"lessons">; title: string }>;
@@ -953,6 +958,7 @@ export type PublicApiType = {
       { client?: string; token: string },
       null | {
         email: string;
+        features: Array<"crosswords">;
         isSuperAdmin: boolean;
         name: string;
         roles: Array<{
@@ -1730,6 +1736,7 @@ export type PublicApiType = {
       { client?: string; courseId: Id<"courses">; token: string },
       {
         canEdit: boolean;
+        canMakeCrosswords: boolean;
         courseId: Id<"courses">;
         drive: null | {
           canTakeOver: boolean;
@@ -1814,6 +1821,14 @@ export type PublicApiType = {
             totalPoints: number;
             updatedAt: number;
             weekId?: Id<"weeks">;
+          }>;
+          crosswords: Array<{
+            _id: Id<"crosswords">;
+            createdVia: "web" | "mcp";
+            status: "draft" | "published";
+            title: string;
+            updatedAt: number;
+            wordCount: number;
           }>;
           description?: string;
           drive: null | {
@@ -4033,6 +4048,93 @@ export type PublicApiType = {
         token: string;
         weekId: Id<"weeks">;
       },
+      null
+    >;
+    getCrosswordAsAgent: FunctionReference<
+      "query",
+      "public",
+      { client?: string; crosswordId: Id<"crosswords">; token: string },
+      {
+        _id: Id<"crosswords">;
+        arranged: boolean;
+        canEdit: boolean;
+        canManage: boolean;
+        courseId: Id<"courses">;
+        courseTitle: string;
+        createdVia: "web" | "mcp";
+        entries: Array<{ answer: string; clue: string; id: string }>;
+        layout: {
+          height: number;
+          placements: Array<{
+            col: number;
+            dir: "across" | "down";
+            id: string;
+            number: number;
+            row: number;
+          }>;
+          unplaced: Array<string>;
+          width: number;
+        };
+        status: "draft" | "published";
+        students: { solved: number; started: number };
+        title: string;
+        updatedAt: number;
+        weekId: Id<"weeks">;
+        weekStatus: "draft" | "published";
+        weekTitle: string;
+      }
+    >;
+    createCrosswordAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        entries: Array<{
+          answer: string;
+          at?: { col: number; dir: "across" | "down"; row: number };
+          clue: string;
+          id?: string;
+        }>;
+        requestId?: string;
+        title: string;
+        token: string;
+        weekId: Id<"weeks">;
+      },
+      Id<"crosswords">
+    >;
+    updateCrosswordAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        crosswordId: Id<"crosswords">;
+        entries?: Array<{
+          answer: string;
+          at?: { col: number; dir: "across" | "down"; row: number };
+          clue: string;
+          id?: string;
+        }>;
+        title?: string;
+        token: string;
+      },
+      Array<string>
+    >;
+    moveCrosswordAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      {
+        client?: string;
+        crosswordId: Id<"crosswords">;
+        direction?: "up" | "down";
+        token: string;
+        weekId?: Id<"weeks">;
+      },
+      null
+    >;
+    deleteCrosswordAsAgent: FunctionReference<
+      "mutation",
+      "public",
+      { client?: string; crosswordId: Id<"crosswords">; token: string },
       null
     >;
     exportCourseForAgent: FunctionReference<
@@ -7382,6 +7484,7 @@ export type PublicApiType = {
       { courseId: Id<"courses">; now: number },
       {
         canEdit: boolean;
+        canMakeCrosswords: boolean;
         courseId: Id<"courses">;
         drive: null | {
           canTakeOver: boolean;
@@ -7466,6 +7569,14 @@ export type PublicApiType = {
             totalPoints: number;
             updatedAt: number;
             weekId?: Id<"weeks">;
+          }>;
+          crosswords: Array<{
+            _id: Id<"crosswords">;
+            createdVia: "web" | "mcp";
+            status: "draft" | "published";
+            title: string;
+            updatedAt: number;
+            wordCount: number;
           }>;
           description?: string;
           drive: null | {
@@ -7744,6 +7855,7 @@ export type PublicApiType = {
       Array<{
         _id: Id<"users">;
         email: string;
+        features: Array<"crosswords">;
         memberships: Array<{
           _id: Id<"memberships">;
           role: "student" | "lecturer" | "uni_admin" | "super_admin";
@@ -7752,6 +7864,12 @@ export type PublicApiType = {
         }>;
         name: string;
       }>
+    >;
+    setFeature: FunctionReference<
+      "mutation",
+      "public",
+      { enabled: boolean; feature: "crosswords"; userId: Id<"users"> },
+      null
     >;
     changeStaffRole: FunctionReference<
       "mutation",
@@ -8573,6 +8691,11 @@ export type PublicApiType = {
         title: string;
         weeks: Array<{
           _id: Id<"weeks">;
+          crosswords: Array<{
+            _id: Id<"crosswords">;
+            title: string;
+            wordCount: number;
+          }>;
           description?: string;
           driveUrl?: string;
           lessons: Array<{ _id: Id<"lessons">; title: string }>;
@@ -9916,6 +10039,128 @@ export type PublicApiType = {
         url: string;
         width: number;
       }
+    >;
+  };
+  crosswords: {
+    get: FunctionReference<
+      "query",
+      "public",
+      { crosswordId: Id<"crosswords"> },
+      {
+        _id: Id<"crosswords">;
+        arranged: boolean;
+        canEdit: boolean;
+        canManage: boolean;
+        courseId: Id<"courses">;
+        courseTitle: string;
+        createdVia: "web" | "mcp";
+        entries: Array<{ answer: string; clue: string; id: string }>;
+        layout: {
+          height: number;
+          placements: Array<{
+            col: number;
+            dir: "across" | "down";
+            id: string;
+            number: number;
+            row: number;
+          }>;
+          unplaced: Array<string>;
+          width: number;
+        };
+        status: "draft" | "published";
+        students: { solved: number; started: number };
+        title: string;
+        updatedAt: number;
+        weekId: Id<"weeks">;
+        weekStatus: "draft" | "published";
+        weekTitle: string;
+      }
+    >;
+    create: FunctionReference<
+      "mutation",
+      "public",
+      { title: string; weekId: Id<"weeks"> },
+      Id<"crosswords">
+    >;
+    save: FunctionReference<
+      "mutation",
+      "public",
+      {
+        crosswordId: Id<"crosswords">;
+        entries?: Array<{
+          answer: string;
+          at?: { col: number; dir: "across" | "down"; row: number };
+          clue: string;
+          id?: string;
+        }>;
+        title?: string;
+      },
+      Array<string>
+    >;
+    move: FunctionReference<
+      "mutation",
+      "public",
+      {
+        crosswordId: Id<"crosswords">;
+        direction?: "up" | "down";
+        weekId?: Id<"weeks">;
+      },
+      null
+    >;
+    setStatus: FunctionReference<
+      "mutation",
+      "public",
+      { crosswordId: Id<"crosswords">; status: "draft" | "published" },
+      null
+    >;
+    remove: FunctionReference<
+      "mutation",
+      "public",
+      { crosswordId: Id<"crosswords"> },
+      null
+    >;
+    read: FunctionReference<
+      "query",
+      "public",
+      { crosswordId: Id<"crosswords"> },
+      {
+        _id: Id<"crosswords">;
+        cells: Array<{ col: number; number?: number; row: number }>;
+        course: { _id: Id<"courses">; title: string };
+        height: number;
+        progress: null | {
+          letters: Array<string>;
+          revealed: Array<number>;
+          solved: boolean;
+        };
+        title: string;
+        week: { _id: Id<"weeks">; title: string };
+        width: number;
+        words: Array<{
+          cells: Array<number>;
+          clue: string;
+          dir: "across" | "down";
+          enumeration: string;
+          id: string;
+          number: number;
+        }>;
+      }
+    >;
+    saveProgress: FunctionReference<
+      "mutation",
+      "public",
+      {
+        check?: boolean;
+        crosswordId: Id<"crosswords">;
+        letters: Array<string>;
+      },
+      { full: boolean; solved: boolean; wrong?: Array<number> }
+    >;
+    reveal: FunctionReference<
+      "mutation",
+      "public",
+      { cells: Array<number>; crosswordId: Id<"crosswords"> },
+      Array<{ cell: number; letter: string }>
     >;
   };
 };

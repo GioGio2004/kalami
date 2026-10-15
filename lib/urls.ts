@@ -20,6 +20,10 @@ export function presentationPath(courseId: string, presentationId: string): stri
   return `/courses/${courseId}/presentations/${presentationId}`;
 }
 
+export function crosswordPath(courseId: string, crosswordId: string): string {
+  return `/courses/${courseId}/crosswords/${crosswordId}`;
+}
+
 /** This app's own Clerk pages, used even when the NEXT_PUBLIC_CLERK_* URL vars are missing. */
 export const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in";
 export const SIGN_UP_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || "/sign-up";

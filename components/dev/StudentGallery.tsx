@@ -38,6 +38,7 @@ import type { DeckTheme } from "@/lib/presentation";
 import { PresentationView } from "@/components/presentations-reader/PresentationView";
 import { SharedLinkOff, SharedPresentationView } from "@/components/presentations-reader/SharedPresentation";
 import { sampleLastLesson, sampleLesson } from "./sampleLessons";
+import { SampleCrossword } from "./sampleCrossword";
 
 // Development-only screen gallery with sample data: lets signed-in screens be
 // reviewed without an account. The route 404s in production.
@@ -144,6 +145,7 @@ const course: ComponentProps<typeof CourseView>["course"] = {
         { _id: lessonId("l_first_page"), title: "Your first page" },
       ],
       presentations: [{ _id: id<"presentations">("p_web"), title: "How the web works", theme: "ink", slideCount: 15 }],
+      crosswords: [{ _id: id<"crosswords">("x_web"), title: "Words of the web", wordCount: 10 }],
       driveUrl: "https://drive.google.com/drive/folders/sample-week-1",
       links: [
         { id: "k1", title: "MDN: Getting started with the web", url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started", host: "developer.mozilla.org" },
@@ -157,6 +159,7 @@ const course: ComponentProps<typeof CourseView>["course"] = {
         { _id: lessonId("l_colours"), title: "Colours and fonts" },
       ],
       presentations: [],
+      crosswords: [],
       driveUrl: "https://drive.google.com/drive/folders/sample-week-2",
       links: [],
     },
@@ -172,6 +175,7 @@ const course: ComponentProps<typeof CourseView>["course"] = {
         { _id: id<"presentations">("p_box"), title: "Boxes all the way down", theme: "aurora", slideCount: 9 },
         { _id: id<"presentations">("p_margin"), title: "Margins, visually", theme: "chalk", slideCount: 6 },
       ],
+      crosswords: [],
       driveUrl: "https://drive.google.com/drive/folders/sample-week-3",
       links: [
         { id: "k2", title: "MDN: The box model", url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Box_model", host: "developer.mozilla.org" },
@@ -588,6 +592,9 @@ const views: Record<string, string> = {
   "course-empty": "Course · nothing published yet",
   lesson: "Lesson · every block type, with previous and next",
   presentation: "Presentation · every slide type (Ink)",
+  crossword: "Crossword · a fresh puzzle (type, check, reveal; works offline)",
+  "crossword-started": "Crossword · half done, one letter wrong, two revealed",
+  "crossword-solved": "Crossword · solved",
   "presentation-aurora": "Presentation · every slide type (Aurora)",
   "presentation-paper": "Presentation · every slide type (Paper)",
   "shared-presentation": "Shared link · presentation (Ink, with speaker notes)",
@@ -706,6 +713,12 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
       );
     case "course":
       return studentPage(<CourseView course={course} />);
+    case "crossword":
+      return studentPage(<SampleCrossword />);
+    case "crossword-started":
+      return studentPage(<SampleCrossword start="started" />);
+    case "crossword-solved":
+      return studentPage(<SampleCrossword start="solved" />);
     case "course-empty":
       return studentPage(<CourseView course={emptyCourse} />);
     case "lesson":

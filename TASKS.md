@@ -1188,3 +1188,92 @@ At 375 px the slide card header ("03 Image" and its description) overlaps the mo
 - **Reported:** 2026-10-14
 
 Failed once in a full `npx vitest run` (the file took 5.9 s instead of about 2.3 s), then passed 3 of 3 runs alone. Looks timing-dependent under load; worth making it independent of wall-clock time.
+
+## TASK-023 — Crosswords: AI-built practice crosswords in a week, switched on per person by the super admin
+
+- **Status:** Ready for review (built 2026-10-14)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-14
+
+### Requested behavior
+
+"Add the feature for AI to build crosswords and give me the ability to give this feature to specific people" (teachers). Build it, then one crossword for testing before production.
+
+### Decided by the user (2026-10-14)
+
+- **Students:** a practice item in a week, next to lessons and presentations: fill it in, check letters, reveal, progress saved; no grade.
+- **Access:** only the super admin switches the feature on per person (Admin → People). Without it a teacher sees no crossword buttons and their assistant gets no crossword tools.
+- **AI:** the teacher's own assistant through the Kalami connector writes words and clues; Kalami lays out the grid.
+- **Editor:** teachers can also make and edit crosswords by hand: words and clues with a live grid.
+
+### Implementation notes (2026-10-14)
+
+- **Features per person** (general, crosswords first): `users.features` (`featureValidator` in `convex/lib/validators.ts`), names in `convex/lib/featureInfo.ts` (no server imports, so the admin panel uses them), checks in `convex/lib/features.ts` (`hasFeature`, `requireFeature`, `featuresOf`; the super admin has every feature). `people.setFeature` (super admin only; staff only; audit log "people.featureOn/Off"); `people.search` returns `features`. Admin → People → a person → **Features** with a switch per feature (`components/admin/PeoplePanel.tsx`); students have no Features box.
+- **Grid** (`convex/lib/crossword/`, synced to `kalami/lib/crossword`): letters folded to lower case (Georgian capitals → ordinary letters), shown in capitals except Georgian; enumeration "(6, 4)"; a deterministic layout (seeded by the words; 24 orders tried; every word crosses another, no side-by-side letters, at most 25 × 25; the most words, then most crossings, then the smallest area wins); usual numbering; `crosswordGrid` (cells, words with their cells, the solution apart); `crosswordVersion` fingerprints grid + letters; `crosswordProblems` lists every problem with where it is, words that don't fit included. Limits: 4–30 words, 2–21 letters, 40-character answers, 200-character clues.
+- **Data:** `crosswords` (course, week, order, title, entries, layout, version, status, createdBy/Via) and `crosswordProgress` (one row per student and crossword: letters per cell, revealed cells, solvedAt). Rate limit `crossword` (120/min, burst 40) on students' saves.
+- **Backend** (`convex/model/crosswords.ts`, `convex/crosswords.ts`): create (a new one from the editor starts with 4 example words), save (title and/or every word, re-laid out), move (up/down, another week), setStatus, remove — making and changing need the feature; publishing, unpublishing and deleting only need course-editor rights, so a teacher who loses the feature can still tidy up. Agents: drafts only, never publish. Students: `read` (grid + clues, **never the answers**; progress only if it belongs to this version), `saveProgress` (letters; `check` returns wrong cells; solved the first time every letter is right), `reveal` (only empty or wrong cells change and count as revealed). Weeks: outline rows + `canMakeCrosswords`; publishing a week publishes its draft crosswords; removing a draft week deletes them with progress; students' weeks list published ones. Course purge deletes crosswords and progress in batches.
+- **Staff app:** week card "Crosswords" section (only with the feature, or when the week has some; mini-grid icon, Draft/Agent pills, move up/down/to week); "New crossword" dialog; editor `components/crossword-editor/CrosswordEditor.tsx` at `/courses/[courseId]/crosswords/[crosswordId]` (words + clues with each word's grid number, problems on the row, Paste a list (`wordList.ts`), live grid with "Answers" / "As students see it", students started/solved, Save/Ctrl+S, Publish, Delete, unsaved-changes guard, agent edits taken in). Shared grid `components/crossword/CrosswordGrid.tsx` (+ module CSS; synced to the student app).
+- **Student app:** "Crosswords" in a week's card with Solve; `/courses/[courseId]/crosswords/[crosswordId]` → `components/crossword-player/CrosswordPuzzle.tsx`: one hidden input takes laptop, phone and Georgian keyboards (an invisible sentinel character catches phone backspace), arrows, Tab/Enter for the next word, Space or a second tap turns direction, clue bar with previous/next, both clue lists, Check / Reveal letter / Reveal word / Reveal all… / Clear…, autosave (0.7 s, immediately when the grid is full, on leaving), solved state and banner.
+- **MCP (staff connector 0.13.0):** `check_crossword` (lays out without saving: grid as text, numbered clues, problems), `create_crossword`, `get_crossword`, `update_crossword`, `move_crossword`, `delete_crossword` (`lib/mcp/crosswordTools.ts`) plus crossword instructions — **only for people with the feature**: `verifyToken` puts the person's features on the request and `server.ts` picks one of two handlers; `whoami` returns `features`. A teacher who just got the feature reconnects Kalami in their assistant to see the tools.
+
+### Checks (2026-10-14)
+
+- `kalami-stuff`: `npx tsc --noEmit` clean; `eslint .` clean; `npx vitest run`: **372 passed (38 files)**. New: `convex/lib/crossword/crossword.test.ts` (letters incl. Georgian and Mtavruli, enumeration, a valid numbered grid checked cell by cell with no accidental words, same words → same grid, Georgian layout, a word that can't fit, 30 words under 500 ms, cells/solution/clue order, version changes with letters not clues, every problem listed), `convex/crosswords.test.ts` (feature off until the super admin turns it on; only the super admin may; students can't get it; starter words; save and problems; without the feature: no editing but publish/delete still work; agent drafts with request id, never publishes, needs the feature; students see it only once the week is published, never the answers, other courses NOT_FOUND; save/check/reveal/solved and the teacher's counts; a new clue keeps progress, a new word resets it; course purge), `components/crossword-editor/wordList.test.ts`, `lib/mcp/server.test.ts` (crossword tools listed only with the feature; instructions; `check_crossword` grid and problems).
+- `kalami`: `npx tsc --noEmit` and `eslint .` clean after `npm run sync:student`.
+- Dev deployment: pushed with `npx convex dev --once` (new tables and the optional `users.features`).
+- Browser (student gallery `crossword`, `crossword-started`, `crossword-solved`; staff gallery `crossword-editor`, `course`, `admin-people`): typing HYPERLINK into 6 across and DNS into 2 across, overwriting, a pasted run stopping at the word's end, Check marking exactly the 3 wrong letters, Reveal all → solved (45 cells green, banner), autosave "saved"; at 375 px no sideways scroll, 31 px squares, revealed corners; the editor flags `Word: "Qqqq" doesn't fit` and "10 of 11 placed"; the outline's Crosswords section; People → Features switch for the lecturer, none for the student.
+- **Test crossword on dev:** made through the agent function as an assistant would (signed dev credential, `mcp:createCrosswordAsAgent`): "Your first HTML document: the words", 13 words, draft in "Week 1 · Your first HTML document" of "Basics of Web Technologies"; all 13 placed in a 17 × 10 grid.
+
+### Limitations and follow-ups
+
+- Production: deploy Convex prod (new tables, optional field), redeploy both apps, then switch the feature on per teacher in Admin → People; teachers reconnect Kalami in their assistant for the tools.
+- Not in `.kalami` course or presentation files yet: exporting a course leaves its crosswords out. The student study assistant (student MCP) doesn't open crosswords. No graded version (designed for one: answers stay on the server).
+- Not checked on a real phone keyboard (Android/iOS, Georgian layout) — the pane only sends desktop key events; the sentinel approach is there for phones.
+- The real staff editor and student page were checked through the galleries (no staff or student sign-in in the pane) and the backend by tests and the dev run.
+
+### User review
+
+Pending.
+
+## TASK-024 — Crosswords: move words by hand (teachers and agents), full screen, PDF, and a fill-in popup for students
+
+- **Status:** Ready for review (built 2026-10-15)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-10-14
+
+### Requested behavior
+
+"I want it to be movable individually and the AI agent to be able to make it with the MCP. And I want the full screen preview, alongside with PDF download, simple as that. And work on the fill-out feature: I want the popup to appear every time I click to fill in the word, or the simpler one: just fill in the text automatically in the box."
+
+### Decided by the user (2026-10-14)
+
+- **Movable** = teachers drag words around the grid (move, turn), and the AI can place words itself.
+- **Production:** the user deploys; nothing is pushed to production from here. (The connector in this session is on production, which has TASK-020 but not TASK-023/024, so crossword tools appear there only after the deploy.)
+
+### Implementation notes
+
+- **Words put by hand** (`convex/lib/crossword`): `arrangeCrossword(entries with optional at {row, col, dir})` keeps hand-placed words where they were put when they fit (letters agree at crossings, nothing side by side, ≤ 25 × 25), lists the ones that don't in `clashes`, fits words without a place around them (crossing, else a free spot), normalises to row/column 0 and numbers; without any place it is the automatic layout. Hand-placed words may stand alone. `crosswordProblems` names a clash ("can't go where it was put… Move it, or let Kalami lay out the grid again"). Fixed on the way: the board's bounds started at 0,0 (a first word placed elsewhere left empty rows).
+- **Backend:** entry input gains `at`; `crosswords.arranged`; `buildCrossword` uses `arrangeCrossword`; staff `get` returns `arranged`. Saving without places lays the grid out again.
+- **Agents (staff connector 0.13.0, still unreleased):** every crossword tool's words take optional `row`, `col`, `dir` (all three or none); `check_crossword`, `create_crossword`, `update_crossword` and `get_crossword` return every word's row, col, dir and number; instructions say how to move one word (send all words with their places, change that one) and to leave places out to let Kalami lay it out.
+- **Editor** (`components/crossword-editor`): the grid panel has Answers / Empty / **Move words**. Move words (`ArrangeBoard.tsx`): the grid with two free squares around it; press a word (press a crossing square again for the other word), drag it with a ghost that turns red where it can't go, or use ↑ ↓ ← → (buttons or keys) and **Turn** (T) around the pressed square; a refused move says why; **Lay out again** hands it back to Kalami; words list badges follow the new numbers. **Preview** opens the student board full screen with the draft (checks against the answers locally, saves nothing). **PDF** downloads the puzzle and an answer key (answers as written). Row keys are now the saved word ids (fixes a hydration mismatch from `Date.now()` keys); problem lines keyed by position.
+- **Shared board** (`components/crossword/CrosswordBoard.tsx`, synced): squares are buttons; tapping a square or a clue opens a **fill-in popup**: the clue, one box per letter (crossing and revealed letters already in), typing fills the box and moves on and the grid fills behind it as you type, Backspace steps back, a pasted word spreads over the boxes, Enter or Done closes; Check, Reveal word, Clear word, Switch to the crossing word, previous/next word. On phones it is a bottom sheet. Opening happens inside the tap (flushSync + showModal + focus) so phones show the keyboard. Tapping the same square again turns to the other direction. Toolbar: Check, Reveal all…, Clear…, **Full screen** (the browser's full screen when allowed, otherwise a full-window overlay; grid sized to the screen height; Exit full screen), **PDF**. The hidden-input typing from TASK-023 is gone.
+- **PDF** (`components/crossword/pdf.ts`, synced): made in the browser with pdf-lib + @pdf-lib/fontkit (loaded only on click); A4 puzzle page (title, course · week, Name and Date lines, numbered grid, Across/Down in two columns that continue on further pages) and, for teachers, an answer-key page; Noto Sans Georgian (Georgian, Latin, Latin Extended; regular and bold WOFF, SIL OFL) in `public/fonts/crossword` (synced to the student app), each character in the subset that has it. Students' PDF is the blank puzzle.
+- **Student page** (`kalami/components/crossword-player/CrosswordPuzzle.tsx`): header + board + footer; PDF of the blank puzzle. `kalami` now depends on pdf-lib and @pdf-lib/fontkit.
+
+### Checks (2026-10-15)
+
+- `kalami-stuff`: `npx tsc --noEmit` and `eslint .` clean; `npx vitest run` **381 passed (39 files)**. New: hand placement in `convex/lib/crossword/crossword.test.ts` (same grid when nothing moves, a word alone in a free spot, a clash reported, unplaced words fitted around placed ones and normalised to 0,0, no places = automatic), `convex/crosswords.test.ts` (placed words stay after saving, `arranged`, a clash refused with the reason, saving without places lays out again), `lib/mcp/server.test.ts` (check_crossword keeps an agent's places and names a word placed beside another), `components/crossword/pdf.test.ts` (2 pages with the key, 1 without, title set, Georgian clues carried over to a second page).
+- `kalami`: `npx tsc --noEmit` and `eslint` clean after `npm run sync:student`. Dev deployment pushed (`npx convex dev --once`).
+- PDF looked at in Chrome's viewer: page 1 title, Name/Date, numbered grid, both clue columns; page 2 the filled answer grid and the answers by number.
+- Browser, student gallery `crossword` (1440 px and 375 px): tapping 6 across opens the popup with 9 boxes and the cursor in the first; typing HYPERLINK fills boxes and grid together; Backspace ×3 clears K, N, I and steps back; Enter closes, "9/45 · saved"; tapping the same square opens 6 down, again 6 across; Full screen covers the window (grid 660 px tall at 1440 × 900) with Exit; PDF builds "Words of the web.pdf" with all six fonts loaded (200); at 375 px the popup is a bottom sheet with 44 px boxes in two rows, no sideways scroll. No console errors.
+- Browser, staff gallery `crossword-editor` (1280 px): Move words board; a real click picks "7 across: CSS"; a real mouse drag moves it to stand alone (now 8 across, grid 10 × 11, "Words placed by hand", Lay out again, Save on); Move right refused with the reason; Save keeps the hand-placed layout; Preview opens full screen with the moved word and the "nothing is saved" note, Exit closes it; PDF builds "Words of the web (with answers).pdf". The hydration warning is gone.
+
+### Limitations
+
+- The browser's real full-screen mode was refused inside the pane (the overlay was checked); a normal browser uses it from the button. iPhones have no element full screen: they get the overlay.
+- Not checked on a real phone: the keyboard opening with the popup (built for it) and a Georgian keyboard.
+- Production still needs the deploy of TASK-023 and TASK-024 (Convex prod + both apps); then turn the feature on per teacher and reconnect the assistant.
+
+### User review
+
+Pending.
