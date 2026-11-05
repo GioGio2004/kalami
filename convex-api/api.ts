@@ -792,7 +792,6 @@ export type PublicApiType = {
           autoScore?: number;
           checkResults?: Array<{ id: string; passed: boolean }>;
           files: Array<{ content: string; name: string }>;
-          progress?: { passed: Array<string>; step: number };
           questionId: Id<"questions">;
           savedAt: number;
         }>;
@@ -831,7 +830,7 @@ export type PublicApiType = {
         };
         questionId: Id<"questions">;
       },
-      { progress: { passed: Array<string>; step: number }; savedAt: number }
+      { savedAt: number }
     >;
     quiz: FunctionReference<
       "query",
@@ -4911,8 +4910,6 @@ export type PublicApiType = {
           score?: number;
           startedAt: number;
           status: "in_progress" | "submitted";
-          stepsDone: number;
-          stepsTotal: number;
           student: string;
           submittedAt?: number;
         }>;
@@ -9701,7 +9698,6 @@ export type PublicApiType = {
               autoScore?: number;
               checkResults?: Array<{ id: string; passed: boolean }>;
               files: Array<{ content: string; name: string }>;
-              progress?: { passed: Array<string>; step: number };
               questionId: Id<"questions">;
               savedAt: number;
             }>;

@@ -1593,3 +1593,29 @@ A grading desk per assessment (chosen over a course gradebook or both).
 ### Limitations
 
 - Production needs the ImageKit key on the production Convex deployment (pending since TASK-020) before uploads work there.
+
+## TASK-035 — Remove the "Mistakes in your code" list and stop tracking code steps in the database
+
+- **Status:** Ready for review (asked for and built 2026-11-05)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05 (screenshot of the steps panel listing "Nothing on the page matches …"; the user asked to remove it and stop tracking each step in the database)
+
+### Implementation notes (2026-11-05)
+
+- The mistake finder is gone: the list under the steps, the wavy underlines in the editor and `components/sandbox/assist/lint.ts` (+ its tests). Hints, hover explanations, tag suggestions and auto-closing tags stay. The help setting now reads "Hints and hover explanations in code questions".
+- Saves no longer record progress. `learn.saveCodeWork` stores the files (and integrity counts) and returns only `savedAt`. Before, every autosave re-ran all visible checks on the server to work out the step reached, so autosaves are now much lighter.
+- Grading no longer writes step progress. Submit, auto-submit and regrade still run every check (visible and hidden) and store `checkResults` and the score; they no longer write `responses.progress` or `attempts.stepsDone`. That also drops a second, visible-only check run per code question at grading time.
+- The lecturer's list (`submissions.forAssessment`) has no `stepsDone` / `stepsTotal`; a row now reads e.g. "Working · 3 tab switches" or "Submitted · 8 of 10 answered".
+- The student's own step navigation (Step 1 of 7, Back / Next step, ticks in live mode) is worked out in the browser from the code and stays as it was.
+- Old data: `migrations.clearStepProgress` (internal) clears `progress` on responses, then `stepsDone` on attempts, a page at a time. The two fields stay in the schema, marked as no longer written, until it has run on every deployment.
+
+### Checks (2026-11-05)
+
+- Staff and Convex typecheck clean; lint clean on the changed files. Full staff suite: 39 files, 429 tests passed. Tests cover the save result, that nothing is stored after a save and a submit, and the clean-up: it clears old values, keeps the saved files and is harmless to run again.
+- `npm run sync:student` done (the student copy of `assist/lint.ts` is gone); the student app typechecks clean, apart from stale `.next` types for an unrelated `app/grammar` folder.
+- Dev Convex: `migrations:clearStepProgress` cleared 10 responses; a second run cleared 0 on both tables.
+- Browser: student `/dev/sandbox` (help on) shows the hover tip but no mistakes list and no underlines. Staff `/dev/ui?view=grading` opened a code part full screen with its red-pen note and no mistakes list.
+
+### To do on production
+
+- After deploying, run `npx convex run migrations:clearStepProgress --prod` once (from kalami-stuff). A later change can then drop `responses.progress` and `attempts.stepsDone` from the schema.
