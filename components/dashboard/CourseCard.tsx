@@ -12,7 +12,8 @@ import { formatShort } from "@/lib/time";
 export type MyCourse = FunctionReturnType<typeof api.learn.myCourses>[number];
 export type CourseDetail = FunctionReturnType<typeof api.learn.course>;
 /** Loads a course's work when its card opens. A hook: the page wires it to Convex, the gallery to samples. */
-export type UseCourse = (courseId: Id<"courses">) => CourseDetail | undefined;
+/** undefined while loading, null when the course can't be opened (left, unpublished). */
+export type UseCourse = (courseId: Id<"courses">) => CourseDetail | null | undefined;
 
 type Group = "open" | "upcoming" | "done";
 
@@ -77,6 +78,8 @@ function CourseBody({ course, useCourse }: { course: MyCourse; useCourse: UseCou
           <div className="h-16 animate-pulse rounded-2xl bg-panel/60" />
           <div className="h-16 animate-pulse rounded-2xl bg-panel/60" />
         </div>
+      ) : detail === null ? (
+        <p className="text-sm leading-relaxed text-graphite">This course isn&apos;t available any more. Ask your lecturer if that&apos;s a surprise.</p>
       ) : detail.assessments.length === 0 ? (
         <p className="text-sm leading-relaxed text-graphite">
           {detail.weeks.length > 0
@@ -107,7 +110,7 @@ function CourseBody({ course, useCourse }: { course: MyCourse; useCourse: UseCou
       >
         Course page
         {/* Lessons and materials live on the course page, week by week; say so, or nobody finds them from here. */}
-        {detail !== undefined && detail.weeks.length > 0 &&
+        {detail != null && detail.weeks.length > 0 &&
           ` · ${detail.weeks.length} week${detail.weeks.length === 1 ? "" : "s"}`}
         <ArrowRight className="size-4" />
       </Link>

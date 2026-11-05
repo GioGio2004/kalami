@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQuery_experimental as useQueryState } from "convex/react";
 import { useState } from "react";
 import { useCurrentUser } from "@/components/CurrentUserProvider";
 import type { UseCourse } from "@/components/dashboard/CourseCard";
@@ -8,8 +8,11 @@ import { DashboardView } from "@/components/dashboard/DashboardView";
 import { InstallCard } from "@/components/pwa/InstallCard";
 import { api } from "@/convex-api/api";
 
-/** A course's work loads only when its card is opened. */
-const useCourse: UseCourse = (courseId) => useQuery(api.learn.course, { courseId });
+/** A course's work loads only when its card is opened; null when the student can't open it (any more). */
+const useCourse: UseCourse = (courseId) => {
+  const result = useQueryState({ query: api.learn.course, args: { courseId } });
+  return result.status === "success" ? result.data : result.status === "error" ? null : undefined;
+};
 
 export default function DashboardPage() {
   const current = useCurrentUser();

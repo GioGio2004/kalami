@@ -53,6 +53,11 @@ function loadFlags(key: string): Set<string> {
   }
 }
 
+/** The files a code question opens with: the saved answer, or the starter files. */
+function codeStartFor(value: SavedValue | undefined, starter: CodeFile[]): CodeFile[] {
+  return value?.type === "code" ? value.files : starter;
+}
+
 function toValue(item: Pending): SavedValue {
   return item.kind === "answer" ? item.answer : { type: "code", files: item.files };
 }
@@ -135,6 +140,9 @@ export function QuizPlayer({
   }, [answers, isUnsaved]);
 
   const [index, setIndex] = useState(0);
+  // Code answers as they were when their question was last opened: the sandbox reads its files once,
+  // so it doesn't need (or re-render for) every keystroke's copy.
+  const [codeStart, setCodeStart] = useState(initial.values);
   const [flags, setFlags] = useState(() => loadFlags(flagKey));
   const [confirming, setConfirming] = useState(false);
   const [unsavedPrompt, setUnsavedPrompt] = useState<number[] | null>(null);
@@ -158,6 +166,22 @@ export function QuizPlayer({
     },
     [autosave, serverNow],
   );
+
+  // The code sandbox gets handlers that never change, so typing doesn't re-render it from here.
+  const currentQuestion = useRef<QuestionId | null>(null);
+  const queueRef = useRef<typeof queue | null>(null);
+  const integrityRef = useRef<((event: IntegrityEvent) => void) | null>(null);
+  useEffect(() => {
+    queueRef.current = queue;
+    integrityRef.current = (event) => integrity.count(event);
+  });
+  const onCodeChange = useCallback((files: CodeFile[]) => {
+    const questionId = currentQuestion.current;
+    if (questionId !== null) queueRef.current?.(questionId, { kind: "code", files }, CODE_SAVE_MS);
+  }, []);
+  const onCodeIntegrity = useCallback((event: IntegrityEvent) => integrityRef.current?.(event), []);
+  const { flush } = autosave;
+  const onSaveNow = useCallback(() => void flush(), [flush]);
 
   /**
    * Saves whatever is left, then submits. Unless `force`, refuses while
@@ -220,6 +244,9 @@ export function QuizPlayer({
   );
 
   const question = quiz.questions[Math.min(index, quiz.questions.length - 1)];
+  useEffect(() => {
+    currentQuestion.current = question?._id ?? null;
+  }, [question?._id]);
   if (question === undefined) {
     return <p className="rounded-[2rem] bg-panel p-8 text-graphite">This has no questions. Ask your lecturer.</p>;
   }
@@ -243,6 +270,7 @@ export function QuizPlayer({
 
   function go(to: number) {
     void autosave.flush();
+    setCodeStart(values);
     setIndex(Math.max(0, Math.min(quiz.questions.length - 1, to)));
   }
 
@@ -317,10 +345,10 @@ export function QuizPlayer({
       </nav>
 
       <section
-        className={`rounded-[2rem] bg-card p-5 sm:p-8 ${question.type === "code" ? "" : "min-h-[22rem]"}`}
-        style={watermark}
+        className={`rounded-[2rem] bg-card ${question.type === "code" && !mobile ? "p-3 sm:p-4" : "min-h-[22rem] p-5 sm:p-8"}`}
+        style={question.type === "code" && !mobile ? undefined : watermark}
       >
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className={`flex flex-wrap items-baseline justify-between gap-2 ${question.type === "code" && !mobile ? "px-2 pt-1" : ""}`}>
           <p className="text-sm font-semibold text-graphite">
             Question {index + 1} of {quiz.questions.length}
           </p>
@@ -337,26 +365,32 @@ export function QuizPlayer({
           {/* Code questions show their prompt inside the sandbox; phones get it here instead. */}
           {(question.type !== "code" || mobile) && <Markdown source={question.prompt} className="text-lg leading-relaxed" />}
         </div>
-        <div className="mt-6">
+        <div className={question.type === "code" && !mobile ? "mt-3" : "mt-6"}>
           {question.type === "code" && question.code && mobile ? (
             <ComputerOnly title="This question needs a computer">
               Answer the others here, then open this {KIND_LABEL[assessment.kind].toLowerCase()} on a computer for this
               one before time runs out. Everything you answer is saved.
             </ComputerOnly>
           ) : question.type === "code" && question.code ? (
-            <div className="h-[72dvh] min-h-[30rem]">
+            // The whole screen below the exam bar: steps, code and the page side by side.
+            <div className="h-[calc(100dvh-15rem)] min-h-[32rem]">
               <TaskPlayer
                 key={question._id}
                 mode="student"
                 task={question.code}
                 intro={question.prompt}
-                initialFiles={value?.type === "code" ? value.files : question.code.files}
+                initialFiles={codeStartFor(codeStart.get(question._id), question.code.files)}
                 readOnly={locked}
                 locale={locale}
                 watermark={assessment.integrityLevel === "off" ? undefined : studentName}
-                onFilesChange={(files) => queue(question._id, { kind: "code", files }, CODE_SAVE_MS)}
-                onIntegrity={(event: IntegrityEvent) => integrity.count(event)}
-                onSaveNow={() => void autosave.flush()}
+                checks={assessment.codeChecks}
+                help={assessment.codeHelp}
+                autoClose={assessment.codeAutoClose}
+                suggest={assessment.codeSuggest}
+                openSteps
+                onFilesChange={onCodeChange}
+                onIntegrity={onCodeIntegrity}
+                onSaveNow={onSaveNow}
               />
             </div>
           ) : (

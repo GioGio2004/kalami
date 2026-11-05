@@ -2,6 +2,7 @@
 
 import { SignOutButton } from "@clerk/nextjs";
 import type { ReactNode } from "react";
+import { AccountTrouble } from "@/components/AccountTrouble";
 import { useCurrentUser, type Me } from "@/components/CurrentUserProvider";
 import { ButtonLink, buttonClass } from "@/components/ui/buttons";
 import { LoadingScreen, StatusScreen } from "@/components/ui/StatusScreen";
@@ -18,11 +19,7 @@ export function StudentAccount({ children }: { children: (me: Me) => ReactNode }
     case "loading":
       return <LoadingScreen />;
     case "error":
-      return (
-        <StatusScreen note="Hmm, that didn't work" title="Something went wrong">
-          <p>{current.message}</p>
-        </StatusScreen>
-      );
+      return <AccountTrouble kind={current.kind} message={current.message} />;
     case "signed-out":
       return (
         <StatusScreen note="Nice to see you" title="Sign in to open your notebook">

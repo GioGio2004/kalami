@@ -14,14 +14,27 @@ import { errorMessage } from "@/lib/errors";
 import { loadDrafts, saveLabel, useAutosave, type Draft } from "@/lib/useAutosave";
 
 type Task = FunctionReturnType<typeof api.learn.task>;
+type Work = FunctionReturnType<typeof api.learn.taskWork>;
 type QuestionId = Task["questions"][number]["_id"];
 
 /** Autosave waits this long after the last keystroke. */
 const AUTOSAVE_MS = 1500;
 
-export function TaskView({ task, studentName, locale }: { task: Task; studentName: string; locale: "ka" | "en" }) {
+export function TaskView({
+  task,
+  work,
+  studentName,
+  locale,
+}: {
+  task: Task;
+  /** The work saved when the page opened (task.responses carries it once the work is final). */
+  work: Work;
+  studentName: string;
+  locale: "ka" | "en";
+}) {
   const submitted = task.attempt?.status === "submitted";
   const readOnly = submitted || task.assessment.state === "closed";
+  const saved = readOnly && task.responses.length > 0 ? task.responses : work.responses;
   const [index, setIndex] = useState(0);
   const question = task.questions[Math.min(index, task.questions.length - 1)];
   const draftKey = `kalami:draft:task:${task.assessment._id}`;
@@ -52,7 +65,7 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
     const drafts = loadDrafts<QuestionId, CodeFile[]>(draftKey);
     const kept = new Map<QuestionId, Draft<CodeFile[]>>();
     for (const [questionId, draft] of drafts) {
-      const server = task.responses.find((r) => r.questionId === questionId)?.savedAt ?? -1;
+      const server = saved.find((r) => r.questionId === questionId)?.savedAt ?? -1;
       if (draft.at > server && !readOnly) kept.set(questionId, draft);
     }
     return kept;
@@ -84,6 +97,8 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
   );
 
   const onIntegrity = useCallback((event: IntegrityEvent) => integrity.count(event), [integrity]);
+  const { flush } = autosave;
+  const onSaveNow = useCallback(() => void flush(), [flush]);
 
   const comments: LineComment[] = useMemo(
     () =>
@@ -230,6 +245,7 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
     ) : null;
 
   const response = task.responses.find((r) => r.questionId === question._id);
+  const savedFiles = saved.find((r) => r.questionId === question._id)?.files;
   const hiddenResults = task.hiddenChecks
     .filter((hidden) => hidden.questionId === question._id)
     .flatMap((hidden) => {
@@ -245,7 +261,7 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
         mode="student"
         task={question.code}
         intro={intro}
-        initialFiles={snapshots.get(question._id) ?? response?.files ?? question.code.files}
+        initialFiles={snapshots.get(question._id) ?? savedFiles ?? question.code.files}
         readOnly={readOnly}
         locale={locale}
         watermark={task.assessment.integrityLevel === "off" ? undefined : studentName}
@@ -254,9 +270,13 @@ export function TaskView({ task, studentName, locale }: { task: Task; studentNam
         banner={banner}
         hiddenResults={hiddenResults}
         comments={comments}
+        checks={task.assessment.codeChecks}
+        help={task.assessment.codeHelp}
+        autoClose={task.assessment.codeAutoClose}
+        suggest={task.assessment.codeSuggest}
         onFilesChange={onFilesChange}
         onIntegrity={onIntegrity}
-        onSaveNow={() => void autosave.flush()}
+        onSaveNow={onSaveNow}
       />
       {integrity.blocked && (
         <div className="absolute inset-0 z-20 grid place-items-center rounded-[2rem] bg-paper/95 p-6 backdrop-blur-sm">

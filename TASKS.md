@@ -38,6 +38,16 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-017 | Presentations: reorder and move between weeks; the student study assistant can open and search them | Ready for review | Claude (Claude Code) |
 | TASK-018 | Presentation files: export one presentation as a .kalami file and import it into any week, on any Kalami | Ready for review | Claude (Claude Code) |
 | TASK-019 | Presentation share links: a public link anyone can watch a presentation with, no account needed | Ready for review | Claude (Claude Code) |
+| TASK-025 | Code questions in midterms and quizzes: close the leak, unlock steps, a proper exam workspace and results | Ready for review | Claude (Claude Code) |
+| TASK-026 | Fix and regrade code questions after students have started | Ready for review | Claude (Claude Code) |
+| TASK-027 | Checks engine: correct code marked wrong, and a selector that can time out saving and grading | Ready for review | Claude (Claude Code) |
+| TASK-028 | Animated midterm: check CSS animation, transitions and hover; a livelier student workspace | Ready for review | Claude (Claude Code) |
+| TASK-029 | "Backend didn't accept the session" screen: find the cause, and stop showing a developer message to users | Ready for review | Claude (Claude Code) |
+| TASK-030 | Student quiz, exam, task and course pages crash on work that isn't available or isn't open yet | Ready for review | Claude (Claude Code) |
+| TASK-031 | Typing aids in code questions: auto-closing HTML tags and tag suggestions, each switched on per assessment | Ready for review | Claude (Claude Code) |
+| TASK-032 | Grading desk: a dedicated page to grade one assessment student by student | Ready for review | Claude (Claude Code) |
+| TASK-033 | Clicking an in-page link (#gallery) in the code preview loaded Kalami inside the preview | Ready for review | Claude (Claude Code) |
+| TASK-034 | Upload pictures for code task images to Kalami's ImageKit from the task editor | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -1277,3 +1287,309 @@ Pending.
 ### User review
 
 Pending.
+
+## TASK-025 — Code questions in midterms and quizzes: close the leak, unlock steps, a proper exam workspace and results
+
+- **Status:** Ready for review (the user said "fix everything" on 2026-11-05: performance first; their first exam is a trial run; built the same day)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05 (analysis before the lecturer's coding midterm)
+
+### Findings (read end to end, 2026-11-05)
+
+- **Leak, high.** `learn.task` (`getStudentTask`, `convex/model/learn.ts:508`) never checks the assessment kind or an attempt, so a student can load a published midterm's code questions (prompt, starter files, steps, visible checks, their own variant) before pressing Start, with no clock running. Only tasks should go through it.
+- **Steps are locked in exams.** `TaskPlayer` only opens step N+1 once step N passes (`next()`, `furthest`). In a timed midterm a student stuck on step 2 can never see or earn steps 3–10, although grading counts every check.
+- **Live checks show the score.** Every visible check ticks as the student types, so in a midterm the student sees nearly their exact score. The mistake finder and hints are always on too. Fine for homework; an exam may want them off.
+- **Cramped workspace.** In the quiz player a code question sits in a card under the header and navigator (`h-[72dvh]`), not full height like a task.
+- **Results lose the code.** After a quiz or midterm the review shows "Your code" and points only: no code, no check results, no red-pen notes. `getStudentQuiz` sends `comments` but the student UI ignores them.
+- **Feedback early.** Feedback and red-pen notes reach the student right after submitting, even when results are "hidden" or "full after close" (`quiz.ts`, `learn.ts`).
+- **Blank answer scores.** An untouched code question is graded on the starter files, so checks already true there (`not_exists`, `count` max, inherited CSS) give points.
+- **Settings.** A time limit, opening time or closing time can't be cleared once set (`stripUndefined` merge in `model/assessments.ts:320`). The builder shows time limit and attempts for kind `task`, which ignores both. The MCP instructions send "code" to kind `task`, so an agent asked for a coding midterm builds an untimed task.
+- No test covers a code question inside a quiz or midterm.
+
+### Decisions needed
+
+- Exam mode for code questions: all steps open; live checks on or off (or progress only); mistake finder and hints on or off. Per assessment, or fixed for midterms and finals?
+
+### Implementation notes (2026-11-05)
+
+- **Leak closed:** `learn.task` and the new `learn.taskWork` refuse anything but kind `task` (`convex/model/learn.ts`). Quizzes and exams hand out code only after Start.
+- **Exam mode:** new optional settings `codeChecks` (`live` | `on_submit`) and `codeHelp`; unset means live + help for tasks and quizzes, on submit + no help for midterms and finals (`codeMode` in `convex/lib/validators.ts`). New midterms and finals store them explicitly. `TaskPlayer` takes `checks`, `help` and `openSteps`: in quizzes and exams every step is open; on submit lists the check labels without ticks; no help hides hints, the mistake finder and hover explanations (and skips computing them).
+- **Workspace:** a code question in the quiz player now fills the screen under the exam bar (`components/quiz/QuizPlayer.tsx`).
+- **Results:** quiz review returns every code check as graded, hidden ones marked (`model/quiz.ts` `codeReview`); the student results list them and "Open your code" shows it read-only with the red-pen notes (`components/quiz/QuizCover.tsx`).
+- **Notes wait for results:** feedback and red-pen comments reach students only when results are visible (tasks and quizzes alike).
+- **Blank answers:** starter files left as they were score 0 (`sameFiles` in grading).
+- **Settings:** emptied time limit / opening / closing time are sent as `clear` (web and MCP `update_assessment`); the builder hides time limit and attempts for homework and says to use a quiz or midterm for a timed coding test; the MCP instructions tell agents that a coding midterm stays a midterm (connector 0.14.0).
+
+### Checks (2026-11-05)
+
+- `npx vitest run --maxWorkers=3` in kalami-stuff: 40 files, 431 tests passed. (A run with default workers had 6 timeouts at 5 s in broadcast, course-delete and connector tests while both dev servers and `convex dev` were running; those files pass alone, 54 of 54.)
+- New: `convex/codeExam.test.ts` (midterm with a code question end to end, notes held, full-results check list, editing after start + regrade + part points, clearing the time limit); 34 new cases in `convex/lib/checks/checks.test.ts` (browser agreement, hover, focus, ::before, keyframes, animation, speed); preview test for media, /style.css and @import.
+- `npx tsc --noEmit` clean in both apps (the student app's stale `.next/types` grammar routes aside); eslint clean on every changed file.
+- In the student app at `/dev/quiz` (1440×900): quiz mode ticks live, the hover and animation checks pass, "Every step done!" shows, the preview kept the same document while CSS was typed (no reload) and runs `pulse`; after submit the review lists the six checks and opens the code read-only. Midterm mode: all steps open, Next enabled, no ticks, no hints or mistake finder, "These are checked when you submit." `/dev/sandbox`: homework still unlocks one step at a time. `/dev/ui?view=gate-error`: the new sign-in screen with Try again and Sign out.
+- Not checked in a browser: the staff screens (settings card, part points, regrade button, the new check kinds in the task editor) need a staff sign-in; they are covered by typecheck, lint and the backend tests only.
+
+### Limitations
+
+- Visible checks (selector, expected value) still travel to the student's browser in on-submit mode, as they always did for homework; anything secret belongs in hidden checks.
+- Production needs the deploy (Convex prod + both apps); assistants need a reconnect to see connector 0.14.0.
+
+
+## TASK-026 — Fix and regrade code questions after students have started
+
+- **Status:** Ready for review (the user said "fix everything" on 2026-11-05: performance first; their first exam is a trial run; built the same day)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05
+
+- `updateQuestion` refuses any change to a code question once there is an attempt (`model/questions.ts:307`), even points or a typo, and there is no regrade anywhere. A broken check found during a midterm can only be fixed by typing an overall score per student.
+- Code reviews (`SubmissionReview`) have no per-part points, no "automatic grading failed" banner, and say "when the task closed" when a timer ran out; a manual overall score silently overrides per-question points.
+- `submissions.detail` throws "Student not found" for a deleted account; after a failed grading an untouched code part can't get points (`submissions.ts:275`); a failed grading keeps partial response patches while the score is 0.
+- Proposed: allow editing checks, hidden checks, step text and points after start (keeping students' files), then "Regrade all submitted" with a before/after list; per-part points in the code review.
+
+### Implementation notes (2026-11-05)
+
+- `updateQuestion` lets a code question's steps, checks, hidden checks, solution and points change after students started; file names and per-student variables stay fixed (`convex/model/questions.ts`).
+- Grading split into `scoreAttempt` (reads, works everything out) and the writes, so a failure halfway writes nothing; `regradeAttempt` re-scores submitted work keeping status, times and the lecturer's points. `submissions.regrade` runs 20 attempts per call; the studio's "Regrade submitted work" loops and lists before → after (`components/studio/Submissions.tsx`).
+- Code review (`TaskTryout.tsx` `SubmissionReview`): per-part points (`PartPoints`, also for parts never saved), a banner when automatic grading failed, "submitted automatically (time ran out or it closed)", and a note that an overall score replaces the total. `submissions.detail` opens for deleted accounts.
+
+### Checks (2026-11-05)
+
+- `npx vitest run --maxWorkers=3` in kalami-stuff: 40 files, 431 tests passed. (A run with default workers had 6 timeouts at 5 s in broadcast, course-delete and connector tests while both dev servers and `convex dev` were running; those files pass alone, 54 of 54.)
+- New: `convex/codeExam.test.ts` (midterm with a code question end to end, notes held, full-results check list, editing after start + regrade + part points, clearing the time limit); 34 new cases in `convex/lib/checks/checks.test.ts` (browser agreement, hover, focus, ::before, keyframes, animation, speed); preview test for media, /style.css and @import.
+- `npx tsc --noEmit` clean in both apps (the student app's stale `.next/types` grammar routes aside); eslint clean on every changed file.
+- In the student app at `/dev/quiz` (1440×900): quiz mode ticks live, the hover and animation checks pass, "Every step done!" shows, the preview kept the same document while CSS was typed (no reload) and runs `pulse`; after submit the review lists the six checks and opens the code read-only. Midterm mode: all steps open, Next enabled, no ticks, no hints or mistake finder, "These are checked when you submit." `/dev/sandbox`: homework still unlocks one step at a time. `/dev/ui?view=gate-error`: the new sign-in screen with Try again and Sign out.
+- Not checked in a browser: the staff screens (settings card, part points, regrade button, the new check kinds in the task editor) need a staff sign-in; they are covered by typecheck, lint and the backend tests only.
+
+### Limitations
+
+- Regrading runs from the lecturer's browser page by page; closing the page midway leaves the rest as they were (run it again).
+
+
+## TASK-027 — Checks engine: correct code marked wrong, and a selector that can time out saving and grading
+
+- **Status:** Ready for review (the user said "fix everything" on 2026-11-05: performance first; their first exam is a trial run; built the same day)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05
+
+A probe of about 70 cases against browser behaviour (scratch test, not in the repo) found 44 that disagree. Grouped:
+
+- **Performance (high).** Chains of `~` in a selector grow polynomially in css-select: `.zz ~ p ~ p ~ p` on 200 `<p>` takes 873 ms; a legit 3,500-element page with 1,400 rules takes 2 s. Checks run in every save mutation and at grading (about 1 s budget), and synchronously in the student's tab.
+- **Shorthands not expanded:** `font`, `flex-flow`, `place-items`, `grid-gap`, `background` (repeat/size/position), `border-radius`, `overflow`, `inset`, `transition`, `animation`.
+- **`var()` never resolved;** custom properties can't be checked.
+- **Equal values not treated as equal:** `700`/`bold`, quoted font names, `300ms`/`0.3s`, 8-digit hex vs `rgba`, `repeat(3, 1fr)`, `border: 0` vs `none`, keyword order in `text-decoration-line`.
+- **Cascade:** `[id=x]` scored like `#x`; `<!-- -->` inside `<style>`, `@supports`, `@layer`, `@import`, native nesting ignored; `media` on `<style>`/`<link>` ignored (preview too); `href="/style.css"` not loaded; range media queries never match; one bad selector in a list doesn't drop the rule; unitless `padding: 10` accepted; no default `color` or `[hidden]`.
+- **Text and attributes:** `<br>` joins words ("HelloWorld"); `<style>` in body counts as text; attribute compare is exact (`EMAIL` vs `email`, `./about.html` vs `about.html`).
+
+### Implementation notes (2026-11-05)
+
+- **Speed:** new `convex/lib/checks/match.ts`: css-select still tests each compound, the combinators are walked with remembered answers, and rules start from the elements with the subject's id, class or tag. A work budget (600,000 compound tests, counted, not timed, so browser and server agree) ends hostile pages as "too complex to check". `.zz ~ p ~ p ~ p` on 200 paragraphs: 873 ms → 9 ms; 3,500 elements × 1,400 rules: 2.07 s → 0.45 s; a realistic exam page with 10 checks: about 2 ms.
+- **Parser** (`css.ts`): nesting (with and without `&`), `@supports`, `@layer` (unlayered wins), `@import` of task files, `@keyframes`, `<!-- -->`, the `media` attribute on `<style>`/`<link>`, `/style.css`, range media queries.
+- **Values** (`values.ts`): shorthands `font`, `flex-flow`, `place-*`, `grid-gap`, full `background`, `border-radius`, `overflow`, `inset`, `outline`, `transition`, `animation`; `var()` with fallbacks and custom properties; `700` = bold, quotes in font names, `ms`/`s`, 8-digit hex alpha, `repeat()`, `border: 0` = `none`, keyword order; unitless lengths dropped like browsers do; default `color` and `[hidden]`.
+- **Cascade and checks** (`page.ts`, `run.ts`): `[id=x]` counts like a class; one bad selector drops the whole list; text reads `<br>` and block edges as spaces and skips `<style>`; attribute checks read `type`-like attributes in any case and `./x` as `x`.
+- **Student side:** checks no longer re-run on every render (a default `[]` was new each time); the preview swaps edited CSS in place instead of reloading; while a task is in progress the task query no longer carries the files, so an autosave doesn't send everything back (`learn.taskWork` is read once).
+
+### Checks (2026-11-05)
+
+- `npx vitest run --maxWorkers=3` in kalami-stuff: 40 files, 431 tests passed. (A run with default workers had 6 timeouts at 5 s in broadcast, course-delete and connector tests while both dev servers and `convex dev` were running; those files pass alone, 54 of 54.)
+- New: `convex/codeExam.test.ts` (midterm with a code question end to end, notes held, full-results check list, editing after start + regrade + part points, clearing the time limit); 34 new cases in `convex/lib/checks/checks.test.ts` (browser agreement, hover, focus, ::before, keyframes, animation, speed); preview test for media, /style.css and @import.
+- `npx tsc --noEmit` clean in both apps (the student app's stale `.next/types` grammar routes aside); eslint clean on every changed file.
+- In the student app at `/dev/quiz` (1440×900): quiz mode ticks live, the hover and animation checks pass, "Every step done!" shows, the preview kept the same document while CSS was typed (no reload) and runs `pulse`; after submit the review lists the six checks and opens the code read-only. Midterm mode: all steps open, Next enabled, no ticks, no hints or mistake finder, "These are checked when you submit." `/dev/sandbox`: homework still unlocks one step at a time. `/dev/ui?view=gate-error`: the new sign-in screen with Try again and Sign out.
+- Not checked in a browser: the staff screens (settings card, part points, regrade button, the new check kinds in the task editor) need a staff sign-in; they are covered by typecheck, lint and the backend tests only.
+
+### Limitations
+
+- Lengths aren't converted (`2em` isn't `32px`), and there is still no real layout (widths, positions).
+
+
+## TASK-028 — Animated midterm: check CSS animation, transitions and hover; a livelier student workspace
+
+- **Status:** Ready for review (the user said "fix everything" on 2026-11-05: performance first; their first exam is a trial run; built the same day)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05
+
+- The lecturer wants the coding midterm to be interesting and animated. Today the engine can't check `:hover`/`:focus` styles, `@keyframes`, `animation`, `transition` or `::before`/`::after`, so an animation midterm couldn't be graded.
+- Proposed: new check kinds (a rule exists for a selector state such as `.btn:hover`; a `@keyframes` exists and changes a property; `animation`/`transition` longhands checked after TASK-027's shorthand fixes), plus motion in the workspace (step-done moments, progress, a results reveal).
+- Needs: what "animated" means (students build animations, the exam screen animates, or both).
+
+### Implementation notes (2026-11-05)
+
+- Done as both readings of "animated": checks for animated work, and a livelier workspace.
+- **Checks:** css checks accept states and pseudo-elements in the selector (`.btn:hover`, `.card:hover .title`, `input:focus`, `.badge::before`), worked out as if those elements were in that state. New check kinds `keyframes` (a @keyframes, optionally changing a property) and `animation` (elements run an animation whose @keyframes exists, optionally changing a property). In the validators, the MCP schemas and instructions, the .kalami guide and the task editor ("Animation runs", "@keyframes exists"). `:hover` in other check kinds is refused with a clear message.
+- **Workspace:** a step that turns done pops its number and shows "Step done" with a small burst; the last one shows "Every step done!"; the progress bar springs and turns lime when complete; steps slide in.
+- `/dev/quiz` has a quiz/midterm switch and an animated-button code question that uses the new checks.
+
+### Checks (2026-11-05)
+
+- `npx vitest run --maxWorkers=3` in kalami-stuff: 40 files, 431 tests passed. (A run with default workers had 6 timeouts at 5 s in broadcast, course-delete and connector tests while both dev servers and `convex dev` were running; those files pass alone, 54 of 54.)
+- New: `convex/codeExam.test.ts` (midterm with a code question end to end, notes held, full-results check list, editing after start + regrade + part points, clearing the time limit); 34 new cases in `convex/lib/checks/checks.test.ts` (browser agreement, hover, focus, ::before, keyframes, animation, speed); preview test for media, /style.css and @import.
+- `npx tsc --noEmit` clean in both apps (the student app's stale `.next/types` grammar routes aside); eslint clean on every changed file.
+- In the student app at `/dev/quiz` (1440×900): quiz mode ticks live, the hover and animation checks pass, "Every step done!" shows, the preview kept the same document while CSS was typed (no reload) and runs `pulse`; after submit the review lists the six checks and opens the code read-only. Midterm mode: all steps open, Next enabled, no ticks, no hints or mistake finder, "These are checked when you submit." `/dev/sandbox`: homework still unlocks one step at a time. `/dev/ui?view=gate-error`: the new sign-in screen with Try again and Sign out.
+- Not checked in a browser: the staff screens (settings card, part points, regrade button, the new check kinds in the task editor) need a staff sign-in; they are covered by typecheck, lint and the backend tests only.
+
+### Limitations
+
+- An animation is checked by its rules (names, keyframes, properties, duration), not by watching it play.
+
+
+## TASK-029 — "Backend didn't accept the session" screen: find the cause, and stop showing a developer message to users
+
+- **Status:** Ready for review (the user said "fix everything" on 2026-11-05: performance first; their first exam is a trial run; built the same day)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05 (screenshot from the lecturer)
+
+- Shown by `CurrentUserProvider` when Clerk says signed in but Convex rejects the token. The text names `CLERK_FRONTEND_API_URL` and Clerk's Convex integration, and the screen (`StudentAccount.tsx`, `StaffGate.tsx`) has no Retry or Sign out, so the user is stuck.
+- Local check 2026-11-05: both apps' publishable keys and the dev Convex deployment all use `patient-bullfrog-5413.clerk.accounts.dev`, so dev config agrees. Production settings weren't read (production reads need the user's OK).
+- Likely causes to check: production Convex `CLERK_FRONTEND_API_URL` not matching the Clerk instance the Vercel apps use; the instance's session token missing `aud: "convex"`; a token that expired while the computer slept (the screen never retries); a wrong system clock.
+- Proposed: plain words for users, Retry and Sign out buttons, one automatic retry with a fresh token, technical detail only in the console.
+
+### Implementation notes (2026-11-05)
+
+- `CurrentUserProvider` (both apps) waits 4 s before calling a refused session an error (a token refresh after sleep is often just slow), logs the technical cause to the console, and gives the screen plain words.
+- New `components/AccountTrouble.tsx` (both apps), used by `StudentAccount` and `StaffGate`: "We couldn't confirm your sign-in" with Try again and Sign out, and for a refused session one quiet automatic reload per 10 minutes (never on /dev pages).
+
+### Cause
+
+- Still open: the user hasn't said where the screenshot was taken. Locally everything points at `patient-bullfrog-5413.clerk.accounts.dev`. If it was production, check Convex prod `CLERK_FRONTEND_API_URL` against the Clerk instance of the Vercel apps' publishable key (reading production settings needs the user's OK).
+
+### Checks (2026-11-05)
+
+- `npx vitest run --maxWorkers=3` in kalami-stuff: 40 files, 431 tests passed. (A run with default workers had 6 timeouts at 5 s in broadcast, course-delete and connector tests while both dev servers and `convex dev` were running; those files pass alone, 54 of 54.)
+- New: `convex/codeExam.test.ts` (midterm with a code question end to end, notes held, full-results check list, editing after start + regrade + part points, clearing the time limit); 34 new cases in `convex/lib/checks/checks.test.ts` (browser agreement, hover, focus, ::before, keyframes, animation, speed); preview test for media, /style.css and @import.
+- `npx tsc --noEmit` clean in both apps (the student app's stale `.next/types` grammar routes aside); eslint clean on every changed file.
+- In the student app at `/dev/quiz` (1440×900): quiz mode ticks live, the hover and animation checks pass, "Every step done!" shows, the preview kept the same document while CSS was typed (no reload) and runs `pulse`; after submit the review lists the six checks and opens the code read-only. Midterm mode: all steps open, Next enabled, no ticks, no hints or mistake finder, "These are checked when you submit." `/dev/sandbox`: homework still unlocks one step at a time. `/dev/ui?view=gate-error`: the new sign-in screen with Try again and Sign out.
+- Not checked in a browser: the staff screens (settings card, part points, regrade button, the new check kinds in the task editor) need a staff sign-in; they are covered by typecheck, lint and the backend tests only.
+
+## TASK-030 — Student quiz, exam, task and course pages crash on work that isn't available or isn't open yet
+
+- **Status:** Ready for review (reported and built 2026-11-05)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05 (the user's screenshot: `Uncaught ConvexError NOT_FOUND` from `learn:quiz` in `/quizzes/[assessmentId]`)
+
+### Cause
+
+- On the dev deployment the old midterm was archived at 09:33 and the new "Midterm test exam" was a draft until 09:58. `learn.quiz` answers NOT_FOUND for anything not published (and for courses the student isn't in), and the quiz page used plain `useQuery`, so the error crashed the page. The same held for the task page (`learn.task`, `learn.taskWork`), the course page (`learn.course`) and the dashboard's course cards.
+- An exam with an opening time threw CONFLICT "This hasn't opened yet" when opened early: a crash too, on exactly the exam-day path. And because query results are cached until data changes, a course page left open showed "Locked" past the opening time until a reload.
+
+### Implementation notes (2026-11-05)
+
+- New `components/ui/NotAvailable.tsx` (`isUnavailable` + a calm card with the way back). Quiz, task and course pages read their queries with `useQuery_experimental` and show it for NOT_FOUND or a malformed id; anything else still goes to the error page. The task page also explains "not open yet". Dashboard course cards say "This course isn't available any more" instead of breaking the dashboard.
+- `requireVisibleAssessment` (`convex/model/learn.ts`) lets `learn.quiz` and `learn.quizAnswers` return an upcoming exam (`state: "upcoming"`, `opensAt`, no questions); starting is still refused until it opens. `learn.quiz` takes an unread `refresh` argument; the start screen counts down on the server's clock and bumps it at the opening time (and every 4 s after, if clocks differ), so the start button appears by itself.
+- Course rows (`AssessmentRow`) unlock at `opensAt` without a reload.
+
+### Checks (2026-11-05)
+
+- On the dev deployment as the user: `learn:quiz` on "Midterm test exam" returns the open exam (attempt in progress, checks on submit, help off); on the archived midterm it returns NOT_FOUND, which the page now shows as "This isn't available".
+- New tests in `convex/codeExam.test.ts` (upcoming exam counts down, start refused, opens after the time with `refresh`; archived answers NOT_FOUND). Full suite `npx vitest run --maxWorkers=3`: 40 files, 433 tests passed.
+- `/dev/quiz` "opens in 15 seconds": "Not open yet · Opens in 0:14", no start button; 15 s later the start button appeared on its own.
+- Typecheck and lint clean in both apps.
+
+### Limitations
+
+- A student who took an exam that is later archived can no longer open its results (archived means taken down); they see "not available".
+
+## TASK-031 — Typing aids in code questions: auto-closing HTML tags and tag suggestions, each switched on per assessment
+
+- **Status:** Ready for review (asked for and built 2026-11-05)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05
+
+### Requested behavior
+
+Typing `<h1>` completes itself with `</h1>`; typing `<` opens a list of tags, and picking one writes the element. Both optional, for the lecturer to turn on and off whenever they want.
+
+### Implementation notes (2026-11-05)
+
+- Settings `codeAutoClose` and `codeSuggest` (both off unless turned on) in `convex/lib/validators.ts` (`codeMode`), sent to students with the task and the quiz, in the MCP/.kalami settings schema, and as two switches in the studio's Settings card ("Close HTML tags automatically", "Suggest HTML tags when students type <").
+- Editor (`components/sandbox/CodeEditor.tsx`): `html({ autoCloseTags })`; suggestions from the new `components/sandbox/assist/complete.ts`, HTML files only: tag names after `<` (not `</` or `<!`), the everyday tags first, each with its explanation in the student's language; picking one writes the whole element with the cursor inside (`<h1>|</h1>`), `a`/`img`/`input`/`link`/`label` with their usual attributes as blanks (Tab moves on). No attribute or CSS suggestions. Paste stays blocked; inserted snippets are far below the large-insert counter.
+- `@codemirror/autocomplete` added as a direct dependency in both apps (it was already installed through lang-html). In the student app `npm install` also pruned 36 packages that were installed but not listed; the lockfile only gained the new entry and the app still typechecks.
+
+### Checks (2026-11-05)
+
+- `/dev/quiz` with both on: `<h2` then `>` became `<h2></h2>`; `<` opened the list (a, div, h1, img, li, p, ul… with "A link. href says where it goes."); "sec" + Enter wrote `<section>|</section>`. (Typing `<h1>` as one string through the browser tool doesn't trigger auto-close, as with a paste; real typing does.)
+- Full suite 433 passed; typecheck and lint clean in both apps.
+
+### Limitations
+
+- The switches are per assessment, not per question.
+
+## TASK-032 — Grading desk: a dedicated page to grade one assessment student by student
+
+- **Status:** Ready for review (asked for and built 2026-11-05)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05
+
+### Decided by the user (2026-11-05)
+
+A grading desk per assessment (chosen over a course gradebook or both).
+
+### Implementation notes (2026-11-05)
+
+- Route `/courses/[courseId]/assessments/[assessmentId]/grading` (`app/(staff)/…/grading/page.tsx`); "Open the grading desk" button in the assessment page's Student work section.
+- `components/studio/GradingDesk.tsx`: `GradingDeskView` (data as props) and `GradingDesk` (live; loads every submission page by page).
+  - Header: back link, "N of M submitted graded · K to grade" with a progress bar, Export scores (CSV, UTF-8 with BOM so Excel reads Georgian names), Regrade.
+  - Left: search, filters To grade / Graded / Still working / All (opens on To grade while anything waits), students A–Z with integrity dot, status and score. "To grade" = submitted and not yet saved by a lecturer, an essay without points, or failed grading.
+  - Right (`StudentWork`): name, attempt, integrity, grading-failed banner; tabs Answers and Code · part N; answers with points (`AnswerCard`), code in the review sandbox with red-pen notes and part points; the overall score and note with Save grade and **Save & next**.
+  - Keys J / K move down and up the list (not while typing in a field or the code). Phones get a "needs a computer" card.
+- Reused and exported: `AnswerCard` (QuizReview), `PartPoints` and `GradeBar` (TaskTryout, now with `onSaveAndNext`), `Regrade` (Submissions).
+- Dev gallery: staff `/dev/ui?view=grading` with six sample students (`components/dev/GradingDeskSample.tsx`).
+
+### Checks (2026-11-05)
+
+- Staff typecheck and lint clean.
+- `/dev/ui?view=grading` at 1440×900: opens on "To grade 4" (Ana, Giorgi, Luka, Saba, A–Z), header "1 of 5 submitted graded · 4 to grade", first student selected; J → Giorgi, J → Luka, K → Giorgi; Save & next shown.
+- Not checked with real data: the live desk needs a staff sign-in. The right side in the gallery is a stand-in, since the real one reads the attempt from Convex.
+
+### Limitations
+
+- The CSV has names, not emails or student groups.
+
+### Update (2026-11-05): code parts open full screen, as the student saw them
+
+- The user tried the desk with real submissions and asked for the code to open the way it looked on the student's screen. The right side is now an overview (who, integrity, each code part with points, checks passed and notes, then the answers); **Open as the student saw it** opens that part in a full-screen layer with the student's steps, code and preview at full size. On top: name, status, integrity, Part buttons, previous/next student, Back to the list; part points under it; the overall grade with Save & next at the bottom.
+- The open part is kept by the desk, so J / K and Save & next go to the next student with the same part still open. While the next attempt loads, the layer stays up with a loading line.
+- Bug from the user's screenshot: the review showed `{{festival}}` in the task's intro. `submissions.detail` now fills the student's values into the prompt, as it already did for the steps.
+- `StudentWork` is now a loader around `StudentWorkView` (attempt as data); the gallery view `grading` shows the real panel with a sample code attempt and a red-pen note.
+- Checks: staff typecheck and lint clean; full suite 40 files, 433 tests passed. Gallery at 1440×900: the layer is 1440×900 with steps 368, code 539, preview 469 px wide and 652 px high; J moved to the next student with the layer still open; Back to the list closed it on that student.
+
+## TASK-033 — Clicking an in-page link (#gallery) in the code preview loaded Kalami inside the preview
+
+- **Status:** Ready for review (reported with screenshots and fixed 2026-11-05)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05: in the midterm's preview, clicking the menu link "gallery" showed the Kalami logo with loading dots; editing the code brought the page back.
+
+### Cause and fix
+
+- A `srcdoc` preview resolves `#gallery` against the app's own address, so the old code, which let in-page links through, navigated the frame to `/quizzes/…#gallery`: Kalami without scripts, stuck loading.
+- `components/sandbox/Preview.tsx`: every link click (and image-map area) is stopped; `#id` links scroll smoothly to that element (or to the top for `#` / `#top`) inside the student's page. Forms were already blocked (sandbox without allow-forms, CSP form-action 'none').
+
+### Checks (2026-11-05)
+
+- `/dev/quiz`: a typed `<a href="#gallery">` plus a far-down `#gallery`; clicking the link left the frame at `about:srcdoc` with the student's page, scrolled to 1084 px.
+
+## TASK-034 — Upload pictures for code task images to Kalami's ImageKit from the task editor
+
+- **Status:** Ready for review (asked for and built 2026-11-05)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-05 (screenshot of the task editor's Images section: rows with a name but no address)
+
+### Implementation notes (2026-11-05)
+
+- No backend change: code task images use the presentation picture pipeline (`media.generateUploadUrl` → `mediaActions.upload`: WebP, stored on ImageKit in the course's folder, recorded in `media`).
+- The assessment page (`app/(staff)/…/assessments/[assessmentId]/page.tsx`) provides `PicturesContext` for the course; `components/studio/CodeTaskForm.tsx` uses it:
+  - **Upload images** (several at once): one row each.
+  - **Upload / Replace** on a row.
+  - Progress ("Uploading 40%", "Compressing…") and errors per row.
+  - A 96 px ImageKit thumbnail.
+  - Empty short names are filled from the file name (`My Cat (1).JPG` → `my-cat-1.jpg`, unique within the task) and empty alt text from its words.
+  - "Add by address" keeps pasting a URL possible.
+- Row layout wraps in narrow editors: name, alt text and buttons on one line when they fit, the address on its own line below.
+- Dev gallery: staff `/dev/ui?view=code-task-images` (fake upload).
+
+### Checks (2026-11-05)
+
+- Staff typecheck and lint clean. Dev Convex has `IMAGEKIT_API_PRIVATE_KEY` and `IMAGEKIT_FOLDER`.
+- Gallery: two files picked at once gave two rows: `my-cat-1.jpg` / "My Cat (1)" and `saturn_rings.png` / "saturn rings", each with the ImageKit address, a thumbnail and Replace; "Uploading 20%" showed meanwhile. In a 422 px wide editor the row wraps without overflow.
+- Not done: a real upload from the task editor (needs a staff sign-in). The same actions already upload presentation pictures (TASK-020).
+
+### Limitations
+
+- Production needs the ImageKit key on the production Convex deployment (pending since TASK-020) before uploads work there.

@@ -2,6 +2,7 @@
 
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { buttonClass } from "@/components/ui/buttons";
 import { ArrowRight, Clock, Code, ListChecks, Lock, Monitor } from "@/components/ui/icons";
 import type { api } from "@/convex-api/api";
@@ -69,9 +70,30 @@ function Action({ item, mobile }: { item: CourseItem; mobile: boolean }) {
   );
 }
 
+/**
+ * True once `at` has passed, re-rendering at that moment. The course list comes
+ * from the server and isn't asked again just because time passed, so an item
+ * that opens while the page is on screen unlocks here; its own page then checks
+ * with the server.
+ */
+function useReached(at: number | undefined): boolean {
+  const [reached, setReached] = useState(false);
+  useEffect(() => {
+    if (at === undefined) return;
+    const delay = at - Date.now();
+    // setTimeout can't wait longer than about 24 days.
+    if (delay > 2_000_000_000) return;
+    const id = setTimeout(() => setReached(true), Math.max(0, delay));
+    return () => clearTimeout(id);
+  }, [at]);
+  return reached;
+}
+
 /** One task, quiz or exam in a course list: what it is, where it stands, what to do. */
-export function AssessmentRow({ item, compact = false }: { item: CourseItem; compact?: boolean }) {
+export function AssessmentRow({ item: listed, compact = false }: { item: CourseItem; compact?: boolean }) {
   const mobile = useIsMobile();
+  const opened = useReached(listed.state === "upcoming" ? listed.opensAt : undefined);
+  const item: CourseItem = opened ? { ...listed, state: "open" } : listed;
   const done = item.state === "closed" || item.result?.status === "submitted";
   return (
     <div

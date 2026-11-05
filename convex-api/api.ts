@@ -16,6 +16,10 @@ export type PublicApiType = {
         settings?: {
           attemptsAllowed?: number;
           closesAt?: number;
+          codeAutoClose?: boolean;
+          codeChecks?: "live" | "on_submit";
+          codeHelp?: boolean;
+          codeSuggest?: boolean;
           integrityLevel?: "off" | "standard" | "strict";
           opensAt?: number;
           resultsVisibility?: "hidden" | "score" | "full_after_close";
@@ -45,6 +49,10 @@ export type PublicApiType = {
           settings: {
             attemptsAllowed: number;
             closesAt?: number;
+            codeAutoClose?: boolean;
+            codeChecks?: "live" | "on_submit";
+            codeHelp?: boolean;
+            codeSuggest?: boolean;
             integrityLevel: "off" | "standard" | "strict";
             opensAt?: number;
             resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -119,6 +127,22 @@ export type PublicApiType = {
                     viewport?: number;
                   }
                 | { href: string; id: string; label: string; type: "linked" }
+                | {
+                    id: string;
+                    label: string;
+                    name?: string;
+                    property?: string;
+                    type: "keyframes";
+                  }
+                | {
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    property?: string;
+                    selector: string;
+                    type: "animation";
+                    viewport?: number;
+                  }
               >;
               hint?: string;
               instructions: string;
@@ -191,6 +215,22 @@ export type PublicApiType = {
                       viewport?: number;
                     }
                   | { href: string; id: string; label: string; type: "linked" }
+                  | {
+                      id: string;
+                      label: string;
+                      name?: string;
+                      property?: string;
+                      type: "keyframes";
+                    }
+                  | {
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      property?: string;
+                      selector: string;
+                      type: "animation";
+                      viewport?: number;
+                    }
                 >;
                 solution: Array<{ content: string; name: string }>;
                 type: "code";
@@ -209,11 +249,16 @@ export type PublicApiType = {
       "public",
       {
         assessmentId: Id<"assessments">;
+        clear?: Array<"opensAt" | "closesAt" | "timeLimitMin">;
         instructions?: string;
         kind?: "task" | "quiz" | "midterm" | "final";
         settings?: {
           attemptsAllowed?: number;
           closesAt?: number;
+          codeAutoClose?: boolean;
+          codeChecks?: "live" | "on_submit";
+          codeHelp?: boolean;
+          codeSuggest?: boolean;
           integrityLevel?: "off" | "standard" | "strict";
           opensAt?: number;
           resultsVisibility?: "hidden" | "score" | "full_after_close";
@@ -328,6 +373,10 @@ export type PublicApiType = {
           settings: {
             attemptsAllowed: number;
             closesAt?: number;
+            codeAutoClose?: boolean;
+            codeChecks?: "live" | "on_submit";
+            codeHelp?: boolean;
+            codeSuggest?: boolean;
             integrityLevel: "off" | "standard" | "strict";
             opensAt?: number;
             resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -621,6 +670,10 @@ export type PublicApiType = {
         assessment: {
           _id: Id<"assessments">;
           closesAt?: number;
+          codeAutoClose: boolean;
+          codeChecks: "live" | "on_submit";
+          codeHelp: boolean;
+          codeSuggest: boolean;
           instructions?: string;
           integrityLevel: "off" | "standard" | "strict";
           resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -710,6 +763,22 @@ export type PublicApiType = {
                     viewport?: number;
                   }
                 | { href: string; id: string; label: string; type: "linked" }
+                | {
+                    id: string;
+                    label: string;
+                    name?: string;
+                    property?: string;
+                    type: "keyframes";
+                  }
+                | {
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    property?: string;
+                    selector: string;
+                    type: "animation";
+                    viewport?: number;
+                  }
               >;
               hint?: string;
               instructions: string;
@@ -728,6 +797,18 @@ export type PublicApiType = {
           savedAt: number;
         }>;
         unsupported: number;
+      }
+    >;
+    taskWork: FunctionReference<
+      "query",
+      "public",
+      { assessmentId: Id<"assessments"> },
+      {
+        responses: Array<{
+          files: Array<{ content: string; name: string }>;
+          questionId: Id<"questions">;
+          savedAt: number;
+        }>;
       }
     >;
     saveCodeWork: FunctionReference<
@@ -755,19 +836,24 @@ export type PublicApiType = {
     quiz: FunctionReference<
       "query",
       "public",
-      { assessmentId: Id<"assessments"> },
+      { assessmentId: Id<"assessments">; refresh?: number },
       {
         assessment: {
           _id: Id<"assessments">;
           attemptsAllowed: number;
           closesAt?: number;
+          codeAutoClose: boolean;
+          codeChecks: "live" | "on_submit";
+          codeHelp: boolean;
           codeQuestionCount: number;
+          codeSuggest: boolean;
           instructions?: string;
           integrityLevel: "off" | "standard" | "strict";
           kind: "task" | "quiz" | "midterm" | "final";
+          opensAt?: number;
           questionCount: number;
           resultsVisibility: "hidden" | "score" | "full_after_close";
-          state: "open" | "closed";
+          state: "upcoming" | "open" | "closed";
           timeLimitMin?: number;
           title: string;
           totalPoints: number;
@@ -854,6 +940,22 @@ export type PublicApiType = {
                     viewport?: number;
                   }
                 | { href: string; id: string; label: string; type: "linked" }
+                | {
+                    id: string;
+                    label: string;
+                    name?: string;
+                    property?: string;
+                    type: "keyframes";
+                  }
+                | {
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    property?: string;
+                    selector: string;
+                    type: "animation";
+                    viewport?: number;
+                  }
               >;
               hint?: string;
               instructions: string;
@@ -867,6 +969,12 @@ export type PublicApiType = {
         }>;
         review: Array<{
           acceptedAnswers?: Array<string>;
+          checks?: Array<{
+            hidden: boolean;
+            id: string;
+            label: string;
+            passed: boolean;
+          }>;
           correctOptionIds?: Array<string>;
           explanation?: string;
           points?: number;
@@ -1021,6 +1129,10 @@ export type PublicApiType = {
           settings: {
             attemptsAllowed: number;
             closesAt?: number;
+            codeAutoClose?: boolean;
+            codeChecks?: "live" | "on_submit";
+            codeHelp?: boolean;
+            codeSuggest?: boolean;
             integrityLevel: "off" | "standard" | "strict";
             opensAt?: number;
             resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -1102,6 +1214,10 @@ export type PublicApiType = {
           settings: {
             attemptsAllowed: number;
             closesAt?: number;
+            codeAutoClose?: boolean;
+            codeChecks?: "live" | "on_submit";
+            codeHelp?: boolean;
+            codeSuggest?: boolean;
             integrityLevel: "off" | "standard" | "strict";
             opensAt?: number;
             resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -1176,6 +1292,22 @@ export type PublicApiType = {
                     viewport?: number;
                   }
                 | { href: string; id: string; label: string; type: "linked" }
+                | {
+                    id: string;
+                    label: string;
+                    name?: string;
+                    property?: string;
+                    type: "keyframes";
+                  }
+                | {
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    property?: string;
+                    selector: string;
+                    type: "animation";
+                    viewport?: number;
+                  }
               >;
               hint?: string;
               instructions: string;
@@ -1248,6 +1380,22 @@ export type PublicApiType = {
                       viewport?: number;
                     }
                   | { href: string; id: string; label: string; type: "linked" }
+                  | {
+                      id: string;
+                      label: string;
+                      name?: string;
+                      property?: string;
+                      type: "keyframes";
+                    }
+                  | {
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      property?: string;
+                      selector: string;
+                      type: "animation";
+                      viewport?: number;
+                    }
                 >;
                 solution: Array<{ content: string; name: string }>;
                 type: "code";
@@ -1273,6 +1421,10 @@ export type PublicApiType = {
         settings?: {
           attemptsAllowed?: number;
           closesAt?: number;
+          codeAutoClose?: boolean;
+          codeChecks?: "live" | "on_submit";
+          codeHelp?: boolean;
+          codeSuggest?: boolean;
           integrityLevel?: "off" | "standard" | "strict";
           opensAt?: number;
           resultsVisibility?: "hidden" | "score" | "full_after_close";
@@ -1291,12 +1443,17 @@ export type PublicApiType = {
       "public",
       {
         assessmentId: Id<"assessments">;
+        clear?: Array<"opensAt" | "closesAt" | "timeLimitMin">;
         client?: string;
         instructions?: string;
         kind?: "task" | "quiz" | "midterm" | "final";
         settings?: {
           attemptsAllowed?: number;
           closesAt?: number;
+          codeAutoClose?: boolean;
+          codeChecks?: "live" | "on_submit";
+          codeHelp?: boolean;
+          codeSuggest?: boolean;
           integrityLevel?: "off" | "standard" | "strict";
           opensAt?: number;
           resultsVisibility?: "hidden" | "score" | "full_after_close";
@@ -1393,6 +1550,20 @@ export type PublicApiType = {
                     viewport?: number;
                   }
                 | { href: string; label: string; type: "linked" }
+                | {
+                    label: string;
+                    name?: string;
+                    property?: string;
+                    type: "keyframes";
+                  }
+                | {
+                    every?: boolean;
+                    label: string;
+                    property?: string;
+                    selector: string;
+                    type: "animation";
+                    viewport?: number;
+                  }
               >;
               points?: number;
               prompt: string;
@@ -1438,6 +1609,20 @@ export type PublicApiType = {
                       viewport?: number;
                     }
                   | { href: string; label: string; type: "linked" }
+                  | {
+                      label: string;
+                      name?: string;
+                      property?: string;
+                      type: "keyframes";
+                    }
+                  | {
+                      every?: boolean;
+                      label: string;
+                      property?: string;
+                      selector: string;
+                      type: "animation";
+                      viewport?: number;
+                    }
                 >;
                 hint?: string;
                 instructions: string;
@@ -1529,6 +1714,20 @@ export type PublicApiType = {
                     viewport?: number;
                   }
                 | { href: string; label: string; type: "linked" }
+                | {
+                    label: string;
+                    name?: string;
+                    property?: string;
+                    type: "keyframes";
+                  }
+                | {
+                    every?: boolean;
+                    label: string;
+                    property?: string;
+                    selector: string;
+                    type: "animation";
+                    viewport?: number;
+                  }
               >;
               points?: number;
               prompt: string;
@@ -1574,6 +1773,20 @@ export type PublicApiType = {
                       viewport?: number;
                     }
                   | { href: string; label: string; type: "linked" }
+                  | {
+                      label: string;
+                      name?: string;
+                      property?: string;
+                      type: "keyframes";
+                    }
+                  | {
+                      every?: boolean;
+                      label: string;
+                      property?: string;
+                      selector: string;
+                      type: "animation";
+                      viewport?: number;
+                    }
                 >;
                 hint?: string;
                 instructions: string;
@@ -1651,6 +1864,20 @@ export type PublicApiType = {
                 viewport?: number;
               }
             | { href: string; label: string; type: "linked" }
+            | {
+                label: string;
+                name?: string;
+                property?: string;
+                type: "keyframes";
+              }
+            | {
+                every?: boolean;
+                label: string;
+                property?: string;
+                selector: string;
+                type: "animation";
+                viewport?: number;
+              }
           >;
           points?: number;
           prompt: string;
@@ -1696,6 +1923,20 @@ export type PublicApiType = {
                   viewport?: number;
                 }
               | { href: string; label: string; type: "linked" }
+              | {
+                  label: string;
+                  name?: string;
+                  property?: string;
+                  type: "keyframes";
+                }
+              | {
+                  every?: boolean;
+                  label: string;
+                  property?: string;
+                  selector: string;
+                  type: "animation";
+                  viewport?: number;
+                }
             >;
             hint?: string;
             instructions: string;
@@ -1757,6 +1998,10 @@ export type PublicApiType = {
           settings: {
             attemptsAllowed: number;
             closesAt?: number;
+            codeAutoClose?: boolean;
+            codeChecks?: "live" | "on_submit";
+            codeHelp?: boolean;
+            codeSuggest?: boolean;
             integrityLevel: "off" | "standard" | "strict";
             opensAt?: number;
             resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -1782,6 +2027,10 @@ export type PublicApiType = {
           settings: {
             attemptsAllowed: number;
             closesAt?: number;
+            codeAutoClose?: boolean;
+            codeChecks?: "live" | "on_submit";
+            codeHelp?: boolean;
+            codeSuggest?: boolean;
             integrityLevel: "off" | "standard" | "strict";
             opensAt?: number;
             resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -1809,6 +2058,10 @@ export type PublicApiType = {
             settings: {
               attemptsAllowed: number;
               closesAt?: number;
+              codeAutoClose?: boolean;
+              codeChecks?: "live" | "on_submit";
+              codeHelp?: boolean;
+              codeSuggest?: boolean;
               integrityLevel: "off" | "standard" | "strict";
               opensAt?: number;
               resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -4354,6 +4607,20 @@ export type PublicApiType = {
                     viewport?: number;
                   }
                 | { href: string; label: string; type: "linked" }
+                | {
+                    label: string;
+                    name?: string;
+                    property?: string;
+                    type: "keyframes";
+                  }
+                | {
+                    every?: boolean;
+                    label: string;
+                    property?: string;
+                    selector: string;
+                    type: "animation";
+                    viewport?: number;
+                  }
               >;
               points?: number;
               prompt: string;
@@ -4399,6 +4666,20 @@ export type PublicApiType = {
                       viewport?: number;
                     }
                   | { href: string; label: string; type: "linked" }
+                  | {
+                      label: string;
+                      name?: string;
+                      property?: string;
+                      type: "keyframes";
+                    }
+                  | {
+                      every?: boolean;
+                      label: string;
+                      property?: string;
+                      selector: string;
+                      type: "animation";
+                      viewport?: number;
+                    }
                 >;
                 hint?: string;
                 instructions: string;
@@ -4487,6 +4768,20 @@ export type PublicApiType = {
                     viewport?: number;
                   }
                 | { href: string; label: string; type: "linked" }
+                | {
+                    label: string;
+                    name?: string;
+                    property?: string;
+                    type: "keyframes";
+                  }
+                | {
+                    every?: boolean;
+                    label: string;
+                    property?: string;
+                    selector: string;
+                    type: "animation";
+                    viewport?: number;
+                  }
               >;
               points?: number;
               prompt: string;
@@ -4532,6 +4827,20 @@ export type PublicApiType = {
                       viewport?: number;
                     }
                   | { href: string; label: string; type: "linked" }
+                  | {
+                      label: string;
+                      name?: string;
+                      property?: string;
+                      type: "keyframes";
+                    }
+                  | {
+                      every?: boolean;
+                      label: string;
+                      property?: string;
+                      selector: string;
+                      type: "animation";
+                      viewport?: number;
+                    }
                 >;
                 hint?: string;
                 instructions: string;
@@ -4682,6 +4991,22 @@ export type PublicApiType = {
                       viewport?: number;
                     }
                   | { href: string; id: string; label: string; type: "linked" }
+                  | {
+                      id: string;
+                      label: string;
+                      name?: string;
+                      property?: string;
+                      type: "keyframes";
+                    }
+                  | {
+                      every?: boolean;
+                      id: string;
+                      label: string;
+                      property?: string;
+                      selector: string;
+                      type: "animation";
+                      viewport?: number;
+                    }
                 >;
                 solution: Array<{ content: string; name: string }>;
                 type: "code";
@@ -4787,6 +5112,22 @@ export type PublicApiType = {
                     viewport?: number;
                   }
                 | { href: string; id: string; label: string; type: "linked" }
+                | {
+                    id: string;
+                    label: string;
+                    name?: string;
+                    property?: string;
+                    type: "keyframes";
+                  }
+                | {
+                    every?: boolean;
+                    id: string;
+                    label: string;
+                    property?: string;
+                    selector: string;
+                    type: "animation";
+                    viewport?: number;
+                  }
               >;
               hint?: string;
               instructions: string;
@@ -4842,7 +5183,25 @@ export type PublicApiType = {
                 viewport?: number;
               }
             | { href: string; id: string; label: string; type: "linked" }
+            | {
+                id: string;
+                label: string;
+                name?: string;
+                property?: string;
+                type: "keyframes";
+              }
+            | {
+                every?: boolean;
+                id: string;
+                label: string;
+                property?: string;
+                selector: string;
+                type: "animation";
+                viewport?: number;
+              }
           >;
+          manualPoints?: number;
+          points: number;
           prompt: string;
           questionId: Id<"questions">;
           savedAt?: number;
@@ -4860,6 +5219,22 @@ export type PublicApiType = {
         questionId: Id<"questions">;
       },
       null
+    >;
+    regrade: FunctionReference<
+      "mutation",
+      "public",
+      { assessmentId: Id<"assessments">; cursor: string | null },
+      {
+        cursor: string;
+        done: boolean;
+        results: Array<{
+          after?: number;
+          attemptId: Id<"attempts">;
+          before?: number;
+          error?: string;
+          student: string;
+        }>;
+      }
     >;
     addComment: FunctionReference<
       "mutation",
@@ -7505,6 +7880,10 @@ export type PublicApiType = {
           settings: {
             attemptsAllowed: number;
             closesAt?: number;
+            codeAutoClose?: boolean;
+            codeChecks?: "live" | "on_submit";
+            codeHelp?: boolean;
+            codeSuggest?: boolean;
             integrityLevel: "off" | "standard" | "strict";
             opensAt?: number;
             resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -7530,6 +7909,10 @@ export type PublicApiType = {
           settings: {
             attemptsAllowed: number;
             closesAt?: number;
+            codeAutoClose?: boolean;
+            codeChecks?: "live" | "on_submit";
+            codeHelp?: boolean;
+            codeSuggest?: boolean;
             integrityLevel: "off" | "standard" | "strict";
             opensAt?: number;
             resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -7557,6 +7940,10 @@ export type PublicApiType = {
             settings: {
               attemptsAllowed: number;
               closesAt?: number;
+              codeAutoClose?: boolean;
+              codeChecks?: "live" | "on_submit";
+              codeHelp?: boolean;
+              codeSuggest?: boolean;
               integrityLevel: "off" | "standard" | "strict";
               opensAt?: number;
               resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -9187,6 +9574,10 @@ export type PublicApiType = {
             assessment: {
               _id: Id<"assessments">;
               closesAt?: number;
+              codeAutoClose: boolean;
+              codeChecks: "live" | "on_submit";
+              codeHelp: boolean;
+              codeSuggest: boolean;
               instructions?: string;
               integrityLevel: "off" | "standard" | "strict";
               resultsVisibility: "hidden" | "score" | "full_after_close";
@@ -9280,6 +9671,22 @@ export type PublicApiType = {
                         id: string;
                         label: string;
                         type: "linked";
+                      }
+                    | {
+                        id: string;
+                        label: string;
+                        name?: string;
+                        property?: string;
+                        type: "keyframes";
+                      }
+                    | {
+                        every?: boolean;
+                        id: string;
+                        label: string;
+                        property?: string;
+                        selector: string;
+                        type: "animation";
+                        viewport?: number;
                       }
                   >;
                   hint?: string;

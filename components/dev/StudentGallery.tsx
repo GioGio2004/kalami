@@ -205,6 +205,10 @@ const task: ComponentProps<typeof TaskOnPhone>["task"] = {
     integrityLevel: "standard",
     resultsVisibility: "score",
     totalPoints: 10,
+    codeChecks: "live",
+    codeHelp: true,
+    codeAutoClose: false,
+    codeSuggest: false,
   },
   questions: [],
   attempt: { status: "in_progress", startedAt: NOW - HOUR, autoSubmitted: false, maxScore: 10 },
@@ -817,7 +821,7 @@ export function StudentGallery({ view, notice }: { view?: string; notice: Honest
     case "gate-signed-out":
       return asUser({ status: "signed-out" }, gate);
     case "gate-error":
-      return asUser({ status: "error", message: "The Kalami backend didn't accept the session." }, gate);
+      return asUser({ status: "error", kind: "session", message: "This usually sorts itself out. Try again, or sign out and sign back in." }, gate);
     default:
       return <LoadingScreen />;
   }

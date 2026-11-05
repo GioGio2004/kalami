@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ContactCard } from "@/components/contact/ContactCard";
 import { Markdown } from "@/components/sandbox/Markdown";
+import { TaskPlayer } from "@/components/sandbox/TaskPlayer";
 import { ComputerOnly } from "@/components/tasks/ComputerOnly";
 import { Button } from "@/components/ui/buttons";
 import { ArrowLeft, Check, Clock, Cross, ListChecks, Monitor, Shield } from "@/components/ui/icons";
@@ -32,11 +33,14 @@ export function QuizCover({
   quiz,
   answers,
   onStart,
+  onOpen,
 }: {
   quiz: Quiz;
   answers: QuizAnswers;
   /** Strict quizzes ask for fullscreen first; that has to happen inside the click. */
   onStart: () => Promise<unknown>;
+  /** Not open yet: called at the opening time (and every few seconds after) to ask the server again. */
+  onOpen?: () => void;
 }) {
   const { assessment, attempt } = quiz;
   const [starting, setStarting] = useState(false);
@@ -64,6 +68,7 @@ export function QuizCover({
   }
 
   const facts = [
+    ...(assessment.state === "upcoming" && assessment.opensAt ? [`Opens ${formatWhen(assessment.opensAt)}`] : []),
     `${assessment.questionCount} question${assessment.questionCount === 1 ? "" : "s"} · ${assessment.totalPoints} points`,
     assessment.timeLimitMin ? `${assessment.timeLimitMin} minutes once you start` : "No time limit",
     assessment.closesAt ? `Closes ${formatWhen(assessment.closesAt)}` : "No closing date",
@@ -127,6 +132,8 @@ export function QuizCover({
               </Button>
               {assessment.timeLimitMin && <span className="text-sm text-graphite">The timer starts when you press it.</span>}
             </div>
+          ) : !submitted && !needsComputer && assessment.state === "upcoming" ? (
+            <OpensIn opensAt={assessment.opensAt} serverNow={quiz.serverNow} onOpen={onOpen} />
           ) : !submitted && !needsComputer ? (
             <p className="mt-7 text-[15px] font-medium text-graphite">
               {assessment.state === "closed"
@@ -174,6 +181,51 @@ export function QuizCover({
   );
 }
 
+function countdown(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const d = Math.floor(total / 86_400);
+  const h = Math.floor((total % 86_400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  return `${h > 0 ? `${h}:` : ""}${String(m).padStart(h > 0 ? 2 : 1, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+/** Not open yet: a countdown on the server's clock, and a fresh look at the opening time. */
+function OpensIn({ opensAt, serverNow, onOpen }: { opensAt?: number; serverNow: number; onOpen?: () => void }) {
+  // The device clock can be off; the server's time when the quiz was loaded corrects it.
+  const [skew] = useState(() => serverNow - Date.now());
+  const [now, setNow] = useState(() => serverNow);
+  const asked = useRef(0);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now() + skew), 1000);
+    return () => clearInterval(id);
+  }, [skew]);
+  const remaining = opensAt === undefined ? undefined : opensAt - now;
+  useEffect(() => {
+    // At the opening time, ask again; if the server still says "not yet" (clocks differ), ask every few seconds.
+    if (remaining === undefined || remaining > 0 || onOpen === undefined) return;
+    if (now - asked.current < 4000) return;
+    asked.current = now;
+    onOpen();
+  }, [remaining, now, onOpen]);
+  return (
+    <div className="mt-7 rounded-2xl bg-panel px-5 py-4" aria-live="polite">
+      <p className="text-[15px] font-medium">Not open yet</p>
+      {remaining === undefined ? (
+        <p className="mt-1 text-sm text-graphite">Your lecturer will open it. This page updates when they do.</p>
+      ) : remaining > 0 ? (
+        <p className="mt-1 text-sm text-graphite">
+          Opens in <span className="font-mono text-base tabular-nums text-ink">{countdown(remaining)}</span>. Stay on this page:
+          the start button appears by itself.
+        </p>
+      ) : (
+        <p className="mt-1 text-sm text-graphite">Opening…</p>
+      )}
+    </div>
+  );
+}
+
 function Results({ quiz, answers }: { quiz: Quiz; answers: QuizAnswers }) {
   const attempt = quiz.attempt!;
   const { assessment } = quiz;
@@ -211,6 +263,7 @@ function Results({ quiz, answers }: { quiz: Quiz; answers: QuizAnswers }) {
               question={question}
               value={answers.find((a) => a.questionId === question._id)?.value}
               review={quiz.review.find((r) => r.questionId === question._id)}
+              comments={quiz.comments.filter((c) => c.questionId === question._id)}
             />
           ))}
         </ol>
@@ -240,12 +293,15 @@ function ReviewItem({
   question,
   value,
   review,
+  comments,
 }: {
   index: number;
   question: QuizQuestion;
   value: SavedValue | undefined;
   review: Quiz["review"][number] | undefined;
+  comments: Quiz["comments"];
 }) {
+  const [open, setOpen] = useState(false);
   const points = review?.points;
   const full = points !== undefined && points >= question.points;
   const correct =
@@ -278,6 +334,56 @@ function ReviewItem({
               <span className="text-graphite">Correct: </span>
               {correct}
             </p>
+          )}
+          {review?.checks && review.checks.length > 0 && (
+            <ul className="mt-3 space-y-1.5">
+              {review.checks.map((check) => (
+                <li key={check.id} className="flex items-start gap-2 text-sm">
+                  <span
+                    className={`mt-0.5 grid size-4.5 shrink-0 place-items-center rounded-full ${check.passed ? "bg-highlighter" : "bg-red-pen/15 text-red-pen"}`}
+                  >
+                    {check.passed ? <Check className="size-3" /> : <Cross className="size-3" />}
+                  </span>
+                  <span className={check.passed ? "" : "text-ink/80"}>
+                    {check.label}
+                    {check.hidden && <span className="text-graphite"> · checked on submit</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {question.type === "code" && question.code && (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+                Open your code
+              </Button>
+              {comments.length > 0 && (
+                <span className="font-hand text-xl leading-none text-red-pen">
+                  {comments.length} note{comments.length === 1 ? "" : "s"} from your lecturer
+                </span>
+              )}
+            </div>
+          )}
+          {open && question.code && (
+            <div className="fixed inset-0 z-40 flex flex-col bg-paper/95 p-3 backdrop-blur-sm sm:p-5">
+              <div className="min-h-0 flex-1">
+                <TaskPlayer
+                  mode="student"
+                  task={question.code}
+                  intro={question.prompt}
+                  initialFiles={value?.type === "code" ? value.files : question.code.files}
+                  readOnly
+                  header={<p className="truncate text-lg font-medium">Question {index + 1}: your code</p>}
+                  actions={
+                    <Button size="sm" onClick={() => setOpen(false)}>
+                      Close
+                    </Button>
+                  }
+                  hiddenResults={review?.checks?.filter((c) => c.hidden)}
+                  comments={comments.map((c) => ({ id: c._id, file: c.file, line: c.line, text: c.text, author: c.author }))}
+                />
+              </div>
+            </div>
           )}
           {review?.explanation && <p className="mt-2 font-hand text-xl leading-tight text-red-pen">{review.explanation}</p>}
         </div>
