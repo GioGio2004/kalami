@@ -30,6 +30,23 @@ export function Footer() {
               Sign in
             </Link>
           </nav>
+          <a
+            href="https://www.shemoqmedi.space/awards/kalami-f100-001"
+            target="_blank"
+            rel="noopener"
+            title="First 100 · Honorary No. 001 on Shemoqmedi"
+            className="shrink-0 self-start md:ml-auto md:self-center"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- external award badge, served at its own size */}
+            <img
+              src="https://www.shemoqmedi.space/badge/kalami-f100-001?motion=1"
+              alt="First 100 · Honorary No. 001 — Shemoqmedi"
+              width={330}
+              height={72}
+              loading="lazy"
+              className="block h-auto max-w-full"
+            />
+          </a>
         </div>
         <div className="flex flex-col gap-2 pt-6 text-sm text-paper/45 sm:flex-row sm:justify-between">
           <p>© 2026 Kalami. Your own work, by your own hand.</p>

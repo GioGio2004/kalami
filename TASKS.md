@@ -48,6 +48,7 @@ Statuses: `Needs clarification` → `Ready` → `In progress` → `Ready for rev
 | TASK-032 | Grading desk: a dedicated page to grade one assessment student by student | Ready for review | Claude (Claude Code) |
 | TASK-033 | Clicking an in-page link (#gallery) in the code preview loaded Kalami inside the preview | Ready for review | Claude (Claude Code) |
 | TASK-034 | Upload pictures for code task images to Kalami's ImageKit from the task editor | Ready for review | Claude (Claude Code) |
+| TASK-036 | Unarchive and Unpublish buttons: archived work can't be brought back; consistent Unpublish everywhere | Ready for review | Claude (Claude Code) |
 
 Keep the queue and the task details consistent when changing status or owner.
 
@@ -1616,6 +1617,45 @@ A grading desk per assessment (chosen over a course gradebook or both).
 - Dev Convex: `migrations:clearStepProgress` cleared 10 responses; a second run cleared 0 on both tables.
 - Browser: student `/dev/sandbox` (help on) shows the hover tip but no mistakes list and no underlines. Staff `/dev/ui?view=grading` opened a code part full screen with its red-pen note and no mistakes list.
 
-### To do on production
+### Production (2026-11-05)
 
-- After deploying, run `npx convex run migrations:clearStepProgress --prod` once (from kalami-stuff). A later change can then drop `responses.progress` and `attempts.stepsDone` from the schema.
+- The user deployed; `migrations:clearStepProgress --prod` cleared 26 saved answers (every response fit in one page). A second run cleared 0 on both tables, and both scheduled runs on production finished successfully.
+- Schema clean-up (2026-11-05, asked for by the user): `responses.progress` and `attempts.stepsDone` are gone from `convex/schema.ts`, and `migrations.clearStepProgress` and its test are removed. Checks: Convex and staff typecheck and lint clean; full staff suite 39 files, 428 tests passed; sync:student left the student API unchanged. Dev took the push: the migration no longer exists there, and the schema check would have refused the push if any document still had either field. Production picks it up with the next deploy; its data is already clean.
+
+## TASK-036 — Unarchive and Unpublish buttons: archived work can't be brought back; consistent Unpublish everywhere
+
+- **Status:** Ready for review (asked for and built 2026-11-07)
+- **Owner:** Claude (Claude Code)
+- **Reported:** 2026-11-07 ("we have archive button on kalami and no unarchive button … add unpublish button to midterms and basically to every section")
+
+### Problem
+
+- An archived quiz, task, midterm or final has no way back. The builder has a "Restore as draft" button, but it only shows when `detail.canEdit` is true, and the server reports `canEdit: false` for every archived assessment (`isEditableBy`), so all status buttons disappear. (Seen on production: "Practice run" was archived on 2026-11-06.)
+- Taking published work away from students is called "Move back to draft" on assessments, lessons, presentations and crosswords, but "Unpublish" on courses and weeks, so lecturers don't find it.
+- An archived course (the admin panel can archive one) shows no status button to the lecturer either.
+
+### Agreed behavior
+
+- Archived assessment: **Unarchive** (back to published, students see it again) and **Move to draft**.
+- Published assessment, lesson, presentation, crossword: **Unpublish** (back to draft); assessments keep **Archive**.
+- Archived course: **Unarchive** (back to draft; publish it again from there).
+
+### Implementation notes (2026-11-07)
+
+- `assessments.get` (`convex/model/questions.ts`) returns a new `canChangeStatus` flag: a course editor in a course that isn't archived. `canEdit` is unchanged (still false for archived work, which stays read-only). The builder shows its status buttons on `canChangeStatus`. No mutation changed: `assessments.setStatus` already allowed archived → published or draft.
+- `components/studio/AssessmentBuilder.tsx`: published → **Archive** / **Unpublish**; archived → **Move to draft** / **Unarchive**. Status notes reworded to match. Unarchiving a published-then-archived assessment doesn't notify students again (`notifyOnce`).
+- **Unpublish** replaces "Move back to draft" in `LessonEditor`, `PresentationEditor` and `CrosswordEditor` (courses and weeks already said Unpublish).
+- `components/studio/CourseView.tsx`: an archived course shows **Unarchive** (back to draft).
+- Dev gallery: staff `/dev/ui?view=builder-archived`. `AssessmentBuilder` takes `showSubmissions` (default true) so the gallery can skip the submissions list, which needs a real id.
+
+### Checks (2026-11-07)
+
+- Staff and Convex typecheck clean; lint clean on the changed files.
+- `convex/studio.test.ts` + `convex/codeExam.test.ts`: 27 passed. New test: an archived assessment reports `canEdit: false`, `canChangeStatus: true`; unarchiving makes it published and editable; an archived course turns `canChangeStatus` off until it's unarchived.
+- Browser (staff gallery, 1280 px): the archived midterm shows "Archived" and "Read only", the buttons **Move to draft** and **Unarchive**, and the new note.
+- Not done: clicking through on a real course (needs a staff sign-in). Full staff suite not run.
+
+### Limitations
+
+- Production needs a deploy of both Convex and the staff app before the buttons show there. "Practice run" (archived on production on 2026-11-06) can then be unarchived from its page.
+- The course outline rows still only show each item's status; the buttons are on each item's own page.
